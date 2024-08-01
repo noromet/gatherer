@@ -47,7 +47,6 @@ class Database:
                 "INSERT INTO weather_record (id, station_id, timestamp, temperature, wind_speed, wind_direction, rain, humidity, pressure, flagged) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (record.id, record.station_id, record.timestamp, record.temperature, record.wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged)
             )
-            
 
 
 class CursorFromConnectionFromPool:
