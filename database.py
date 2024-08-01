@@ -3,7 +3,11 @@ from psycopg2 import pool
 from psycopg2.extensions import connection as _connection
 from psycopg2.extensions import cursor as _cursor
 from typing import List, Tuple, Optional
+import uuid
+import re
 import random
+
+from schema import WeatherRecord
 
 class Database:
     """Database class for managing PostgreSQL connections."""
@@ -32,6 +36,18 @@ class Database:
     def close_all_connections(cls) -> None:
         """Close all connections in the pool."""
         cls.__connection_pool.closeall()
+        
+    @classmethod
+    def save_record(cls, record: WeatherRecord) -> None:
+        """Save a weather record to the database."""
+        record.id = str(uuid.uuid4())
+        
+        with CursorFromConnectionFromPool() as cursor:
+            cursor.execute(
+                "INSERT INTO weather_record (id, station_id, timestamp, temperature, wind_speed, wind_direction, rain, humidity, pressure, flagged) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (record.id, record.station_id, record.timestamp, record.temperature, record.wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged)
+            )
+            
 
 
 class CursorFromConnectionFromPool:

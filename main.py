@@ -16,25 +16,22 @@ def process_chunk(chunk, chunk_number):
         params = station['connection_params']
         if station['type'] == 'meteoclimatic':
             try:
-                data = MeteoclimaticReader.get_data(params['endpoint'])
-                print(json.dumps(data, indent=2))
+                record = MeteoclimaticReader.get_data(params['endpoint'])
+                record.station_id = station['id']
+                Database.save_record(record)
             except Exception as e:
                 print(f"Error processing station {station['id']}: {e}")
         else:
             pass
 
 def main():
-    #get database url
+    load_dotenv(verbose=True)
     db_url = os.getenv("DATABASE_CONNECTION_URL")
     max_threads = int(os.getenv("MAX_THREADS"))
-    
-    print("ZZZZ")
     
     Database.initialize(db_url)
     stations = get_all_stations()
     print(json.dumps(stations, indent=2))
-    
-    print("AAAA")
     
     #divide the station list in chunks to be processed by threads
     chunk_size = len(stations) // max_threads
@@ -47,13 +44,12 @@ def main():
     for i in range(remainder_size):
         chunks[i].append(stations[-(i+1)])
         
-    print("BBBB")
-
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
         for i, chunk in enumerate(chunks):
             executor.submit(process_chunk, chunk, chunk_number=i)
+            
+    Database.close_all_connections()
     
 if __name__ == "__main__":
-    load_dotenv(verbose=True)
     main()
 

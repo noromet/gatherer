@@ -1,5 +1,6 @@
 import requests
 import datetime
+from schema import WeatherRecord
 
 class MeteoclimaticReader:
     code_to_name_map = {
@@ -49,16 +50,7 @@ class MeteoclimaticReader:
         
         
     @staticmethod
-    def parse(str_data: str) -> dict:
-        """
-        *DHHM=100
-        *DLHM=74
-        *DHBR=1015.2 
-        *DLBR=1011.9 
-        *EOT*
-        """
-        
-        # turn into key/value pairs
+    def parse(str_data: str) -> WeatherRecord:
         data = {}
         for line in str_data.split("\n"):
             line = line.strip()
@@ -74,7 +66,18 @@ class MeteoclimaticReader:
                                       
                 data[MeteoclimaticReader.code_to_name_map[key.strip()[1:]]] = value
             
-        return data
+        return WeatherRecord(
+            id=None,
+            station_id=None,
+            timestamp=data["record_timestamp"],
+            temperature=data["current_temperature_celsius"],
+            wind_speed=data["current_wind_speed_kph"],
+            wind_direction=data["current_wind_direction"],
+            rain=data["total_daily_precipitation_at_record_timestamp"],
+            humidity=data["relative_humidity"],
+            pressure=data["pressure_hpa"],
+            flagged=False
+        )
     
     @staticmethod
     def curl_endpoint(endpoint: str) -> str:
