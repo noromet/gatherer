@@ -19,14 +19,19 @@ def print_green(text):
 def main():
     load_dotenv(verbose=True)
     db_url = os.getenv("DATABASE_CONNECTION_URL")
-    owner_id = os.getenv("STATION_OWNER_ID")
+    owner_email = os.getenv("STATION_OWNER_EMAIL")
     
     print_red("This script will upload the weather stations from the file 'estaciones.csv' to the database.")
-    print(f"Environment variables: \n\tDATABASE_CONNECTION_URL={db_url}\n\tSTATION_OWNER_ID={owner_id}")
+    print(f"Environment variables: \n\tDATABASE_CONNECTION_URL={db_url}\n\tSTATION_OWNER_EMAIL={owner_email}")
+    
     input("Press Enter to confirm.")   
     
     conn = psycopg2.connect(db_url)
     cursor = conn.cursor()
+    
+    # get user id
+    cursor.execute("SELECT \"id\" FROM \"user\" WHERE \"email\" = %s", (owner_email,))
+    owner_id = cursor.fetchone()
     
     # read file from csv estaciones.csv
     with open('estaciones.csv', newline='') as csvfile:
@@ -37,7 +42,7 @@ def main():
                 "id": str(uuid.uuid4()),
                 "owner_id": owner_id,
                 "name": row["name"],
-                "status": "blocked",
+                "status": "active",
                 "location": row["location"],
                 "province": row["province"],
                 "latitude": float(row["latitude"]),

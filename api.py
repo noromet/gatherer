@@ -88,3 +88,53 @@ class MeteoclimaticReader:
     def get_data(endpoint: str) -> dict:
         raw_data = MeteoclimaticReader.curl_endpoint(endpoint)
         return MeteoclimaticReader.parse(raw_data)
+    
+    
+class WeatherLinkReader:
+    @staticmethod
+    def parse(str_data: str) -> WeatherRecord:
+        raise NotImplementedError()
+        pass
+    
+    @staticmethod
+    def curl_endpoint(endpoint: str, params: dict = {}) -> str:
+        assert params["key"] is not None
+        assert params["secret"] is not None
+        assert params["station_id"] is not None
+        
+        #{endpoint}?user={params['user']}&pass={params['password']}&apiToken={params['token']}
+        response = requests.get(endpoint, params)
+        return response.text
+
+    
+    @staticmethod
+    def get_data(endpoint: str, params: dict = {}) -> dict:
+        assert params["key"] is not None
+        assert params["secret"] is not None
+        assert params["station_id"] is not None
+        
+        response = WeatherLinkReader.curl_endpoint(endpoint, params)
+        
+        parsed = WeatherLinkReader.parse(response)
+        
+        return parsed
+    
+class WeatherDotComReader:
+    @staticmethod
+    def parse(str_data: str) -> WeatherRecord:
+        raise NotImplementedError()
+        pass
+    
+    @staticmethod
+    def curl_endpoint(endpoint: str, params: dict = {}) -> str:
+        raise NotImplementedError()
+        assert params["station_id"] is not None
+        assert params["api_key"] is not None
+        pass
+    
+    @staticmethod
+    def get_data(endpoint: str, params: dict = {}) -> dict:
+        raise NotImplementedError()
+        assert params["station_id"] is not None
+        assert params["api_key"] is not None
+        pass
