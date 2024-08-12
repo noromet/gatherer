@@ -1,6 +1,11 @@
 import requests
 import datetime
 from schema import WeatherRecord
+import json
+
+def is_date_too_old(date: datetime.datetime) -> bool: #1hr
+    now_minus_1_hour = (datetime.datetime.now(date.tzinfo) - datetime.timedelta(hours=1))
+    return date < now_minus_1_hour
 
 class MeteoclimaticReader:
     code_to_name_map = {
@@ -47,6 +52,16 @@ class MeteoclimaticReader:
         "YHUV": "yearly_max_uva_index",
         "YPCP": "total_precipitation_current_year"
     }
+    
+    values_to_keep = [
+        "UPD",
+        "TMP",
+        "WND",
+        "AZI",
+        "DPCP",
+        "HUM",
+        "BAR"
+    ]
         
         
     @staticmethod
@@ -59,29 +74,33 @@ class MeteoclimaticReader:
                 key = key.strip()
                 value = value.strip()
                 
-                if key == "*UPD":
-                    value = datetime.datetime.now().isoformat()
-                if key not in ["*VER", "*COD", "*SIG", "*UPD"]:
-                    value = float(value)
-                                      
-                data[MeteoclimaticReader.code_to_name_map[key.strip()[1:]]] = value
+                if key in MeteoclimaticReader.code_to_name_map and key in MeteoclimaticReader.values_to_keep:
+                    data[MeteoclimaticReader.code_to_name_map[key.strip()[1:]]] = value
+
+               
+        if is_date_too_old(datetime.datetime.strptime(data["record_timestamp"], "%Y-%m-%dT%H:%M:%S.%f")):
+            raise ValueError("Record timestamp is too old to be stored as current.")
             
-        return WeatherRecord(
-            id=None,
-            station_id=None,
-            timestamp=data["record_timestamp"],
-            temperature=data["current_temperature_celsius"],
-            wind_speed=data["current_wind_speed_kph"],
-            wind_direction=data["current_wind_direction"],
-            rain=data["total_daily_precipitation_at_record_timestamp"],
-            humidity=data["relative_humidity"],
-            pressure=data["pressure_hpa"],
-            flagged=False
-        )
+        try:
+            return WeatherRecord(
+                id=None,
+                station_id=None,
+                timestamp=data["record_timestamp"],
+                temperature=data["current_temperature_celsius"],
+                wind_speed=data["current_wind_speed_kph"],
+                wind_direction=data["current_wind_direction"],
+                rain=data["total_daily_precipitation_at_record_timestamp"],
+                humidity=data["relative_humidity"],
+                pressure=data["pressure_hpa"],
+                flagged=False
+            )
+        except KeyError as e:
+            raise ValueError(f"Missing key {e} in data.")
     
     @staticmethod
     def curl_endpoint(endpoint: str) -> str:
         response = requests.get(endpoint)
+        print(f"Requesting {response.url}")
         return response.text
     
     @staticmethod
@@ -90,33 +109,54 @@ class MeteoclimaticReader:
         return MeteoclimaticReader.parse(raw_data)
     
     
-class WeatherLinkReader:
+class WeatherLinkV1Reader:
     @staticmethod
     def parse(str_data: str) -> WeatherRecord:
-        raise NotImplementedError()
-        pass
+        try:
+            data = json.loads(str_data)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
+        
+        observation_time = datetime.datetime.strptime(data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z")
+        
+        if is_date_too_old(observation_time):
+            raise ValueError("Record timestamp is too old to be stored as current.")
+        
+        return WeatherRecord(
+            id=None,
+            station_id=None,
+            timestamp=datetime.datetime.now().isoformat(),
+            temperature=data["temp_c"],
+            wind_speed=data["wind_mph"],
+            wind_direction=data["wind_degrees"],
+            rain=0.0,
+            humidity=data["relative_humidity"],
+            pressure=data["pressure_mb"],
+            flagged = False
+        )
     
     @staticmethod
-    def curl_endpoint(endpoint: str, params: dict = {}) -> str:
-        assert params["key"] is not None
-        assert params["secret"] is not None
-        assert params["station_id"] is not None
+    def curl_endpoint(endpoint: str, user_did: str, password: str, apiToken: str) -> str:
+        response = requests.get(endpoint, {
+            "user": user_did,
+            "pass": password,
+            "apiToken": apiToken
+        })
         
-        #{endpoint}?user={params['user']}&pass={params['password']}&apiToken={params['token']}
-        response = requests.get(endpoint, params)
+        #print full url
+        print(f"Requesting {response.url}")
+        
         return response.text
 
     
     @staticmethod
     def get_data(endpoint: str, params: dict = {}) -> dict:
-        assert params["key"] is not None
-        assert params["secret"] is not None
-        assert params["station_id"] is not None
+        assert params[0] is not None
+        assert params[1] is not None
+        assert params[2] is not None
         
-        response = WeatherLinkReader.curl_endpoint(endpoint, params)
-        
-        parsed = WeatherLinkReader.parse(response)
-        
+        response = WeatherLinkV1Reader.curl_endpoint(endpoint, params[0], params[2], params[1])#did, password, apiToken are field1, field3, field2
+        parsed = WeatherLinkV1Reader.parse(response)
         return parsed
     
 class WeatherDotComReader:

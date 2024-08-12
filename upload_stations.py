@@ -8,13 +8,23 @@ import os
 import uuid
 from dotenv import load_dotenv
 from datetime import datetime
-import json
+
+tipo_to_connection_type_map = {
+    '0': "weatherlink_v1",
+    '1': "meteoclimatic",
+    '2': "weatherdotcom"
+}
 
 def print_red(text):
     print(f"\033[91m{text}\033[00m")
     
 def print_green(text):
     print(f"\033[92m{text}\033[00m")
+
+def na_to_none(value):
+    if not isinstance(value, str):
+        return value
+    return None if value.strip().lower() == "na" else value
 
 def main():
     load_dotenv(verbose=True)
@@ -38,28 +48,36 @@ def main():
         reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
         
         for row in reader:
+            old_conn_type_int = row["tipo"]
+            if old_conn_type_int not in tipo_to_connection_type_map:
+                print_red(f"Unsupported connection type '{old_conn_type_int}'. Skipping...")
+                continue
+            connection_type = tipo_to_connection_type_map[old_conn_type_int]
+            
             weather_station = {
                 "id": str(uuid.uuid4()),
                 "owner_id": owner_id,
                 "name": row["name"],
-                "status": "active",
+                "status": "blocked",
                 "location": row["location"],
                 "province": row["province"],
                 "latitude": float(row["latitude"]),
                 "longitude": float(row["longitude"]),
                 "elevation": float(row["elevation"]),
-                "did": row["did"],
-                "token": row["token"],
                 "model": row["model"],
                 "brand": row["brand"],
-                "date": datetime.strptime(row["date"], "%Y-%m-%d")
+                "date": datetime.strptime(row["date"], "%Y-%m-%d"),
+                "connection_type": connection_type,
+                "field1": na_to_none(row["did"]),
+                "field2": na_to_none(row["token"]),
+                "field3": na_to_none(row["password"])
             }
             
             print_green(f"Inserting station {weather_station["id"]}, location {weather_station["location"]}...")
             
             cursor.execute("""
-                INSERT INTO weather_station (id, owner_id, name, status, location, province, latitude, longitude, elevation, created_at, token, model, brand)
-                VALUES (%(id)s, %(owner_id)s, %(name)s, %(status)s, %(location)s, %(province)s, %(latitude)s, %(longitude)s, %(elevation)s, %(date)s, %(token)s, %(model)s, %(brand)s)
+                INSERT INTO weather_station (id, owner_id, name, status, location, province, latitude, longitude, elevation, model, brand, created_at, connection_type, field1, field2, field3)
+                VALUES (%(id)s, %(owner_id)s, %(name)s, %(status)s, %(location)s, %(province)s, %(latitude)s, %(longitude)s, %(elevation)s, %(model)s, %(brand)s, %(date)s, %(connection_type)s, %(field1)s, %(field2)s, %(field3)s)
             """, weather_station)
             conn.commit()
             

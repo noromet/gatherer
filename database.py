@@ -75,15 +75,13 @@ class CursorFromConnectionFromPool:
 def get_all_stations() -> List[Tuple]:
     """Get all active weather stations."""
     with CursorFromConnectionFromPool() as cursor:
-        cursor.execute("SELECT id, token FROM weather_station WHERE status = 'active'")
+        cursor.execute("SELECT id, connection_type, field1, field2, field3 FROM weather_station WHERE status = 'active'")
         stations = cursor.fetchall()
-        types = ('meteoclimatic', 'aemet', 'other')
-        return [
-                {
-                    'id': id, 
-                    'type': random.choice(types), 
-                    'connection_params': {
-                        'token': token,
-                        'endpoint': 'http://www.meteobuenavista.es/wxlocal'
-                    }
-                } for id, token in stations]
+        return stations
+    
+def get_single_station(station_id: str) -> Tuple:
+    """Get a single weather station by ID."""
+    with CursorFromConnectionFromPool() as cursor:
+        cursor.execute("SELECT id, connection_type, field1, field2, field3 FROM weather_station WHERE id = %s", (station_id,))
+        station = cursor.fetchone()
+        return station
