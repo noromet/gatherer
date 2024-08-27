@@ -73,7 +73,7 @@ def main():
                 "field3": na_to_none(row["password"])
             }
             
-            print_green(f"Inserting station {weather_station["id"]}, location {weather_station["location"]}...")
+            print_green(f'Inserting station {weather_station["id"]}, location {weather_station["location"]}...')
             
             cursor.execute("""
                 INSERT INTO weather_station (id, owner_id, name, status, location, province, latitude, longitude, elevation, model, brand, created_at, connection_type, field1, field2, field3)

@@ -63,6 +63,12 @@ def main():
     
     else:
         stations = get_all_stations()
+
+        if len(stations) == 0:
+            print_red("No active stations found!")
+            return
+
+        print(f"Processing {len(stations)} stations")
         
         if len(stations) > 50:
             #divide the station list in chunks to be processed by threads
