@@ -2,6 +2,69 @@ import requests
 import datetime
 from schema import WeatherRecord
 import json
+from dateutil import parser
+
+def smart_azimuth(azimuth) -> float:
+    if type(azimuth) is not str:
+        if type(azimuth) is int or type(azimuth) is float:
+            if azimuth < 0 or azimuth > 360:
+                raise ValueError(f"Invalid azimuth value: {azimuth}")
+            return azimuth
+        else:
+            raise ValueError(f"Invalid azimuth value: {azimuth}")
+        
+    azimuth = azimuth.strip().lower().replace(" ", "").replace("º", "").replace("o", "w")
+    
+    translations = {
+        "n": 0,
+        "nne": 22.5,
+        "ne": 45,
+        "ene": 67.5,
+        "e": 90,
+        "ese": 112.5,
+        "se": 135,
+        "sse": 157.5,
+        "s": 180,
+        "ssw": 202.5,
+        "sw": 225,
+        "wsw": 247.5,
+        "w": 270,
+        "wnw": 292.5,
+        "nw": 315,
+        "nnw": 337.5
+    }
+
+    if azimuth in translations.keys():
+        return translations[azimuth]
+    else:
+        try:
+            return smart_parse_float(azimuth)
+        except ValueError:
+            raise ValueError(f"Invalid azimuth value: {azimuth}")
+
+def smart_parse_date(date_str: str) -> datetime.datetime:
+    try:
+        return parser.parse(date_str)
+    except ValueError as e:
+        raise ValueError(f"Invalid date format: {e}")
+    
+def smart_parse_float(float_str: str) -> float:
+    """
+    Handles both comma and dot as decimal separator. Removes any non-numeric character other than the separator. Pray.
+    """
+
+    if not float_str:
+        return 0.0
+    
+    if "," in float_str and "." in float_str:
+        raise ValueError("Invalid float format: both comma and dot as separators.")
+    
+    if "," in float_str:
+        float_str = float_str.replace(".", "").replace(",", ".")
+    
+    float_str = "".join([c for c in float_str if c.isdigit() or c == "."])
+    
+    return float(float_str)
 
 def is_date_too_old(date: datetime.datetime) -> bool: #1hr
     now_minus_1_hour = (datetime.datetime.now(date.tzinfo) - datetime.timedelta(hours=1))
@@ -67,18 +130,19 @@ class MeteoclimaticReader:
     @staticmethod
     def parse(str_data: str) -> WeatherRecord:
         data = {}
-        for line in str_data.split("\n"):
+        for line in str_data.strip().split("*"):
             line = line.strip()
-            if line.startswith("*") and not line.endswith("*"):
-                key, value = line.split("=")
-                key = key.strip()
-                value = value.strip()
-                
-                if key in MeteoclimaticReader.code_to_name_map and key in MeteoclimaticReader.values_to_keep:
-                    data[MeteoclimaticReader.code_to_name_map[key.strip()[1:]]] = value
+            if not line or "=" not in line:
+                continue
+            key, value = line.split("=")
+            key = key.strip()
+            value = value.strip()
+            
+            if key in MeteoclimaticReader.code_to_name_map.keys() and key in MeteoclimaticReader.values_to_keep:
+                data[MeteoclimaticReader.code_to_name_map[key]] = value
 
-               
-        if is_date_too_old(datetime.datetime.strptime(data["record_timestamp"], "%Y-%m-%dT%H:%M:%S.%f")):
+        data["record_timestamp"] = smart_parse_date(data["record_timestamp"])
+        if is_date_too_old(data["record_timestamp"]):
             raise ValueError("Record timestamp is too old to be stored as current.")
             
         try:
@@ -86,12 +150,12 @@ class MeteoclimaticReader:
                 id=None,
                 station_id=None,
                 timestamp=data["record_timestamp"],
-                temperature=data["current_temperature_celsius"],
-                wind_speed=data["current_wind_speed_kph"],
-                wind_direction=data["current_wind_direction"],
-                rain=data["total_daily_precipitation_at_record_timestamp"],
-                humidity=data["relative_humidity"],
-                pressure=data["pressure_hpa"],
+                temperature=smart_parse_float(data["current_temperature_celsius"]),
+                wind_speed=smart_parse_float(data["current_wind_speed_kph"]),
+                wind_direction=smart_azimuth(data["current_wind_direction"]),
+                rain=smart_parse_float(data["total_daily_precipitation_at_record_timestamp"]),
+                humidity=smart_parse_float(data["relative_humidity"]),
+                pressure=smart_parse_float(data["pressure_hpa"]),
                 flagged=False
             )
         except KeyError as e:
@@ -99,7 +163,10 @@ class MeteoclimaticReader:
     
     @staticmethod
     def curl_endpoint(endpoint: str) -> str:
-        response = requests.get(endpoint)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+        }
+        response = requests.get(endpoint, headers=headers)
         print(f"Requesting {response.url}")
         return response.text
     
