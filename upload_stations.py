@@ -81,7 +81,7 @@ def main():
             """, weather_station)
             conn.commit()
             
-            print_green(f"Station {weather_station["id"]} inserted successfully.")
+            print_green(f'Station {weather_station["id"]} inserted successfully.')
             print()
         
 if __name__ == "__main__":
