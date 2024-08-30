@@ -149,7 +149,7 @@ class MeteoclimaticReader:
             return WeatherRecord(
                 id=None,
                 station_id=None,
-                timestamp=data["record_timestamp"],
+                source_timestamp=data["record_timestamp"],
                 temperature=smart_parse_float(data["current_temperature_celsius"]),
                 wind_speed=smart_parse_float(data["current_wind_speed_kph"]),
                 wind_direction=smart_azimuth(data["current_wind_direction"]),
