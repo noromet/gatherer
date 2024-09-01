@@ -4,8 +4,6 @@ from psycopg2.extensions import connection as _connection
 from psycopg2.extensions import cursor as _cursor
 from typing import List, Tuple, Optional
 import uuid
-import re
-import random
 
 from schema import WeatherRecord
 
