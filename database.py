@@ -83,3 +83,10 @@ def get_single_station(station_id: str) -> Tuple:
         cursor.execute("SELECT id, connection_type, field1, field2, field3 FROM weather_station WHERE id = %s", (station_id,))
         station = cursor.fetchone()
         return station
+    
+def get_stations_by_type(station_type: str) -> List[Tuple]:
+    """Get all weather stations by type."""
+    with CursorFromConnectionFromPool() as cursor:
+        cursor.execute("SELECT id, connection_type, field1, field2, field3 FROM weather_station WHERE connection_type = %s AND status = 'active'", (station_type,))
+        stations = cursor.fetchall()
+        return stations

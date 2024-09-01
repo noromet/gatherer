@@ -5,26 +5,69 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Gatherer",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "main.py",
-            "console": "integratedTerminal"
-        },
-        {
             "name": "Gatherer, single station",
             "type": "debugpy",
             "request": "launch",
             "program": "main.py",
-            "args": ["${input:station_id}"],
+            "args": ["--id", "${input:station_id}"],
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "Gatherer, specific type",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["--type", "${input:station_type}"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Gatherer, all stations",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["--all"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Gatherer, dry run on all stations",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["--dry-run", "--all"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Gatherer, multithreaded",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["--multithread_threshold", "${input:multithread_threshold}"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Gatherer, type, dry run",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["--type", "${input:station_type}", "--dry-run"],
+            "console": "integratedTerminal"
+        },
     ],
     "inputs": [
         {
             "id": "station_id",
             "type": "promptString",
             "description": "Enter the station ID"
+        },
+        {
+            "id": "station_type",
+            "type": "promptString",
+            "description": "Enter the station type"
+        },
+        {
+            "id": "multithread_threshold",
+            "type": "promptString",
+            "description": "Enter the multithread threshold"
         }
     ]
 }

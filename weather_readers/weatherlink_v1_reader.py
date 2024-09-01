@@ -20,13 +20,13 @@ class WeatherLinkV1Reader:
         return WeatherRecord(
             id=None,
             station_id=None,
-            timestamp=datetime.datetime.now().isoformat(),
+            source_timestamp=observation_time,
             temperature=data["temp_c"],
             wind_speed=data["wind_mph"],
             wind_direction=data["wind_degrees"],
             rain=0.0,
             humidity=data["relative_humidity"],
-            pressure=data["pressure_mb"],
+            pressure=data["pressure_mb"], #mb = hpa
             flagged = False
         )
     
