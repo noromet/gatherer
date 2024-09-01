@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 from datetime import datetime
 
 tipo_to_connection_type_map = {
-    '0': "weatherlink_v1",
-    '1': "meteoclimatic",
-    '2': "weatherdotcom"
+    # '0': "weatherlink_v1",
+    # '1': "meteoclimatic",
+    '3': "weatherdotcom"
 }
 
 def print_red(text):

@@ -102,3 +102,20 @@ def smart_parse_float(float_str: str) -> float:
 def is_date_too_old(date: datetime.datetime) -> bool: #1hr
     now_minus_1_hour = (datetime.datetime.now(date.tzinfo) - datetime.timedelta(hours=1))
     return date < now_minus_1_hour
+
+class UnitConverter:
+    @staticmethod
+    def fahrenheit_to_celsius(fahrenheit: float) -> float:
+        return round((fahrenheit - 32) * 5/9, 1) if fahrenheit is not None else None
+
+    @staticmethod
+    def psi_to_hpa(pressure: float) -> float:
+        return round(pressure * 33.8639, 1) if pressure is not None else None
+    
+    @staticmethod
+    def mph_to_kph(speed: float) -> float:
+        return round(speed * 1.60934, 1) if speed is not None else None
+
+    @staticmethod
+    def inches_to_mm(inches: float) -> float:
+        return round(inches * 25.4, 1) if inches is not None else None

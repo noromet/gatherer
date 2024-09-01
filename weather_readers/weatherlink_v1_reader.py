@@ -45,7 +45,7 @@ class WeatherLinkV1Reader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: dict = {}) -> dict:
+    def get_data(endpoint: str, params: tuple = ()) -> dict:
         assert params[0] is not None
         assert params[1] is not None
         assert params[2] is not None
