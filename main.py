@@ -5,7 +5,7 @@ import threading
 import sys
 
 from database import Database, get_all_stations, get_single_station
-import api
+import weather_readers as api
 
 def print_red(text):
     print(f"\033[91m{text}\033[00m")

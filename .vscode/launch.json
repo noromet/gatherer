@@ -10,6 +10,21 @@
             "request": "launch",
             "program": "main.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Gatherer, single station",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["${input:station_id}"],
+            "console": "integratedTerminal"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "station_id",
+            "type": "promptString",
+            "description": "Enter the station ID"
         }
     ]
 }
