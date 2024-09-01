@@ -90,3 +90,11 @@ def get_stations_by_type(station_type: str) -> List[Tuple]:
         cursor.execute("SELECT id, connection_type, field1, field2, field3 FROM weather_station WHERE connection_type = %s AND status = 'active'", (station_type,))
         stations = cursor.fetchall()
         return stations
+    
+def increment_incident_count(station_id: str) -> None:
+    """Increment the incident count for a weather station."""
+    with CursorFromConnectionFromPool() as cursor:
+        cursor.execute(
+            "UPDATE weather_station SET incident_count = COALESCE(incident_count, 0) + 1 WHERE id = %s", 
+            (station_id,)
+        )

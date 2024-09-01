@@ -5,7 +5,7 @@ import threading
 import json
 import argparse
 
-from database import Database, get_all_stations, get_single_station, get_stations_by_type
+from database import Database, get_all_stations, get_single_station, get_stations_by_type, increment_incident_count
 import weather_readers as api
 
 # region definitions
@@ -80,6 +80,8 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
 
     except Exception as e:
         print_red(f"Error processing station {station[0]}: {e}")
+        if not DRY_RUN:
+            increment_incident_count(station[0])
     print()
 
 def process_chunk(chunk, chunk_number):
