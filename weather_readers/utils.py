@@ -41,7 +41,7 @@ def smart_azimuth(azimuth) -> float:
             raise ValueError(f"Invalid azimuth value: {azimuth}")
 
 def smart_parse_date(date_str: str) -> datetime.datetime:
-    #try spanish formatting
+    # Try Spanish formatting
     spanish = None
     try:
         spanish_long_year_format_date = datetime.datetime.strptime(date_str, "%d/%m/%Y %H:%M")
@@ -56,29 +56,32 @@ def smart_parse_date(date_str: str) -> datetime.datetime:
         except ValueError:
             pass
 
-    #try american formatting
+    # Try American formatting
     american = None
     try:
         american_format_date = parser.parse(date_str)
         american = american_format_date
-    except ValueError as e:
+    except ValueError:
         pass
 
     if spanish is None and american is None:
         raise ValueError(f"Invalid date format: {date_str}")
-    
+
+    now = datetime.datetime.now()
+
     if spanish is not None and american is not None:
-        if abs((spanish - datetime.datetime.now()).days) < abs((american - datetime.datetime.now()).days):
-            return spanish
-        else:
-            return american
-        
+        if spanish > now:
+            return american if american <= now else None
+        if american > now:
+            return spanish if spanish <= now else None
+        return spanish if abs((spanish - now).days) < abs((american - now).days) else american
+
     if spanish is not None:
-        return spanish
-    
+        return spanish if spanish <= now else None
+
     if american is not None:
-        return american
-    
+        return american if american <= now else None
+
     raise ValueError(f"Invalid date format: {date_str}")
     
 def smart_parse_float(float_str: str) -> float:

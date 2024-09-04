@@ -28,7 +28,7 @@ class MeteoclimaticReader:
         "WRUN": "wind_run_distance_daily",
         "MHTM": "monthly_max_temperature",
         "MLTM": "monthly_min_temperature",
-        "MHHM": "monthly_max_humidity",
+        "MHHM": "monthly_max_humidity", 
         "MLHM": "monthly_min_humidity",
         "MHBR": "monthly_max_pressure",
         "MLBR": "monthly_min_pressure",
@@ -53,7 +53,7 @@ class MeteoclimaticReader:
         "TMP",
         "WND",
         "AZI",
-        "DPCP",
+        "DPCP", #lluvia cumulativa
         "HUM",
         "BAR"
     ]
