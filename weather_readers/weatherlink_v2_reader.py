@@ -1,4 +1,4 @@
-#https://api.weather.com/v2/pws/observations/current?stationId=ISOTODEL6&format=json&units=e&apiKey=a952662893aa49f992662893aad9f98d
+# https://api.weatherlink.com/v2/current/{station-id}?api-key={YOUR API KEY}
 
 from schema import WeatherRecord
 from .utils import is_date_too_old, UnitConverter
@@ -6,7 +6,7 @@ import json
 import requests
 import datetime
 
-class WeatherDotComReader:
+class WeatherlinkV2Reader:
     @staticmethod
     def parse(str_data: str) -> WeatherRecord:
         try:
@@ -31,13 +31,13 @@ class WeatherDotComReader:
             pressure=UnitConverter.psi_to_hpa(data["imperial"]["pressure"]),
             flagged=False
         )
+    
     @staticmethod
-    def curl_endpoint(endpoint: str, did: str, token: str) -> str:
+    def curl_endpoint(endpoint: str, station_id: str, api_key: str) -> str:
+        endpoint = endpoint.format(station_id=station_id)
+
         response = requests.get(endpoint, {
-            "stationId": did,
-            "apiKey": token,
-            "format": "json",
-            "units": "e"
+            "api-key": api_key,
         })
         
         #print full url
@@ -48,12 +48,9 @@ class WeatherDotComReader:
     
     @staticmethod
     def get_data(endpoint: str, params: tuple = ()) -> dict:
-        assert params[0] is not None #did
-        assert params[1] is not None #apiToken
+        assert params[0] is not None #station id
+        assert params[1] is not None #api token
         
-        if params[2] not in (None, "NA", "na", ""):
-            print("Warning: WeatherDotComReader does not use password, but it was provided.")
-
-        response = WeatherDotComReader.curl_endpoint(endpoint, params[0], params[1])
-        parsed = WeatherDotComReader.parse(response)
+        response = WeatherlinkV2Reader.curl_endpoint(endpoint, params[0], params[1])
+        parsed = WeatherlinkV2Reader.parse(response)
         return parsed
