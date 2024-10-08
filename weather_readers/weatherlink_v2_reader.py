@@ -28,7 +28,7 @@ class WeatherlinkV2Reader:
             wind_direction=data["winddir"],
             rain=UnitConverter.inches_to_mm(data["imperial"]["precipRate"]),
             humidity=data["humidity"],
-            pressure=UnitConverter.psi_to_hpa(data["imperial"]["pressure"]),
+        pressure=UnitConverter.psi_to_hpa(data["imperial"]["pressure"]),
             flagged=False
         )
     
@@ -48,8 +48,8 @@ class WeatherlinkV2Reader:
     
     @staticmethod
     def get_data(endpoint: str, params: tuple = ()) -> dict:
-        assert params[0] is not None #station id
-        assert params[1] is not None #api token
+        assert params[0] is not None, "station id cant be null" #station id
+        assert params[1] is not None, "api token is null" #api token
         
         response = WeatherlinkV2Reader.curl_endpoint(endpoint, params[0], params[1])
         parsed = WeatherlinkV2Reader.parse(response)
