@@ -13,7 +13,8 @@ tipo_to_connection_type_map = {
     # '0': "weatherlink_v1",
     # '1': "meteoclimatic",
     # '3': "wunderground",
-    '5': "weatherlink_v2",
+    # '5': "weatherlink_v2",
+    '6': "holfuy",
 }
 
 def print_red(text):
@@ -45,6 +46,7 @@ def main():
     owner_id = cursor.fetchone()
     
     # read file from csv estaciones.csv
+    counter_added = 0
     with open('estaciones.csv', newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
         
@@ -83,7 +85,9 @@ def main():
             conn.commit()
             
             print_green(f'Station {weather_station["id"]} inserted successfully.')
-            print()
+            counter_added += 1
+
+    print_green(f"\n***\nAdded {counter_added} stations.\n***")
         
 if __name__ == "__main__":
     main()
