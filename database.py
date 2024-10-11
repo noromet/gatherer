@@ -42,8 +42,8 @@ class Database:
         
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
-                "INSERT INTO weather_record (id, station_id, source_timestamp, taken_timestamp, temperature, wind_speed, wind_direction, rain, humidity, pressure, flagged) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (record.id, record.station_id, record.source_timestamp, record.taken_timestamp, record.temperature, record.wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged)
+                "INSERT INTO weather_record (id, station_id, source_timestamp, taken_timestamp, temperature, wind_speed, max_wind_speed, wind_direction, rain, humidity, pressure, flagged) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (record.id, record.station_id, record.source_timestamp, record.taken_timestamp, record.temperature, record.wind_speed, record.max_wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged)
             )
 
 
