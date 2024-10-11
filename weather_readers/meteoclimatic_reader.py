@@ -52,6 +52,7 @@ class MeteoclimaticReader:
         "UPD",
         "TMP",
         "WND",
+        "DGST",
         "AZI",
         "DPCP", #lluvia cumulativa
         "HUM",
@@ -84,6 +85,7 @@ class MeteoclimaticReader:
                 source_timestamp=data["record_timestamp"],
                 temperature=smart_parse_float(data["current_temperature_celsius"]),
                 wind_speed=smart_parse_float(data["current_wind_speed_kph"]),
+                max_wind_speed=smart_parse_float(data["daily_max_wind_speed"]),
                 wind_direction=smart_azimuth(data["current_wind_direction"]),
                 rain=smart_parse_float(data["total_daily_precipitation_at_record_timestamp"]),
                 humidity=smart_parse_float(data["relative_humidity"]),

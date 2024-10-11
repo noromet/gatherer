@@ -24,6 +24,7 @@ class HolfuyReader:
             temperature=data["temperature"],  # Already in Celsius
             wind_speed=data["wind"]["speed"],  # Already in m/s
             wind_direction=data["wind"]["direction"],
+            max_wind_speed=data["wind"]["gust"],  # Already in m/s
             rain=data["rain"],  # Assuming rain is in mm
             humidity=data["humidity"],
             pressure=data["pressure"],  # Assuming pressure is in hPa

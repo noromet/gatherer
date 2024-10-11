@@ -17,13 +17,14 @@ class WeatherLinkV1Reader:
         if is_date_too_old(observation_time):
             raise ValueError("Record timestamp is too old to be stored as current.")
         
-        return WeatherRecord(
+        return WeatherRecord( #https://api.weatherlink.com/v1/NoaaExt.json?user=001D0A00EC80&pass=Cagondiox9332&apiToken=F35DD737814743A29ADD562111C81190
             id=None,
             station_id=None,
             source_timestamp=observation_time,
             temperature=data["temp_c"],
             wind_speed=data["wind_mph"],
             wind_direction=data["wind_degrees"],
+            max_wind_speed=data["davis_current_observation"]["wind_day_high_mph"],
             rain=0.0,
             humidity=data["relative_humidity"],
             pressure=data["pressure_mb"], #mb = hpa
