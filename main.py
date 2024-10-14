@@ -8,6 +8,8 @@ import argparse
 from database import Database, get_all_stations, get_single_station, get_stations_by_type, increment_incident_count
 import weather_readers as api
 
+from uuid import uuid4
+
 # region definitions
 print_red = lambda text: print(f"\033[91m{text}\033[00m")
 print_green = lambda text: print(f"\033[92m{text}\033[00m")
@@ -21,6 +23,8 @@ WEATHERLINK_V2_ENDPOINT = os.getenv("WEATHERLINK_V2_ENDPOINT")
 WEATHER_DOT_COM_ENDPOINT = os.getenv("WEATHER_DOT_COM_ENDPOINT")
 HOLFUY_ENDPOINT = os.getenv("HOLFUY_ENDPOINT")
 DRY_RUN = False
+
+RUN_ID = uuid4().hex
 # endregion
 
 #region argument processing
@@ -76,6 +80,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
             return
 
         record.station_id = station[0]
+        record.gatherer_run_id = RUN_ID
 
         if not DRY_RUN:
             Database.save_record(record)

@@ -30,7 +30,8 @@ class WundergroundReader:
             rain=UnitConverter.inches_to_mm(data["imperial"]["precipRate"]),
             humidity=data["humidity"],
             pressure=UnitConverter.psi_to_hpa(data["imperial"]["pressure"]),
-            flagged=False
+            flagged=False,
+            gathererRunId=None
         )
     @staticmethod
     def curl_endpoint(endpoint: str, did: str, token: str) -> str:

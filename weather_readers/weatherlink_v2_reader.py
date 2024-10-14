@@ -29,8 +29,9 @@ class WeatherlinkV2Reader:
             wind_direction=data["winddir"],
             rain=UnitConverter.inches_to_mm(data["imperial"]["precipRate"]),
             humidity=data["humidity"],
-        pressure=UnitConverter.psi_to_hpa(data["imperial"]["pressure"]),
-            flagged=False
+            pressure=UnitConverter.psi_to_hpa(data["imperial"]["pressure"]),
+            flagged=False,
+            gathererRunId=None
         )
     
     @staticmethod

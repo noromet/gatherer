@@ -33,7 +33,8 @@ class WeatherLinkV1Reader:
             rain=0.0,
             humidity=data["relative_humidity"],
             pressure=data["pressure_mb"], #mb = hpa
-            flagged=False
+            flagged=False,
+            gathererRunId=None
         )
     
     @staticmethod

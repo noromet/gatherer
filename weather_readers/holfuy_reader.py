@@ -28,7 +28,8 @@ class HolfuyReader:
             rain=data["rain"],  # Assuming rain is in mm
             humidity=data["humidity"],
             pressure=data["pressure"],  # Assuming pressure is in hPa
-            flagged=False
+            flagged=False,
+            gathererRunId=None
         )
     
     @staticmethod

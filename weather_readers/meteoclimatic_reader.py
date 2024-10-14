@@ -90,7 +90,8 @@ class MeteoclimaticReader:
                 rain=smart_parse_float(data["total_daily_precipitation_at_record_timestamp"]),
                 humidity=smart_parse_float(data["relative_humidity"]),
                 pressure=smart_parse_float(data["pressure_hpa"]),
-                flagged=False
+                flagged=False,
+                gathererRunId=None
             )
         except KeyError as e:
             raise ValueError(f"Missing key {e} in data.")
