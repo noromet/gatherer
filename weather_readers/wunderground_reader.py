@@ -28,6 +28,7 @@ class WundergroundReader:
             max_wind_speed=UnitConverter.mph_to_kph(data["imperial"]["windGust"]),
             wind_direction=data["winddir"],
             rain=UnitConverter.inches_to_mm(data["imperial"]["precipRate"]),
+            cumulativeRain=UnitConverter.inches_to_mm(data["imperial"]["precipTotal"]),
             humidity=data["humidity"],
             pressure=UnitConverter.psi_to_hpa(data["imperial"]["pressure"]),
             flagged=False,

@@ -3,6 +3,9 @@ from dateutil import parser
 from typing import Any
 
 def smart_azimuth(azimuth) -> float:
+    if azimuth is None:
+        return None
+
     if type(azimuth) is not str:
         if type(azimuth) is int or type(azimuth) is float:
             if azimuth < 0 or azimuth > 360:

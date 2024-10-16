@@ -82,14 +82,15 @@ class MeteoclimaticReader:
             return WeatherRecord(
                 id=None,
                 station_id=None,
-                source_timestamp=data["record_timestamp"],
-                temperature=smart_parse_float(data["current_temperature_celsius"]),
-                wind_speed=smart_parse_float(data["current_wind_speed_kph"]),
-                max_wind_speed=smart_parse_float(data["daily_max_wind_speed"]),
-                wind_direction=smart_azimuth(data["current_wind_direction"]),
-                rain=smart_parse_float(data["total_daily_precipitation_at_record_timestamp"]),
-                humidity=smart_parse_float(data["relative_humidity"]),
-                pressure=smart_parse_float(data["pressure_hpa"]),
+                source_timestamp=data.get("record_timestamp", None),
+                temperature=smart_parse_float(data.get("current_temperature_celsius", None)),
+                wind_speed=smart_parse_float(data.get("current_wind_speed_kph", None)),
+                max_wind_speed=smart_parse_float(data.get("daily_max_wind_speed", None)),
+                wind_direction=smart_azimuth(data.get("current_wind_direction", None)),
+                rain=None, #meteoclimatic no da lluvia puntual
+                cumulativeRain=smart_parse_float(data.get("total_daily_precipitation_at_record_timestamp", None)),
+                humidity=smart_parse_float(data.get("relative_humidity", None)),
+                pressure=smart_parse_float(data.get("pressure_hpa", None)),
                 flagged=False,
                 gathererRunId=None
             )

@@ -30,7 +30,8 @@ class WeatherLinkV1Reader:
             wind_speed=data["wind_mph"],
             wind_direction=data["wind_degrees"],
             max_wind_speed=data["davis_current_observation"]["wind_day_high_mph"],
-            rain=0.0,
+            rain=data["davis_current_observation"]["rain_rate_in_per_hr"],
+            cumulativeRain=data["davis_current_observation"]["rain_day_in"],
             humidity=data["relative_humidity"],
             pressure=data["pressure_mb"], #mb = hpa
             flagged=False,
