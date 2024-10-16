@@ -26,7 +26,7 @@ class WundergroundReader:
             temperature=UnitConverter.fahrenheit_to_celsius(data["imperial"]["temp"]),
             wind_speed=UnitConverter.mph_to_kph(data["imperial"]["windSpeed"]),
             max_wind_speed=UnitConverter.mph_to_kph(data["imperial"]["windGust"]),
-            wind_direction=data["winddir"],
+            wind_direction=data["winddir"] if "winddir" in data else None,
             rain=UnitConverter.inches_to_mm(data["imperial"]["precipRate"]),
             cumulativeRain=UnitConverter.inches_to_mm(data["imperial"]["precipTotal"]),
             humidity=data["humidity"],
