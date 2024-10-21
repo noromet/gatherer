@@ -13,8 +13,8 @@ tipo_to_connection_type_map = {
     # '0': "weatherlink_v1",
     # '1': "meteoclimatic",
     # '3': "wunderground",
-    # '5': "weatherlink_v2",
-    '6': "holfuy",
+    '5': "weatherlink_v2",
+    # '6': "holfuy",
 }
 
 def print_red(text):

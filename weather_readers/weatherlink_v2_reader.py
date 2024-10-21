@@ -5,6 +5,7 @@ from .utils import is_date_too_old, UnitConverter
 import json
 import requests
 import datetime
+import itertools
 
 class WeatherlinkV2Reader:
     @staticmethod
@@ -35,12 +36,16 @@ class WeatherlinkV2Reader:
         )
     
     @staticmethod
-    def curl_endpoint(endpoint: str, station_id: str, api_key: str) -> str:
+    def curl_endpoint(endpoint: str, station_id: str, api_key: str, api_secret: str) -> str:
         endpoint = endpoint.format(station_id=station_id)
 
-        response = requests.get(endpoint, {
-            "api-key": api_key,
-        })
+        params = {
+            "api-key": api_key
+        }
+        headers = {
+            'X-Api-Secret': api_secret
+        }
+        response = requests.get(endpoint, params=params, headers=headers)
         
         #print full url
         print(f"Requesting {response.url}")
@@ -50,9 +55,12 @@ class WeatherlinkV2Reader:
     
     @staticmethod
     def get_data(endpoint: str, params: tuple = ()) -> dict:
-        assert params[0] is not None, "station id cant be null" #station id
-        assert params[1] is not None, "api token is null" #api token
+        assert params[0] is not None, "station id cant be null"
+        assert params[1] is not None, "api key is null"
+        assert params[2] is not None, "api secret is null"
         
-        response = WeatherlinkV2Reader.curl_endpoint(endpoint, params[0], params[1])
+        response = WeatherlinkV2Reader.curl_endpoint(endpoint, params[0], params[1], params[2])
+        print(response)
         parsed = WeatherlinkV2Reader.parse(response)
+
         return parsed
