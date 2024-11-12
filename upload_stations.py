@@ -60,7 +60,7 @@ def main():
             weather_station = {
                 "id": str(uuid.uuid4()),
                 "owner_id": owner_id,
-                "name": row["name"],
+                "organizationName": row["organizationName"],
                 "status": "blocked",
                 "location": row["location"],
                 "province": row["province"],
@@ -79,8 +79,8 @@ def main():
             print_green(f'Inserting station {weather_station["id"]}, location {weather_station["location"]}...')
             
             cursor.execute("""
-                INSERT INTO weather_station (id, owner_id, name, status, location, province, latitude, longitude, elevation, model, brand, created_at, connection_type, field1, field2, field3)
-                VALUES (%(id)s, %(owner_id)s, %(name)s, %(status)s, %(location)s, %(province)s, %(latitude)s, %(longitude)s, %(elevation)s, %(model)s, %(brand)s, %(date)s, %(connection_type)s, %(field1)s, %(field2)s, %(field3)s)
+                INSERT INTO weather_station (id, owner_id, organizationName, status, location, province, latitude, longitude, elevation, model, brand, created_at, connection_type, field1, field2, field3)
+                VALUES (%(id)s, %(owner_id)s, %(organizationName)s, %(status)s, %(location)s, %(province)s, %(latitude)s, %(longitude)s, %(elevation)s, %(model)s, %(brand)s, %(date)s, %(connection_type)s, %(field1)s, %(field2)s, %(field3)s)
             """, weather_station)
             conn.commit()
             
