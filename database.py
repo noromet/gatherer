@@ -3,7 +3,9 @@ from psycopg2 import pool
 from psycopg2.extensions import connection as _connection
 from psycopg2.extensions import cursor as _cursor
 from typing import List, Tuple, Optional
+import datetime
 import uuid
+import json
 
 from schema import WeatherRecord
 
@@ -46,6 +48,21 @@ class Database:
                 (record.id, record.station_id, record.source_timestamp, record.taken_timestamp, record.temperature, record.wind_speed, record.max_wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged, record.gatherer_run_id, record.cumulativeRain)
             )
 
+    @classmethod
+    def save_thread_record(cls, id: uuid, timestamp: datetime.datetime, results: dict, command: str):
+        if not results:
+            print("No results to save")
+            return
+        
+        total_stations = len(results)
+        error_stations = len([station for station in results.keys() if results[station]['status'] == 'error'])
+        errors = {station: results[station]['error'] for station in results.keys() if results[station]['status'] == 'error'}
+
+        with CursorFromConnectionFromPool() as cursor:
+            cursor.execute(
+                "INSERT INTO gatherer_thread (id, timestamp, total_stations, error_stations, errors, command) VALUES (%s, %s, %s, %s, %s, %s)",
+                (id, timestamp, total_stations, error_stations, json.dumps(errors, ensure_ascii=False, allow_nan=True, indent=4), command)
+            )
 
 class CursorFromConnectionFromPool:
     """Context manager for PostgreSQL cursor."""

@@ -36,3 +36,12 @@ class WeatherRecord:
         self.flagged = flagged
         self.taken_timestamp = datetime.datetime.now()
         self.gathererRunId = gathererRunId
+
+class GathererThread:
+    def __init__(self, id: uuid.uuid4, timestamp: datetime.datetime, total_stations: int, error_stations: int, errors: dict, command: str):
+        self.id = id
+        self.timestamp = timestamp
+        self.total_stations = total_stations
+        self.error_stations = error_stations
+        self.errors = errors
+        self.command = command
