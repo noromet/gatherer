@@ -43,7 +43,6 @@ def get_args():
     parser.add_argument("--id", type=str, help="Read a single weather station by id")
     parser.add_argument("--dry-run", action="store_true", help="Perform a dry run")
     parser.add_argument("--multithread-threshold", type=int, default=-1, help="Threshold for enabling multithreading")
-    parser.add_argument("--save-thread-record", action="store_true", help="Save the thread record")
     return parser.parse_args()
 
 def validate_args(args):
@@ -212,13 +211,13 @@ def main():
 
     timestamp = datetime.now().replace(second=0, microsecond=0)
     
-    if args.save_thread_record:
-        Database.init_thread_record(RUN_ID, timestamp, command=" ".join(os.sys.argv))
-
     if args.dry_run:
         print_yellow("[Dry run enabled]")
     else:
         print_yellow("[Dry run disabled]")
+
+    if not args.dry_run:
+        Database.init_thread_record(RUN_ID, timestamp, command=" ".join(os.sys.argv))
 
     if args.id:
         results = process_single(args.id)
@@ -229,8 +228,9 @@ def main():
     else:
         results = process_all(multithread_threshold)
                 
-    if args.save_thread_record:
-        print_yellow("Saving thread record")
+    print_yellow("Saving thread record")
+
+    if not args.dry_run:
         Database.save_thread_record(RUN_ID, results)
 
     Database.close_all_connections()
