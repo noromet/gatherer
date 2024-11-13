@@ -211,6 +211,9 @@ def main():
     multithread_threshold = args.multithread_threshold
 
     timestamp = datetime.now().replace(second=0, microsecond=0)
+    
+    if args.save_thread_record:
+        Database.init_thread_record(RUN_ID, timestamp, command=" ".join(os.sys.argv))
 
     if args.dry_run:
         print_yellow("[Dry run enabled]")
@@ -228,7 +231,7 @@ def main():
                 
     if args.save_thread_record:
         print_yellow("Saving thread record")
-        Database.save_thread_record(RUN_ID, timestamp, results, " ".join(os.sys.argv))
+        Database.save_thread_record(RUN_ID, results)
 
     Database.close_all_connections()
 

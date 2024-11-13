@@ -44,12 +44,12 @@ class Database:
         
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
-                "INSERT INTO weather_record (id, station_id, source_timestamp, taken_timestamp, temperature, wind_speed, max_wind_speed, wind_direction, rain, humidity, pressure, flagged, gatherer_run_id, cumulative_rain) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "INSERT INTO weather_record (id, station_id, source_timestamp, taken_timestamp, temperature, wind_speed, max_wind_speed, wind_direction, rain, humidity, pressure, flagged, gatherer_thread_id, cumulative_rain) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (record.id, record.station_id, record.source_timestamp, record.taken_timestamp, record.temperature, record.wind_speed, record.max_wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged, record.gatherer_run_id, record.cumulativeRain)
             )
 
     @classmethod
-    def save_thread_record(cls, id: uuid, timestamp: datetime.datetime, results: dict, command: str):
+    def save_thread_record(cls, id: uuid, results: dict):
         if not results:
             print("No results to save")
             return
@@ -60,8 +60,16 @@ class Database:
 
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
-                "INSERT INTO gatherer_thread (id, timestamp, total_stations, error_stations, errors, command) VALUES (%s, %s, %s, %s, %s, %s)",
-                (id, timestamp, total_stations, error_stations, json.dumps(errors, ensure_ascii=False, allow_nan=True, indent=4), command)
+                "UPDATE gatherer_thread SET total_stations = %s, error_stations = %s, errors = %s WHERE id = %s",
+                (total_stations, error_stations, json.dumps(errors), id)
+            )
+
+    @classmethod
+    def init_thread_record(cls, id: uuid, timestamp: datetime.datetime, command: str):
+        with CursorFromConnectionFromPool() as cursor:
+            cursor.execute(
+                "INSERT INTO gatherer_thread (id, timestamp, command) VALUES (%s, %s, %s)",
+                (id, timestamp, command)
             )
 
 class CursorFromConnectionFromPool:
