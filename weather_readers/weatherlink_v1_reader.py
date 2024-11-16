@@ -4,6 +4,8 @@ import json
 import requests
 import datetime
 
+# https://api.weather.com/v2/pws/observations/current?stationId=ISOTOYAM2&apiKey=317bd2820daf46edbbd2820daf26ede4&format=json&units=s&numericPrecision=decimal
+
 class WeatherLinkV1Reader:
     @staticmethod
     def parse(str_data: str) -> WeatherRecord:

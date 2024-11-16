@@ -1,5 +1,5 @@
 from schema import WeatherRecord
-from .utils import is_date_too_old
+from .utils import is_date_too_old, UnitConverter
 import json
 import requests
 import datetime
@@ -22,9 +22,9 @@ class HolfuyReader:
             station_id=None,
             source_timestamp=observation_time,
             temperature=data["temperature"],  # Already in Celsius
-            wind_speed=data["wind"]["speed"],  # Already in m/s
+            wind_speed=UnitConverter.mph_to_kph(data["wind"]["speed"]),  # Already in m/s
             wind_direction=data["wind"]["direction"],
-            max_wind_speed=data["wind"]["gust"],  # Already in m/s
+            max_wind_speed=UnitConverter.mph_to_kph(data["wind"]["gust"]),  # Already in m/s
             rain=data["rain"],  # Assuming rain is in mm
             cumulativeRain=None,  # Assuming rain is in mm
             humidity=data["humidity"],
