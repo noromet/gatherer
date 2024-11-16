@@ -56,7 +56,9 @@ class MeteoclimaticReader:
         "AZI",
         "DPCP", #lluvia cumulativa
         "HUM",
-        "BAR"
+        "BAR",
+        "DHTM",
+        "DLTM",
     ]
         
         
@@ -92,7 +94,9 @@ class MeteoclimaticReader:
                 humidity=smart_parse_float(data.get("relative_humidity", None)),
                 pressure=smart_parse_float(data.get("pressure_hpa", None)),
                 flagged=False,
-                gathererRunId=None
+                gathererRunId=None,
+                maxTemp=smart_parse_float(data.get("daily_max_temperature", None)),
+                minTemp=smart_parse_float(data.get("daily_min_temperature", None))
             )
         except KeyError as e:
             raise ValueError(f"Missing key {e} in data.")

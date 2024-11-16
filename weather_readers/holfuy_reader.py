@@ -26,16 +26,18 @@ class HolfuyReader:
             wind_direction=data["wind"]["direction"],
             max_wind_speed=UnitConverter.mph_to_kph(data["wind"]["gust"]),  # Already in m/s
             rain=data["rain"],  # Assuming rain is in mm
-            cumulativeRain=None,  # Assuming rain is in mm
+            cumulativeRain=round(data["daily"]["sum_rain"],2),  # Assuming rain is in mm
             humidity=data["humidity"],
             pressure=data["pressure"],  # Assuming pressure is in hPa
             flagged=False,
-            gathererRunId=None
+            gathererRunId=None,
+            minTemp=data["daily"]["min_temp"],
+            maxTemp=data["daily"]["max_temp"]
         )
     
     @staticmethod
     def curl_endpoint(endpoint: str, station_id: str, password: str) -> str:
-        endpoint = f"{endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=m/s"
+        endpoint = f"{endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=m/s&daily=True"
 
         response = requests.get(endpoint)
         
