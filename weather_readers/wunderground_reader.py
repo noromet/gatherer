@@ -32,7 +32,9 @@ class WundergroundReader:
             humidity=data["humidity"],
             pressure=data["metric"]["pressure"],
             flagged=False,
-            gathererRunId=None
+            gathererRunId=None,
+            maxTemp=None,
+            minTemp=None
         )
     @staticmethod
     def curl_endpoint(endpoint: str, did: str, token: str) -> str:

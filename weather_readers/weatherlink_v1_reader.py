@@ -22,7 +22,7 @@ class WeatherLinkV1Reader:
         if "temp_c" in data:
             temperature = data["temp_c"]
         else:
-            temperature = UnitConverter.fahrenheit_to_celsius(data["davis_current_observation"]["temp_in_f"])
+            temperature = UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_in_f"]))
         
         return WeatherRecord(
             id=None,
@@ -37,7 +37,9 @@ class WeatherLinkV1Reader:
             humidity=data["relative_humidity"],
             pressure=data["pressure_mb"], #mb = hpa
             flagged=False,
-            gathererRunId=None
+            gathererRunId=None,
+            maxTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_high_f"])),
+            minTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_low_f"]))
         )
     
     @staticmethod
