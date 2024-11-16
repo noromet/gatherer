@@ -215,22 +215,17 @@ def main():
         print_yellow("[Dry run enabled]")
     else:
         print_yellow("[Dry run disabled]")
-
-    if not args.dry_run:
         Database.init_thread_record(RUN_ID, timestamp, command=" ".join(os.sys.argv))
 
     if args.id:
         results = process_single(args.id)
-    
     elif args.type:
         results = process_type(args.type, multithread_threshold)
-
     else:
         results = process_all(multithread_threshold)
                 
-    print_yellow("Saving thread record")
-
     if not args.dry_run:
+        print_yellow("Saving thread record")
         Database.save_thread_record(RUN_ID, results)
 
     Database.close_all_connections()

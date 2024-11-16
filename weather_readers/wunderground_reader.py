@@ -23,14 +23,14 @@ class WundergroundReader:
             id=None,
             station_id=None,
             source_timestamp=observation_time,
-            temperature=UnitConverter.fahrenheit_to_celsius(data["imperial"]["temp"]),
-            wind_speed=UnitConverter.mph_to_kph(data["imperial"]["windSpeed"]),
-            max_wind_speed=UnitConverter.mph_to_kph(data["imperial"]["windGust"]),
+            temperature=UnitConverter.fahrenheit_to_celsius(data["metric"]["temp"]),
+            wind_speed=UnitConverter.mph_to_kph(data["metric"]["windSpeed"]),
+            max_wind_speed=UnitConverter.mph_to_kph(data["metric"]["windGust"]),
             wind_direction=data["winddir"] if "winddir" in data else None,
-            rain=UnitConverter.inches_to_mm(data["imperial"]["precipRate"]),
-            cumulativeRain=UnitConverter.inches_to_mm(data["imperial"]["precipTotal"]),
+            rain=UnitConverter.inches_to_mm(data["metric"]["precipRate"]),
+            cumulativeRain=UnitConverter.inches_to_mm(data["metric"]["precipTotal"]),
             humidity=data["humidity"],
-            pressure=UnitConverter.psi_to_hpa(data["imperial"]["pressure"]),
+            pressure=UnitConverter.psi_to_hpa(data["metric"]["pressure"]),
             flagged=False,
             gathererRunId=None
         )
@@ -40,7 +40,8 @@ class WundergroundReader:
             "stationId": did,
             "apiKey": token,
             "format": "json",
-            "units": "e"
+            "units": "m",
+            "numericPrecision": "decimal"
         })
         
         #print full url
