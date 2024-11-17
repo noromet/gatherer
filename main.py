@@ -25,6 +25,7 @@ WEATHERLINK_V1_ENDPOINT = os.getenv("WEATHERLINK_V1_ENDPOINT")
 WEATHERLINK_V2_ENDPOINT = os.getenv("WEATHERLINK_V2_ENDPOINT")
 WEATHER_DOT_COM_ENDPOINT = os.getenv("WEATHER_DOT_COM_ENDPOINT")
 HOLFUY_ENDPOINT = os.getenv("HOLFUY_ENDPOINT")
+THINGSPEAK_ENDPOINT = os.getenv("THINGSPEAK_ENDPOINT")
 DRY_RUN = False
 
 RUN_ID = uuid4().hex
@@ -57,7 +58,7 @@ def validate_args(args):
         raise ValueError("Must specify --all, --type or --id")
     
     if args.type:
-        if args.type not in ["meteoclimatic", "weatherlink_v1", "wunderground", "weatherlink_v2", "holfuy"]:
+        if args.type not in ["meteoclimatic", "weatherlink_v1", "wunderground", "weatherlink_v2", "holfuy", "thingspeak"]:
             raise ValueError("Invalid type")
         
     if args.multithread_threshold == 0 or args.multithread_threshold < -1: #so, -1 or positive integer are valid
@@ -79,6 +80,8 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
             record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, station[2:])
         elif station[1] == 'holfuy':
             record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, station[2:])
+        elif station[1] == 'thingspeak':
+            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, station[2:])
         else:
             message = f"Unknown station type {station[1]} for station {station[0]}"
             print(message)
