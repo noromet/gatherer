@@ -1,5 +1,12 @@
 import csv
 import psycopg2
+import dotenv
+import os
+
+# Load environment variables
+dotenv.load_dotenv(verbose=True)
+
+db_uri = os.getenv("DATABASE_CONNECTION_URL")
 
 # Read the CSV file and extract the organization names
 csv_file = 'estaciones.csv'
@@ -13,7 +20,7 @@ with open(csv_file, mode='r', encoding='utf-8') as file:
 print(organization_names)
 
 # Connect to the PostgreSQL database
-conn = psycopg2.connect("postgresql://rhean:password@127.0.0.1:5432/noromet")
+conn = psycopg2.connect(db_uri)
 cursor = conn.cursor()
 
 # Fetch organization IDs
