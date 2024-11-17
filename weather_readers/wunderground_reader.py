@@ -25,7 +25,7 @@ class WundergroundReader:
             source_timestamp=observation_time,
             temperature=data["metric"]["temp"],
             wind_speed=data["metric"]["windSpeed"],
-            max_wind_speed=data["metric"]["windGust"],
+            max_wind_speed=None,
             wind_direction=data["winddir"] if "winddir" in data else None,
             rain=data["metric"]["precipRate"],
             cumulativeRain=data["metric"]["precipTotal"],
@@ -34,7 +34,8 @@ class WundergroundReader:
             flagged=False,
             gathererRunId=None,
             maxTemp=None,
-            minTemp=None
+            minTemp=None,
+            windGust=data["metric"]["windGust"]
         )
     @staticmethod
     def curl_endpoint(endpoint: str, did: str, token: str) -> str:

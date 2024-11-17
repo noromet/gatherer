@@ -52,7 +52,7 @@ class MeteoclimaticReader:
         "UPD",
         "TMP",
         "WND",
-        "DGST",
+        "DGST", #daily max wind speed: max_wind_speed
         "AZI",
         "DPCP", #lluvia cumulativa
         "HUM",
@@ -96,7 +96,8 @@ class MeteoclimaticReader:
                 flagged=False,
                 gathererRunId=None,
                 maxTemp=smart_parse_float(data.get("daily_max_temperature", None)),
-                minTemp=smart_parse_float(data.get("daily_min_temperature", None))
+                minTemp=smart_parse_float(data.get("daily_min_temperature", None)),
+                windGust=None
             )
         except KeyError as e:
             raise ValueError(f"Missing key {e} in data.")

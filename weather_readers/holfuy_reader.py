@@ -22,9 +22,9 @@ class HolfuyReader:
             station_id=None,
             source_timestamp=observation_time,
             temperature=data["temperature"],  # Already in Celsius
-            wind_speed=UnitConverter.mph_to_kph(data["wind"]["speed"]),  # Already in m/s
+            wind_speed=UnitConverter.mph_to_kph(data["wind"]["speed"]),
             wind_direction=data["wind"]["direction"],
-            max_wind_speed=UnitConverter.mph_to_kph(data["wind"]["gust"]),  # Already in m/s
+            max_wind_speed=None,
             rain=data["rain"],  # Assuming rain is in mm
             cumulativeRain=round(data["daily"]["sum_rain"],2),  # Assuming rain is in mm
             humidity=data["humidity"],
@@ -32,7 +32,8 @@ class HolfuyReader:
             flagged=False,
             gathererRunId=None,
             minTemp=data["daily"]["min_temp"],
-            maxTemp=data["daily"]["max_temp"]
+            maxTemp=data["daily"]["max_temp"],
+            windGust=UnitConverter.mph_to_kph(data["wind"]["gust"])
         )
     
     @staticmethod

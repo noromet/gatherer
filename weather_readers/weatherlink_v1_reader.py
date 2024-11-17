@@ -29,9 +29,9 @@ class WeatherLinkV1Reader:
             station_id=None,
             source_timestamp=observation_time,
             temperature=temperature,
-            wind_speed=data["wind_mph"],
+            wind_speed=UnitConverter.mph_to_kph(float(data["wind_mph"])),
             wind_direction=data["wind_degrees"],
-            max_wind_speed=data["davis_current_observation"]["wind_day_high_mph"],
+            max_wind_speed=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_day_high_mph"])), #daily
             rain=data["davis_current_observation"]["rain_rate_in_per_hr"],
             cumulativeRain=data["davis_current_observation"]["rain_day_in"],
             humidity=data["relative_humidity"],
@@ -39,7 +39,8 @@ class WeatherLinkV1Reader:
             flagged=False,
             gathererRunId=None,
             maxTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_high_f"])),
-            minTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_low_f"]))
+            minTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_low_f"])),
+            windGust=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_ten_min_avg_mph"]))
         )
     
     @staticmethod

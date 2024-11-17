@@ -22,14 +22,15 @@ class WeatherRecord:
                  gathererRunId: uuid.uuid4, 
                  cumulativeRain: float,
                  maxTemp: float,
-                 minTemp: float,):
+                 minTemp: float,
+                 windGust: float):
         
         self.id = id
         self.station_id = station_id
         self.source_timestamp = source_timestamp
         self.temperature = temperature
         self.wind_speed = wind_speed
-        self.max_wind_speed = max_wind_speed
+        self.max_wind_speed = max_wind_speed # today
         self.wind_direction = wind_direction
         self.rain = rain
         self.cumulativeRain = cumulativeRain
@@ -38,8 +39,9 @@ class WeatherRecord:
         self.flagged = flagged
         self.taken_timestamp = datetime.datetime.now()
         self.gathererRunId = gathererRunId
-        self.maxTemp = maxTemp
-        self.minTemp = minTemp
+        self.maxTemp = maxTemp # today
+        self.minTemp = minTemp # today
+        self.windGust = windGust
 
 class GathererThread:
     def __init__(self, id: uuid.uuid4, timestamp: datetime.datetime, total_stations: int, error_stations: int, errors: dict, command: str):
