@@ -18,8 +18,6 @@ class ThingspeakReader:
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        print(json.dumps(data, indent=4))
-
         observation_time = datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ")
         observation_time = observation_time.replace(tzinfo=datetime.timezone.utc) # LAS FECHAS DE THINGSPEAK SON UTC (CREO)
         
