@@ -43,7 +43,7 @@ def get_args():
     parser.add_argument("--type", type=str, help="Read stations with a specific type")
     parser.add_argument("--id", type=str, help="Read a single weather station by id")
     parser.add_argument("--dry-run", action="store_true", help="Perform a dry run")
-    parser.add_argument("--multithread-threshold", type=int, default=-1, help="Threshold for enabling multithreading")
+    parser.add_argument("-m", "--multithread-threshold", type=int, default=-1, help="Threshold for enabling multithreading")
     return parser.parse_args()
 
 def validate_args(args):

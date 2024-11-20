@@ -53,6 +53,9 @@ class HolfuyReader:
         assert params[0] is not None, "station_id is null"  # station id
         assert params[2] is not None, "password is null"  # password
         
+        if params[1] not in (None, "NA", "na", ""):
+            print("Warning: HolfuyReader does not use api key, but it was provided.")
+
         response = HolfuyReader.curl_endpoint(endpoint, params[0], params[2])
         parsed = HolfuyReader.parse(response)
         return parsed

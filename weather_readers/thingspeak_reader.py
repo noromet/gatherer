@@ -57,6 +57,12 @@ class ThingspeakReader:
     @staticmethod
     def get_data(endpoint: str, params: tuple = ()) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
+
+        if params[1] not in (None, "NA", "na", ""):
+            print("Warning: ThingspeakReader does not use api key, but it was provided.")
+
+        if params[2] not in (None, "NA", "na", ""):
+            print("Warning: ThingspeakReader does not use password, but it was provided.")
         
         response = ThingspeakReader.curl_endpoint(endpoint, params[0], params[2])
         parsed = ThingspeakReader.parse(response)
