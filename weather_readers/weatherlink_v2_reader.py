@@ -55,7 +55,7 @@ class WeatherlinkV2Reader:
     
     @staticmethod
     def get_data(endpoint: str, params: tuple = ()) -> dict:
-        assert params[0] is not None, "station id cant be null"
+        assert params[0] is not None, "station id is null"
         assert params[1] is not None, "api key is null"
         assert params[2] is not None, "api secret is null"
         
