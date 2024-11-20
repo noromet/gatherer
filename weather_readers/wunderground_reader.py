@@ -60,6 +60,7 @@ class WundergroundReader:
         
         if params[2] not in (None, "NA", "na", ""):
             print("Warning: WundergroundReader does not use password, but it was provided.")
+            print("\t It is, however, expected to be required in the future.")
 
         response = WundergroundReader.curl_endpoint(endpoint, params[0], params[1])
         parsed = WundergroundReader.parse(response)
