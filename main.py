@@ -70,6 +70,11 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
     print_yellow(f"Processing station {station[0]}, type {station[1]}")
     
     try:
+        if station[1] == 'connection_disabled':
+            message = f"Connection disabled for station {station[0]}"
+            print(message)
+            return {"status": "success"}
+
         if station[1] == 'meteoclimatic':
             record = api.MeteoclimaticReader.get_data(station[2])
         elif station[1] == 'weatherlink_v1':
