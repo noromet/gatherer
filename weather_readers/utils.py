@@ -3,7 +3,7 @@ from dateutil import parser
 from typing import Any
 
 def smart_azimuth(azimuth) -> float:
-    if azimuth is None:
+    if azimuth is None or azimuth == "-":
         return None
 
     if type(azimuth) is not str:
@@ -92,6 +92,8 @@ def smart_parse_float(float_str: str) -> float:
     Handles both comma and dot as decimal separator. Removes any non-numeric character other than the separator. Pray.
     """
 
+    orig_float_str = float_str
+
     if not float_str:
         return 0.0
     
@@ -103,7 +105,14 @@ def smart_parse_float(float_str: str) -> float:
     
     float_str = "".join([c for c in float_str if c.isdigit() or c == "."])
     
-    return float(float_str)
+    float_val = float(float_str)
+
+    if float_val == 100:
+        with open("100.txt", "a") as f:
+            #dump timestamp, original string
+            f.write(f"{datetime.datetime.now().isoformat()}\t{orig_float_str}\n")
+
+    return float_val
 
 def is_date_too_old(date: datetime.datetime) -> bool: #1hr
     now_minus_1_hour = (datetime.datetime.now(date.tzinfo) - datetime.timedelta(hours=1))

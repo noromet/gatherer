@@ -115,8 +115,6 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
             increment_incident_count(station[0])
         return {"status": "error", "error": str(e)}
     
-    print()
-
 def process_chunk(chunk, chunk_number, result_queue):
     print(f"Processing chunk {chunk_number} on {threading.current_thread().name}")
 
