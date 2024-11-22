@@ -2,7 +2,6 @@ from schema import WeatherRecord
 from .utils import smart_parse_date, is_date_too_old, smart_parse_float, smart_azimuth
 import requests
 
-print(smart_parse_float(None))
 
 class MeteoclimaticReader:
     code_to_name_map = {
