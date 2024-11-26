@@ -11,7 +11,7 @@ class WundergroundReader:
     def parse(live_data_str: str, daily_data_str) -> WeatherRecord:
         try:
             live_data = json.loads(live_data_str)["observations"][0]
-            last_daily_data = json.loads(daily_data_str)["observations"][-1]
+            last_daily_data = json.loads(daily_data_str)["summaries"][-1]
 
             assert live_data["stationID"] == last_daily_data["stationID"], "Something broke: live and daily data are not from the same station."
         except json.JSONDecodeError as e:
