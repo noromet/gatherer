@@ -23,7 +23,8 @@ DB_URL = os.getenv("DATABASE_CONNECTION_URL")
 MAX_THREADS = int(os.getenv("MAX_THREADS"))
 WEATHERLINK_V1_ENDPOINT = os.getenv("WEATHERLINK_V1_ENDPOINT")
 WEATHERLINK_V2_ENDPOINT = os.getenv("WEATHERLINK_V2_ENDPOINT")
-WEATHER_DOT_COM_ENDPOINT = os.getenv("WEATHER_DOT_COM_ENDPOINT")
+WUNDERGROUND_ENDPOINT = os.getenv("WUNDERGROUND_ENDPOINT")
+WUNDERGROUND_DAILY_ENDPOINT = os.getenv("WUNDERGROUND_DAILY_ENDPOINT")
 HOLFUY_ENDPOINT = os.getenv("HOLFUY_ENDPOINT")
 THINGSPEAK_ENDPOINT = os.getenv("THINGSPEAK_ENDPOINT")
 DRY_RUN = False
@@ -80,7 +81,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         elif station[1] == 'weatherlink_v1':
             record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, station[2:])
         elif station[1] == 'wunderground':
-            record = api.WundergroundReader.get_data(WEATHER_DOT_COM_ENDPOINT, station[2:])
+            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, station[2:])
         elif station[1] == 'weatherlink_v2':
             record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, station[2:])
         elif station[1] == 'holfuy':
