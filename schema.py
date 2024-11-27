@@ -44,13 +44,13 @@ class WeatherRecord:
         self.windGust = windGust
 
     def sanity_check(self):
-        if not -39 < self.temperature < 50:
+        if not -39 < float(self.temperature) < 50:
             self.temperature = None
             self.flagged = True
-        if not -39 < self.maxTemp < 50:
+        if not -39 < float(self.maxTemp) < 50:
             self.maxTemp = None
             self.flagged = True
-        if not -39 < self.minTemp < 50:
+        if not -39 < float(self.minTemp) < 50:
             self.minTemp = None
             self.flagged = True
 
