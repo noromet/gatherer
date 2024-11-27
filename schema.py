@@ -1,11 +1,6 @@
 import datetime
 import uuid
 
-class WeatherStation:
-    def __init__(self, id: uuid.uuid4, token: str):
-        self.id = id
-        self.token = token
-        
 class WeatherRecord:
     def __init__(self, 
                  id: uuid.uuid4, 
