@@ -41,10 +41,12 @@ class WundergroundReader:
             windGust=live_data["metric"]["windGust"]
         )
 
-        wr.max_wind_speed = last_daily_data["metric"]["windspeedHigh"]
-        wr.maxTemp = last_daily_data["metric"]["tempHigh"]
-        wr.minTemp = last_daily_data["metric"]["tempLow"]
-        wr.cumulativeRain = last_daily_data["metric"]["precipTotal"]
+        # if it is past 00:15
+        if not (observation_time.hour == 0 and observation_time.minute < 15):
+            wr.max_wind_speed = last_daily_data["metric"]["windspeedHigh"]
+            wr.maxTemp = last_daily_data["metric"]["tempHigh"]
+            wr.minTemp = last_daily_data["metric"]["tempLow"]
+            wr.cumulativeRain = last_daily_data["metric"]["precipTotal"]
 
         return wr
     
