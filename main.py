@@ -101,6 +101,8 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         record.station_id = station[0]
         record.gatherer_run_id = RUN_ID
 
+        record.sanity_check()
+
         if not DRY_RUN:
             Database.save_record(record)
             print_green(f"Record saved for station {station[0]}")

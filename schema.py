@@ -43,6 +43,19 @@ class WeatherRecord:
         self.minTemp = minTemp # today
         self.windGust = windGust
 
+    def sanity_check(self):
+        if not -39 < self.temperature < 50:
+            self.temperature = None
+            self.flagged = True
+        if not -39 < self.maxTemp < 50:
+            self.maxTemp = None
+            self.flagged = True
+        if not -39 < self.minTemp < 50:
+            self.minTemp = None
+            self.flagged = True
+
+        #implement further limits here
+
 class GathererThread:
     def __init__(self, id: uuid.uuid4, timestamp: datetime.datetime, total_stations: int, error_stations: int, errors: dict, command: str):
         self.id = id
