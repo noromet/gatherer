@@ -40,7 +40,7 @@ class WeatherLinkV1Reader:
             gathererRunId=None,
             maxTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_high_f"])),
             minTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_low_f"])),
-            windGust=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_ten_min_avg_mph"]))
+            windGust=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_ten_min_gust_mph"]))
         )
     
     @staticmethod
