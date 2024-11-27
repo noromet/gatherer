@@ -41,7 +41,7 @@ class WundergroundReader:
             windGust=live_data["metric"]["windGust"]
         )
 
-        # if it is past 00:15
+        # records from before 00:15 are still yesterday's
         if not (observation_time.hour == 0 and observation_time.minute < 15):
             wr.max_wind_speed = last_daily_data["metric"]["windspeedHigh"]
             wr.maxTemp = last_daily_data["metric"]["tempHigh"]
