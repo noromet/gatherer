@@ -41,8 +41,9 @@ class WundergroundReader:
             windGust=live_data["metric"]["windGust"]
         )
 
-        # records from before 00:15 are still yesterday's
-        if not (observation_time.hour == 0 and observation_time.minute < 15):
+        # records from before 00:15 are still yesterday's, so discard. also, discard those with obsTimeUtc not the same day as today in local time
+        if not (observation_time.hour == 0 and observation_time.minute < 15) \
+            and last_daily_data["obsTimeUtc"][:10] == datetime.datetime.now().strftime("%Y-%m-%d"):
             wr.max_wind_speed = last_daily_data["metric"]["windspeedHigh"]
             wr.maxTemp = last_daily_data["metric"]["tempHigh"]
             wr.minTemp = last_daily_data["metric"]["tempLow"]
