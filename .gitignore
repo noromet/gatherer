@@ -163,3 +163,7 @@ cython_debug/
 
 
 *.csv
+
+
+*.log
+100.txt
