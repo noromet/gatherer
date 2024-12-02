@@ -18,8 +18,9 @@ class WundergroundReader:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
         observation_time = datetime.datetime.strptime(live_data["obsTimeLocal"], "%Y-%m-%d %H:%M:%S")
+        observation_time_utc = datetime.datetime.strptime(live_data["obsTimeUtc"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
         
-        if is_date_too_old(observation_time):
+        if is_date_too_old(observation_time_utc):
             raise ValueError("Record timestamp is too old to be stored as current.")
 
         wr = WeatherRecord(

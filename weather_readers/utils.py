@@ -115,6 +115,7 @@ def smart_parse_float(float_str: str) -> float:
     return float_val
 
 def is_date_too_old(date: datetime.datetime) -> bool: #1hr
+    print(date, date.tzinfo)
     now_minus_1_hour = (datetime.datetime.now(date.tzinfo) - datetime.timedelta(hours=1))
     return date < now_minus_1_hour
 
