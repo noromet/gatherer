@@ -24,24 +24,40 @@ class WeatherLinkV1Reader:
         else:
             temperature = UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_in_f"]))
         
-        return WeatherRecord(
+        wr = WeatherRecord(
             id=None,
             station_id=None,
             source_timestamp=observation_time,
             temperature=temperature,
             wind_speed=UnitConverter.mph_to_kph(float(data["wind_mph"])),
             wind_direction=data["wind_degrees"],
-            max_wind_speed=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_day_high_mph"])), #daily
+            max_wind_speed=None,
             rain=data["davis_current_observation"]["rain_rate_in_per_hr"],
-            cumulativeRain=data["davis_current_observation"]["rain_day_in"],
+            cumulativeRain=None,
             humidity=data["relative_humidity"],
             pressure=data["pressure_mb"], #mb = hpa
             flagged=False,
             gathererRunId=None,
-            maxTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_high_f"])),
-            minTemp=UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"]["temp_day_low_f"])),
+            maxTemp=None,
+            minTemp=None,
             windGust=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_ten_min_gust_mph"]))
         )
+
+        obstime_local_tz = observation_time.astimezone(datetime.datetime.now().astimezone().tzinfo)
+
+        if not (observation_time.hour == 0 and observation_time.minute < 15) \
+            and obstime_local_tz.date() == datetime.datetime.now().date():
+            wr.max_wind_speed = UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_day_high_mph"]))
+
+            max_float_temp = float(data["davis_current_observation"]["temp_day_high_f"])
+            wr.maxTemp = UnitConverter.fahrenheit_to_celsius(max_float_temp)
+
+            min_float_temp = float(data["davis_current_observation"]["temp_day_low_f"])
+            wr.minTemp = UnitConverter.fahrenheit_to_celsius(min_float_temp)
+
+            wr.cumulativeRain = data["davis_current_observation"]["rain_day_in"]
+
+        return wr
     
     @staticmethod
     def curl_endpoint(endpoint: str, user_did: str, password: str, apiToken: str) -> str:
