@@ -1,7 +1,9 @@
 from schema import WeatherRecord
 from .utils import smart_parse_date, is_date_too_old, smart_parse_float, smart_azimuth
 import requests
-
+import logging
+import json
+import datetime
 
 class MeteoclimaticReader:
     code_to_name_map = {
@@ -64,7 +66,7 @@ class MeteoclimaticReader:
         
         
     @staticmethod
-    def parse(str_data: str) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None) -> WeatherRecord:
         data = {}
         for line in str_data.strip().split("*"):
             line = line.strip()
@@ -79,27 +81,64 @@ class MeteoclimaticReader:
 
         data["record_timestamp"] = smart_parse_date(data["record_timestamp"])
         if is_date_too_old(data["record_timestamp"]):
-            raise ValueError("Record timestamp is too old to be stored as current.")
+            raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {data['record_timestamp']}, local time: {datetime.datetime.now()}")
             
         try:
-            return WeatherRecord(
+            source_timestamp = data.get("record_timestamp", None)
+            wind_direction = smart_azimuth(data.get("current_wind_direction", None))
+            
+            temperature = smart_parse_float(data.get("current_temperature_celsius", None))
+            if temperature == 100:
+                logging.error(f"[{station_id}]: Temperature == 100: {temperature}. Dump: {json.dumps(data)}")
+            
+            wind_speed = smart_parse_float(data.get("current_wind_speed_kph", None))
+            if wind_speed == 100:
+                logging.error(f"[{station_id}]: Wind speed == 100: {wind_speed}. Dump: {json.dumps(data)}")
+            
+            max_wind_speed = smart_parse_float(data.get("daily_max_wind_speed", None))
+            if max_wind_speed == 100:
+                logging.error(f"[{station_id}]: Max wind speed == 100: {max_wind_speed}. Dump: {json.dumps(data)}")
+            
+            cumulativeRain = smart_parse_float(data.get("total_daily_precipitation_at_record_timestamp", None))
+            if cumulativeRain == 100:
+                logging.error(f"[{station_id}]: Cumulative rain == 100: {cumulativeRain}. Dump: {json.dumps(data)}")
+            
+            humidity = smart_parse_float(data.get("relative_humidity", None))
+            if humidity == 100:
+                logging.error(f"[{station_id}]: Humidity == 100: {humidity}. Dump: {json.dumps(data)}")
+            
+            pressure = smart_parse_float(data.get("pressure_hpa", None))
+            if pressure == 100:
+                logging.error(f"[{station_id}]: Pressure == 100: {pressure}. Dump: {json.dumps(data)}")
+            
+            maxTemp = smart_parse_float(data.get("daily_max_temperature", None))
+            if maxTemp == 100:
+                logging.error(f"[{station_id}]: Max temperature == 100: {maxTemp}. Dump: {json.dumps(data)}")
+            
+            minTemp = smart_parse_float(data.get("daily_min_temperature", None))
+            if minTemp == 100:
+                logging.error(f"[{station_id}]: Min temperature == 100: {minTemp}. Dump: {json.dumps(data)}")
+
+            wr = WeatherRecord(
                 id=None,
                 station_id=None,
-                source_timestamp=data.get("record_timestamp", None),
-                temperature=smart_parse_float(data.get("current_temperature_celsius", None)),
-                wind_speed=smart_parse_float(data.get("current_wind_speed_kph", None)),
-                max_wind_speed=smart_parse_float(data.get("daily_max_wind_speed", None)),
-                wind_direction=smart_azimuth(data.get("current_wind_direction", None)),
-                rain=None, #meteoclimatic no da lluvia puntual
-                cumulativeRain=smart_parse_float(data.get("total_daily_precipitation_at_record_timestamp", None)),
-                humidity=smart_parse_float(data.get("relative_humidity", None)),
-                pressure=smart_parse_float(data.get("pressure_hpa", None)),
+                source_timestamp=source_timestamp,
+                temperature=temperature,
+                wind_speed=wind_speed,
+                max_wind_speed=max_wind_speed,
+                wind_direction=wind_direction,
+                rain=None, # meteoclimatic no da lluvia puntual
+                cumulativeRain=cumulativeRain,
+                humidity=humidity,
+                pressure=pressure,
                 flagged=False,
                 gathererRunId=None,
-                maxTemp=smart_parse_float(data.get("daily_max_temperature", None)),
-                minTemp=smart_parse_float(data.get("daily_min_temperature", None)),
+                maxTemp=maxTemp,
+                minTemp=minTemp,
                 windGust=None
             )
+
+            return wr
         except KeyError as e:
             raise ValueError(f"Missing key {e} in data.")
     
@@ -115,8 +154,6 @@ class MeteoclimaticReader:
         return response.text
     
     @staticmethod
-    def get_data(endpoint: str) -> dict:
+    def get_data(endpoint: str, station_id: str = None) -> dict:
         raw_data = MeteoclimaticReader.curl_endpoint(endpoint)
-        return MeteoclimaticReader.parse(raw_data)
-    
-    
+        return MeteoclimaticReader.parse(raw_data, station_id=station_id)

@@ -3,12 +3,13 @@ from .utils import is_date_too_old, UnitConverter
 import json
 import requests
 import datetime
+import logging
 
 # https://api.weather.com/v2/pws/observations/current?stationId=ISOTOYAM2&apiKey=317bd2820daf46edbbd2820daf26ede4&format=json&units=s&numericPrecision=decimal
 
 class WeatherLinkV1Reader:
     @staticmethod
-    def parse(str_data: str) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
@@ -17,7 +18,7 @@ class WeatherLinkV1Reader:
         observation_time = datetime.datetime.strptime(data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z")
         
         if is_date_too_old(observation_time):
-            raise ValueError("Record timestamp is too old to be stored as current.")
+            raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
         
         if "temp_c" in data:
             temperature = data["temp_c"]
@@ -56,6 +57,8 @@ class WeatherLinkV1Reader:
             wr.minTemp = UnitConverter.fahrenheit_to_celsius(min_float_temp)
 
             wr.cumulativeRain = data["davis_current_observation"]["rain_day_in"]
+        else:
+            logging.warning(f"[{station_id}]: Observation time is not today. Skipping max/min temp and rain data. Observation time: {observation_time}, Local time: {obstime_local_tz}")
 
         return wr
     
@@ -74,11 +77,11 @@ class WeatherLinkV1Reader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = ()) -> dict:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None) -> dict:
         assert params[0] is not None
         assert params[1] is not None
         assert params[2] is not None
         
         response = WeatherLinkV1Reader.curl_endpoint(endpoint, params[0], params[2], params[1])#did, password, apiToken are field1, field3, field2
-        parsed = WeatherLinkV1Reader.parse(response)
+        parsed = WeatherLinkV1Reader.parse(response, station_id)
         return parsed

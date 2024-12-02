@@ -5,14 +5,12 @@ import threading
 import json
 import argparse
 import queue
-
 from database import Database, get_all_stations, get_single_station, get_stations_by_type, increment_incident_count
 import weather_readers as api
-
 from datetime import datetime
-
 from uuid import uuid4
-
+import logging
+from logging.handlers import RotatingFileHandler
 # region definitions
 print_red = lambda text: print(f"\033[91m{text}\033[00m")
 print_green = lambda text: print(f"\033[92m{text}\033[00m")
@@ -32,10 +30,24 @@ DRY_RUN = False
 RUN_ID = uuid4().hex
 # endregion
 
-#force these commands:
-# --all --save-thread-record --multithread-threshold 2
-# import sys
-# sys.argv = ["main.py", "--all", "--save-thread-record", "--multithread-threshold", "2"]
+# region logging
+# Set up a specific logger with our desired output level
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# Add the log message handler to the logger
+handler = RotatingFileHandler(
+    "gatherer.log", maxBytes=5*1024*1024, backupCount=5
+)
+handler.setLevel(logging.INFO)
+
+# Create a formatter and set the formatter for the handler
+formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(handler)
+# endregion
 
 #region argument processing
 def get_args():
@@ -77,25 +89,27 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
             return {"status": "success"}
 
         if station[1] == 'meteoclimatic':
-            record = api.MeteoclimaticReader.get_data(station[2])
+            record = api.MeteoclimaticReader.get_data(station[2], station_id=station[0])
         elif station[1] == 'weatherlink_v1':
-            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, station[2:])
+            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, station[2:], station_id=station[0])
         elif station[1] == 'wunderground':
-            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, station[2:])
+            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, station[2:], station_id=station[0])
         elif station[1] == 'weatherlink_v2':
-            record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, station[2:])
+            record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, station[2:], station_id=station[0])
         elif station[1] == 'holfuy':
-            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, station[2:])
+            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, station[2:], station_id=station[0])
         elif station[1] == 'thingspeak':
-            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, station[2:])
+            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, station[2:], station_id=station[0])
         else:
             message = f"Unknown station type {station[1]} for station {station[0]}"
-            print(message)
+            print(f"[{station[0]}]: {message}")
+            logging.error(f"[{station[0]}]: {message}")
             return {"status": "error", "error": message}
         
         if record is None:
             message = f"No data retrieved for station {station[0]}"
-            print(message)
+            print(f"[{station[0]}]: {message}")
+            logging.error(f"[{station[0]}]: {message}")
             return {"status": "error", "error": message}
 
         record.station_id = station[0]
@@ -114,6 +128,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
 
     except Exception as e:
         print_red(f"Error processing station {station[0]}: {e}")
+        logging.error(f"Error processing station {station[0]}: {e}")
         if not DRY_RUN:
             increment_incident_count(station[0])
         return {"status": "error", "error": str(e)}
@@ -159,6 +174,7 @@ def process_all(multithread_threshold):
         return
 
     print(f"Processing {len(stations)} stations")
+    logging.info(f"Processing {len(stations)} stations")
     
     if multithread_threshold == -1 or len(stations) < multithread_threshold:
         for station in stations:
@@ -192,6 +208,7 @@ def process_type(station_type, multithread_threshold):
     result = {}
     
     print(f"Processing {len(stations)} stations of type {station_type}")
+    logging.info(f"Processing {len(stations)} stations of type {station_type}")
 
     if multithread_threshold == -1 or len(stations) < multithread_threshold:
         for station in stations:
@@ -225,6 +242,8 @@ def main():
     else:
         print_yellow("[Dry run disabled]")
         Database.init_thread_record(RUN_ID, timestamp, command=" ".join(os.sys.argv))
+
+    logging.info(f"Starting gatherer run {RUN_ID}")
 
     if args.id:
         results = process_single(args.id)

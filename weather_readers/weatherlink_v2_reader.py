@@ -9,7 +9,7 @@ import itertools
 
 class WeatherlinkV2Reader:
     @staticmethod
-    def parse(str_data: str) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None) -> WeatherRecord:
         try:
             data = json.loads(str_data)["observations"][0]
         except json.JSONDecodeError as e:
@@ -54,13 +54,13 @@ class WeatherlinkV2Reader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = ()) -> dict:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None) -> dict:
         assert params[0] is not None, "station id is null"
         assert params[1] is not None, "api key is null"
         assert params[2] is not None, "api secret is null"
         
         response = WeatherlinkV2Reader.curl_endpoint(endpoint, params[0], params[1], params[2])
         print(response)
-        parsed = WeatherlinkV2Reader.parse(response)
+        parsed = WeatherlinkV2Reader.parse(response, station_id=station_id)
 
         return parsed

@@ -3,10 +3,11 @@ from .utils import is_date_too_old, UnitConverter
 import json
 import requests
 import datetime
+import logging
 
 class HolfuyReader:
     @staticmethod
-    def parse(str_data: str) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
@@ -15,7 +16,7 @@ class HolfuyReader:
         observation_time = datetime.datetime.strptime(data["dateTime"], "%Y-%m-%d %H:%M:%S")
         
         if is_date_too_old(observation_time):
-            raise ValueError("Record timestamp is too old to be stored as current.")
+            raise ValueError(f"[{station_id}]: Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
 
         return WeatherRecord(
             id=None,
@@ -49,13 +50,14 @@ class HolfuyReader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = ()) -> WeatherRecord:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
         assert params[2] is not None, "password is null"  # password
         
         if params[1] not in (None, "NA", "na", ""):
             print("Warning: HolfuyReader does not use api key, but it was provided.")
+            logging.warning(f"{[station_id]} Warning: HolfuyReader does not use api key, but it was provided.")
 
         response = HolfuyReader.curl_endpoint(endpoint, params[0], params[2])
-        parsed = HolfuyReader.parse(response)
+        parsed = HolfuyReader.parse(response, station_id)
         return parsed

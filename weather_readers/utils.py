@@ -1,6 +1,7 @@
 import datetime
 from dateutil import parser
 from typing import Any
+import logging
 
 def smart_azimuth(azimuth) -> float:
     if azimuth is None or azimuth == "-":
@@ -106,11 +107,6 @@ def smart_parse_float(float_str: str) -> float:
     float_str = "".join([c for c in float_str if c.isdigit() or c == "."])
     
     float_val = float(float_str)
-
-    if float_val == 100:
-        with open("100.txt", "a") as f:
-            #dump timestamp, original string
-            f.write(f"{datetime.datetime.now().isoformat()}\t{orig_float_str}\n")
 
     return float_val
 

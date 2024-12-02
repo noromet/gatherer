@@ -3,6 +3,7 @@ from .utils import is_date_too_old, UnitConverter
 import json
 import requests
 import datetime
+import logging
 
 field_map = {
     "temperature": "field1",
@@ -12,17 +13,18 @@ field_map = {
 
 class ThingspeakReader:
     @staticmethod
-    def parse(str_data: str) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
+            logging.error(f"[{station_id}]: Invalid JSON data: {e}. Check station connection parameters.")
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
         observation_time = datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ")
         observation_time = observation_time.replace(tzinfo=datetime.timezone.utc) # LAS FECHAS DE THINGSPEAK SON UTC (CREO)
         
         if is_date_too_old(observation_time):
-            raise ValueError("Record timestamp is too old to be stored as current.")
+            raise ValueError("Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
 
         return WeatherRecord(
             id=None,
@@ -55,7 +57,7 @@ class ThingspeakReader:
         return response.text
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = ()) -> WeatherRecord:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
 
         if params[1] not in (None, "NA", "na", ""):
@@ -65,5 +67,5 @@ class ThingspeakReader:
             print("Warning: ThingspeakReader does not use password, but it was provided.")
         
         response = ThingspeakReader.curl_endpoint(endpoint, params[0], params[2])
-        parsed = ThingspeakReader.parse(response)
+        parsed = ThingspeakReader.parse(response, station_id)
         return parsed

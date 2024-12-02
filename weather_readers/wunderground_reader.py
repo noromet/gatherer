@@ -5,10 +5,11 @@ from .utils import is_date_too_old
 import json
 import requests
 import datetime
+import logging
 
 class WundergroundReader:
     @staticmethod
-    def parse(live_data_str: str, daily_data_str) -> WeatherRecord:
+    def parse(live_data_str: str, daily_data_str: str, station_id: str = None) -> WeatherRecord:
         try:
             live_data = json.loads(live_data_str)["observations"][0]
             last_daily_data = json.loads(daily_data_str)["summaries"][-1]
@@ -21,7 +22,7 @@ class WundergroundReader:
         observation_time_utc = datetime.datetime.strptime(live_data["obsTimeUtc"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
         
         if is_date_too_old(observation_time_utc):
-            raise ValueError("Record timestamp is too old to be stored as current.")
+            raise ValueError("Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
 
         wr = WeatherRecord(
             id=None,
@@ -52,6 +53,9 @@ class WundergroundReader:
             wr.minTemp = last_daily_data["metric"]["tempLow"]
             wr.cumulativeRain = last_daily_data["metric"]["precipTotal"]
 
+        else:
+            logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, now: {now_in_utc}")
+
         return wr
     
     @staticmethod
@@ -70,7 +74,7 @@ class WundergroundReader:
         return response.text
     
     @staticmethod
-    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = ()) -> dict:
+    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = (), station_id: str = None) -> dict:
         assert params[0] is not None #did
         assert params[1] is not None #apiToken
         
