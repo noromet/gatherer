@@ -40,7 +40,7 @@ class WundergroundReader:
             gathererRunId=None,
             maxTemp=None,
             minTemp=None,
-            maxWindGust=live_data["metric"]["windGust"]
+            maxWindGust=None
         )
 
         now_in_utc = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -48,6 +48,7 @@ class WundergroundReader:
         if not (observation_time.hour == 0 and observation_time.minute < 15) \
             and observation_time.date() == datetime.datetime.now().date():
             
+            wr.maxWindGust = last_daily_data["metric"]["windgustHigh"]
             wr.max_wind_speed = last_daily_data["metric"]["windspeedHigh"]
             wr.maxTemp = last_daily_data["metric"]["tempHigh"]
             wr.minTemp = last_daily_data["metric"]["tempLow"]

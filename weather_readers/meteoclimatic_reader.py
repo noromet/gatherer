@@ -135,7 +135,7 @@ class MeteoclimaticReader:
                 gathererRunId=None,
                 maxTemp=maxTemp,
                 minTemp=minTemp,
-                maxWindGust=None
+                maxWindGust=max_wind_speed
             )
 
             return wr

@@ -41,7 +41,7 @@ class WeatherLinkV1Reader:
             gathererRunId=None,
             maxTemp=None,
             minTemp=None,
-            maxWindGust=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_ten_min_gust_mph"]))
+            maxWindGust=None
         )
 
         obstime_local_tz = observation_time.astimezone(datetime.datetime.now().astimezone().tzinfo)
@@ -49,6 +49,7 @@ class WeatherLinkV1Reader:
         if not (observation_time.hour == 0 and observation_time.minute < 15) \
             and obstime_local_tz.date() == datetime.datetime.now().date():
             wr.max_wind_speed = UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_day_high_mph"]))
+            wr.maxWindGust = UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_ten_min_gust_mph"]))
 
             max_float_temp = float(data["davis_current_observation"]["temp_day_high_f"])
             wr.maxTemp = UnitConverter.fahrenheit_to_celsius(max_float_temp)
