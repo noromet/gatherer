@@ -58,7 +58,7 @@ class WeatherLinkV1Reader:
 
             wr.cumulativeRain = data["davis_current_observation"]["rain_day_in"]
         else:
-            logging.warning(f"[{station_id}]: Observation time is not today. Skipping max/min temp and rain data. Observation time: {observation_time}, Local time: {obstime_local_tz}")
+            logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, Local time: {obstime_local_tz}")
 
         return wr
     

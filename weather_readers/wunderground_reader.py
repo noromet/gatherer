@@ -54,7 +54,7 @@ class WundergroundReader:
             wr.cumulativeRain = last_daily_data["metric"]["precipTotal"]
 
         else:
-            logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, now: {now_in_utc}")
+            logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, now in UTC: {now_in_utc}")
 
         return wr
     
@@ -85,5 +85,5 @@ class WundergroundReader:
         live_response = WundergroundReader.curl_endpoint(live_endpoint, params[0], params[1])
         daily_response = WundergroundReader.curl_endpoint(daily_endpoint, params[0], params[1])
 
-        parsed = WundergroundReader.parse(live_response, daily_response)
+        parsed = WundergroundReader.parse(live_response, daily_response, station_id=station_id)
         return parsed

@@ -17,7 +17,6 @@ class ThingspeakReader:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
-            logging.error(f"[{station_id}]: Invalid JSON data: {e}. Check station connection parameters.")
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
         observation_time = datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ")
