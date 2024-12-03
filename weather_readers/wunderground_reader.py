@@ -40,7 +40,7 @@ class WundergroundReader:
             gathererRunId=None,
             maxTemp=None,
             minTemp=None,
-            windGust=live_data["metric"]["windGust"]
+            maxWindGust=live_data["metric"]["windGust"]
         )
 
         now_in_utc = datetime.datetime.now(tz=datetime.timezone.utc)

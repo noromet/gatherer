@@ -34,7 +34,7 @@ class HolfuyReader:
             gathererRunId=None,
             minTemp=data["daily"]["min_temp"],
             maxTemp=data["daily"]["max_temp"],
-            windGust=UnitConverter.mph_to_kph(data["wind"]["gust"])
+            maxWindGust=UnitConverter.mph_to_kph(data["wind"]["gust"])
         )
     
     @staticmethod

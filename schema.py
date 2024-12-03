@@ -18,7 +18,7 @@ class WeatherRecord:
                  cumulativeRain: float,
                  maxTemp: float,
                  minTemp: float,
-                 windGust: float):
+                 maxWindGust: float):
         
         self.id = id
         self.station_id = station_id
@@ -36,7 +36,7 @@ class WeatherRecord:
         self.gathererRunId = gathererRunId
         self.maxTemp = maxTemp # today
         self.minTemp = minTemp # today
-        self.windGust = windGust
+        self.maxWindGust = maxWindGust
 
     def sanity_check(self):
         if self.temperature:

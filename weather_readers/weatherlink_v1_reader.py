@@ -41,7 +41,7 @@ class WeatherLinkV1Reader:
             gathererRunId=None,
             maxTemp=None,
             minTemp=None,
-            windGust=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_ten_min_gust_mph"]))
+            maxWindGust=UnitConverter.mph_to_kph(float(data["davis_current_observation"]["wind_ten_min_gust_mph"]))
         )
 
         obstime_local_tz = observation_time.astimezone(datetime.datetime.now().astimezone().tzinfo)
