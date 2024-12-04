@@ -33,7 +33,7 @@ class WeatherLinkV1Reader:
             wind_speed=UnitConverter.mph_to_kph(float(data["wind_mph"])),
             wind_direction=data["wind_degrees"],
             max_wind_speed=None,
-            rain=UnitConverter.inches_to_mm(data["davis_current_observation"]["rain_rate_in_per_hr"]),
+            rain=UnitConverter.inches_to_mm(float(data["davis_current_observation"]["rain_rate_in_per_hr"])),
             cumulativeRain=None,
             humidity=data["relative_humidity"],
             pressure=data["pressure_mb"], #mb = hpa
@@ -57,7 +57,7 @@ class WeatherLinkV1Reader:
             min_float_temp = float(data["davis_current_observation"]["temp_day_low_f"])
             wr.minTemp = UnitConverter.fahrenheit_to_celsius(min_float_temp)
 
-            wr.cumulativeRain = UnitConverter.inches_to_mm(data["davis_current_observation"]["rain_day_in"])
+            wr.cumulativeRain = UnitConverter.inches_to_mm(float(data["davis_current_observation"]["rain_day_in"]))
         else:
             logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, Local time: {obstime_local_tz}")
 
