@@ -7,6 +7,9 @@ import logging
 
 # https://api.weather.com/v2/pws/observations/current?stationId=ISOTOYAM2&apiKey=317bd2820daf46edbbd2820daf26ede4&format=json&units=s&numericPrecision=decimal
 
+def safe_float(value):
+    return float(value) if value is not None else None
+
 class WeatherLinkV1Reader:
     @staticmethod
     def parse(str_data: str, station_id: str = None) -> WeatherRecord:
@@ -20,20 +23,20 @@ class WeatherLinkV1Reader:
         if is_date_too_old(observation_time):
             raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
         
-        temperature = data.get("temp_c", UnitConverter.fahrenheit_to_celsius(float(data["davis_current_observation"].get("temp_in_f", None))))
+        temperature = data.get("temp_c", UnitConverter.fahrenheit_to_celsius(safe_float(data["davis_current_observation"].get("temp_in_f"))))
         
         wr = WeatherRecord(
             id=None,
             station_id=None,
             source_timestamp=observation_time,
             temperature=temperature,
-            wind_speed=UnitConverter.mph_to_kph(float(data.get("wind_mph", None))),
-            wind_direction=data.get("wind_degrees", None),
+            wind_speed=UnitConverter.mph_to_kph(safe_float(data.get("wind_mph"))),
+            wind_direction=data.get("wind_degrees"),
             max_wind_speed=None,
-            rain=UnitConverter.inches_to_mm(float(data["davis_current_observation"].get("rain_rate_in_per_hr", 0))),
+            rain=UnitConverter.inches_to_mm(safe_float(data["davis_current_observation"].get("rain_rate_in_per_hr"))),
             cumulativeRain=None,
-            humidity=data.get("relative_humidity", None),
-            pressure=data.get("pressure_mb", None), #mb = hpa
+            humidity=data.get("relative_humidity"),
+            pressure=data.get("pressure_mb"), #mb = hpa
             flagged=False,
             gathererRunId=None,
             maxTemp=None,
@@ -45,16 +48,16 @@ class WeatherLinkV1Reader:
 
         if not (observation_time.hour == 0 and observation_time.minute < 15) \
             and obstime_local_tz.date() == datetime.datetime.now().date():
-            wr.max_wind_speed = UnitConverter.mph_to_kph(float(data["davis_current_observation"].get("wind_day_high_mph", None)))
-            wr.maxWindGust = UnitConverter.mph_to_kph(float(data["davis_current_observation"].get("wind_ten_min_gust_mph", None)))
+            wr.max_wind_speed = UnitConverter.mph_to_kph(safe_float(data["davis_current_observation"].get("wind_day_high_mph")))
+            wr.maxWindGust = UnitConverter.mph_to_kph(safe_float(data["davis_current_observation"].get("wind_ten_min_gust_mph")))
 
-            max_float_temp = float(data["davis_current_observation"].get("temp_day_high_f", None))
+            max_float_temp = safe_float(data["davis_current_observation"].get("temp_day_high_f"))
             wr.maxTemp = UnitConverter.fahrenheit_to_celsius(max_float_temp)
 
-            min_float_temp = float(data["davis_current_observation"].get("temp_day_low_f", None))
+            min_float_temp = safe_float(data["davis_current_observation"].get("temp_day_low_f"))
             wr.minTemp = UnitConverter.fahrenheit_to_celsius(min_float_temp)
 
-            wr.cumulativeRain = UnitConverter.inches_to_mm(float(data["davis_current_observation"].get("rain_day_in", None)))
+            wr.cumulativeRain = UnitConverter.inches_to_mm(safe_float(data["davis_current_observation"].get("rain_day_in")))
         else:
             logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, Local time: {obstime_local_tz}")
 
