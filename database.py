@@ -98,21 +98,21 @@ class CursorFromConnectionFromPool:
 def get_all_stations() -> List[Tuple]:
     """Get all active weather stations."""
     with CursorFromConnectionFromPool() as cursor:
-        cursor.execute("SELECT id, connection_type, field1, field2, field3 FROM weather_station WHERE status = 'active'")
+        cursor.execute("SELECT id, connection_type, field1, field2, field3, pressure_offset FROM weather_station WHERE status = 'active'")
         stations = cursor.fetchall()
         return stations
     
 def get_single_station(station_id: str) -> Tuple:
     """Get a single weather station by ID."""
     with CursorFromConnectionFromPool() as cursor:
-        cursor.execute("SELECT id, connection_type, field1, field2, field3 FROM weather_station WHERE id = %s", (station_id,))
+        cursor.execute("SELECT id, connection_type, field1, field2, field3, pressure_offset FROM weather_station WHERE id = %s", (station_id,))
         station = cursor.fetchone()
         return station
     
 def get_stations_by_type(station_type: str) -> List[Tuple]:
     """Get all weather stations by type."""
     with CursorFromConnectionFromPool() as cursor:
-        cursor.execute("SELECT id, connection_type, field1, field2, field3 FROM weather_station WHERE connection_type = %s AND status = 'active'", (station_type,))
+        cursor.execute("SELECT id, connection_type, field1, field2, field3, pressure_offset FROM weather_station WHERE connection_type = %s AND status = 'active'", (station_type,))
         stations = cursor.fetchall()
         return stations
     
