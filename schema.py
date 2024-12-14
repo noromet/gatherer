@@ -44,6 +44,16 @@ class WeatherRecord:
         humidity_safe_range = (0, 100)
         pressure_safe_range = (800, 1100)
 
+        print(type(self.temperature))
+        print(type(self.maxTemp))
+        print(type(self.minTemp))
+        print(type(self.wind_speed))
+        print(type(self.max_wind_speed))
+        print(type(self.maxWindGust))
+        print(type(self.wind_direction))
+        print(type(self.humidity))
+        print(type(self.pressure))
+
         if self.temperature:
             if not temp_safe_range[0] < self.temperature < temp_safe_range[1]:
                 self.flagged = True

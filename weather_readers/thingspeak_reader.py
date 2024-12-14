@@ -1,9 +1,8 @@
 from schema import WeatherRecord
-from .utils import is_date_too_old, UnitConverter
+from .utils import is_date_too_old, safe_float
 import json
 import requests
 import datetime
-import logging
 
 field_map = {
     "temperature": "field1",
@@ -29,14 +28,14 @@ class ThingspeakReader:
             id=None,
             station_id=None,
             source_timestamp=observation_time,
-            temperature=data["feeds"][0]["field1"],
+            temperature=safe_float(data["feeds"][0].get("field1", None)),
             wind_speed=None,
             wind_direction=None,
             max_wind_speed=None,
             rain=None,
             cumulativeRain=None,
-            humidity=data["feeds"][0]["field2"],
-            pressure=data["feeds"][0]["field4"],
+            humidity=safe_float(data["feeds"][0].get("field2", None)),
+            pressure=safe_float(data["feeds"][0].get("field4", None)),
             flagged=False,
             gathererRunId=None,
             minTemp=None,

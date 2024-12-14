@@ -44,6 +44,9 @@ def smart_azimuth(azimuth) -> float:
         except ValueError:
             raise ValueError(f"Invalid azimuth value: {azimuth}")
 
+def safe_float(value):
+    return float(value) if value is not None else None
+
 def smart_parse_date(date_str: str) -> datetime.datetime:
     # Try Spanish formatting
     spanish = None
