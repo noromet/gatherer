@@ -39,18 +39,50 @@ class WeatherRecord:
         self.maxWindGust = maxWindGust
 
     def sanity_check(self):
+        temp_safe_range = (-39, 50)
+        wind_safe_range = (0, 500)
+        humidity_safe_range = (0, 100)
+        pressure_safe_range = (800, 1100)
+
         if self.temperature:
-            if not -39 < float(self.temperature) < 50:
+            if not temp_safe_range[0] < self.temperature < temp_safe_range[1]:
+                self.flagged = True
                 self.temperature = None
-                self.flagged = True
         if self.maxTemp:
-            if not -39 < float(self.maxTemp) < 50:
+            if not temp_safe_range[0] < self.maxTemp < temp_safe_range[1]:
+                self.flagged = True
                 self.maxTemp = None
-                self.flagged = True
         if self.minTemp:
-            if not -39 < float(self.minTemp) < 50:
-                self.minTemp = None
+            if not temp_safe_range[0] < self.minTemp < temp_safe_range[1]:
                 self.flagged = True
+                self.minTemp = None
+
+        if self.wind_speed:
+            if not wind_safe_range[0] < self.wind_speed < wind_safe_range[1]:
+                self.flagged = True
+                self.wind_speed = None
+        if self.max_wind_speed:
+            if not wind_safe_range[0] < self.max_wind_speed < wind_safe_range[1]:
+                self.flagged = True
+                self.max_wind_speed = None
+        if self.maxWindGust:
+            if not wind_safe_range[0] < self.maxWindGust < wind_safe_range[1]:
+                self.flagged = True
+                self.maxWindGust = None
+        if self.wind_direction:
+            if not 0 <= self.wind_direction <= 360:
+                self.flagged = True
+                self.wind_direction = None
+
+        if self.humidity:
+            if not humidity_safe_range[0] < self.humidity < humidity_safe_range[1]:
+                self.flagged = True
+                self.humidity = None
+
+        if self.pressure:
+            if not pressure_safe_range[0] < self.pressure < pressure_safe_range[1]:
+                self.flagged = True
+                self.pressure = None
 
         #implement further limits here
 
