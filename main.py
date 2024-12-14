@@ -79,7 +79,7 @@ def validate_args(args):
 #endregion
 
 # region processing
-def process_station(station: tuple): # station is a tuple like id, connection_type, field1, field2, field3
+def process_station(station: tuple): # station is a tuple like id, connection_type, field1, field2, field3, pressure_offset
     print_yellow(f"Processing station {station[0]}, type {station[1]}")
     
     try:
@@ -91,16 +91,16 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         if station[1] == 'meteoclimatic':
             record = api.MeteoclimaticReader.get_data(station[2], station_id=station[0])
         elif station[1] == 'weatherlink_v1':
-            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, station[2:], station_id=station[0])
+            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, station[2:5], station_id=station[0])
         elif station[1] == 'wunderground':
-            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, station[2:], station_id=station[0])
+            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, station[2:5], station_id=station[0])
         elif station[1] == 'weatherlink_v2':
             raise NotImplementedError("Weatherlink V2 is not implemented yet")
-            # record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, station[2:], station_id=station[0])
+            # record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, station[2:5], station_id=station[0])
         elif station[1] == 'holfuy':
-            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, station[2:], station_id=station[0])
+            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, station[2:5], station_id=station[0])
         elif station[1] == 'thingspeak':
-            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, station[2:], station_id=station[0])
+            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, station[2:5], station_id=station[0])
         else:
             message = f"Unknown station type {station[1]} for station {station[0]}"
             print(f"[{station[0]}]: {message}")
@@ -117,6 +117,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         record.gatherer_run_id = RUN_ID
 
         record.sanity_check()
+        record.apply_pressure_offset(station[5])
 
         if not DRY_RUN:
             Database.save_record(record)
