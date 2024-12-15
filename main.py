@@ -56,7 +56,7 @@ def get_args():
     parser.add_argument("--type", type=str, help="Read stations with a specific type")
     parser.add_argument("--id", type=str, help="Read a single weather station by id")
     parser.add_argument("--dry-run", action="store_true", help="Perform a dry run")
-    parser.add_argument("-m", "--multithread-threshold", type=int, default=-1, help="Threshold for enabling multithreading")
+    parser.add_argument("--single-thread", action="store_true", help="Run in single-thread mode", default=False)
     return parser.parse_args()
 
 def validate_args(args):
@@ -73,9 +73,6 @@ def validate_args(args):
     if args.type:
         if args.type not in ["meteoclimatic", "weatherlink_v1", "wunderground", "weatherlink_v2", "holfuy", "thingspeak"]:
             raise ValueError("Invalid type")
-        
-    if args.multithread_threshold == 0 or args.multithread_threshold < -1: #so, -1 or positive integer are valid
-        raise ValueError("Invalid multithread threshold")
 #endregion
 
 # region processing
@@ -166,7 +163,7 @@ def multithread_processing(stations):
     
     return results
 
-def process_all(multithread_threshold):
+def process_all(single_thread):
     stations = get_all_stations()
 
     result = {}
@@ -178,15 +175,11 @@ def process_all(multithread_threshold):
     print(f"Processing {len(stations)} stations")
     logging.info(f"Processing {len(stations)} stations")
     
-    if multithread_threshold == -1 or len(stations) < multithread_threshold:
+    if single_thread:
         for station in stations:
             result[station[0]] = process_station(station)
-
-    elif len(stations) >= multithread_threshold:
-        result = multithread_processing(stations)
-
     else:
-        raise ValueError("Invalid multithread threshold")
+        result = multithread_processing(stations)
     
     return result
 
@@ -201,7 +194,7 @@ def process_single(station_id):
         "status": "success"
     }}
 
-def process_type(station_type, multithread_threshold):
+def process_type(station_type, single_thread):
     stations = get_stations_by_type(station_type)
     if len(stations) == 0:
         print_red(f"No active stations found for type {station_type}")
@@ -212,15 +205,11 @@ def process_type(station_type, multithread_threshold):
     print(f"Processing {len(stations)} stations of type {station_type}")
     logging.info(f"Processing {len(stations)} stations of type {station_type}")
 
-    if multithread_threshold == -1 or len(stations) < multithread_threshold:
+    if single_thread:
         for station in stations:
             result[station[0]] = process_station(station)
-
-    elif len(stations) >= multithread_threshold:
-        result = multithread_processing(stations)
-
     else:
-        raise ValueError("Invalid multithread threshold")
+        result = multithread_processing(stations)
 
     return result
 
@@ -235,7 +224,7 @@ def main():
 
     global DRY_RUN
     DRY_RUN = args.dry_run
-    multithread_threshold = args.multithread_threshold
+    single_thread = args.single_thread
 
     timestamp = datetime.now().replace(second=0, microsecond=0)
     
@@ -250,9 +239,9 @@ def main():
     if args.id:
         results = process_single(args.id)
     elif args.type:
-        results = process_type(args.type, multithread_threshold)
+        results = process_type(args.type, single_thread)
     else:
-        results = process_all(multithread_threshold)
+        results = process_all(single_thread)
                 
     if not args.dry_run:
         print_yellow("Saving thread record")
