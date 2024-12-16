@@ -22,7 +22,7 @@ class WeatherLinkV1Reader:
         if is_date_too_old(observation_time):
             raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
         
-        temperature = data.get("temp_c", UnitConverter.fahrenheit_to_celsius(safe_float(data["davis_current_observation"].get("temp_in_f"))))
+        temperature = data.get("temp_c", None)
         
         wr = WeatherRecord(
             id=None,
