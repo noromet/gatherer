@@ -102,7 +102,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
             record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, station[2:5], station_id=station[0])
         else:
             record = api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, station[2:5], station_id=station[0])
-        
+
         if record is None:
             message = f"No data retrieved for station {station[0]}"
             print(f"[{station[0]}]: {message}")

@@ -47,6 +47,9 @@ def smart_azimuth(azimuth) -> float:
 def safe_float(value):
     return float(value) if value is not None else None
 
+def safe_int(value):
+    return int(value) if value is not None else None
+
 def smart_parse_date(date_str: str) -> datetime.datetime:
     # Try Spanish formatting
     spanish = None
@@ -114,7 +117,6 @@ def smart_parse_float(float_str: str) -> float:
     return float_val
 
 def is_date_too_old(date: datetime.datetime) -> bool: #1hr
-    print(date, date.tzinfo)
     now_minus_1_hour = (datetime.datetime.now(date.tzinfo) - datetime.timedelta(hours=1))
     return date < now_minus_1_hour
 
