@@ -25,6 +25,8 @@ WUNDERGROUND_ENDPOINT = os.getenv("WUNDERGROUND_ENDPOINT")
 WUNDERGROUND_DAILY_ENDPOINT = os.getenv("WUNDERGROUND_DAILY_ENDPOINT")
 HOLFUY_ENDPOINT = os.getenv("HOLFUY_ENDPOINT")
 THINGSPEAK_ENDPOINT = os.getenv("THINGSPEAK_ENDPOINT")
+ECOWITT_ENDPOINT = os.getenv("ECOWITT_ENDPOINT")
+ECOWITT_DAILY_ENDPOINT = os.getenv("ECOWITT_DAILY_ENDPOINT")
 DRY_RUN = False
 
 RUN_ID = uuid4().hex
@@ -71,7 +73,7 @@ def validate_args(args):
         raise ValueError("Must specify --all, --type or --id")
     
     if args.type:
-        if args.type not in ["meteoclimatic", "weatherlink_v1", "wunderground", "weatherlink_v2", "holfuy", "thingspeak"]:
+        if args.type not in ["meteoclimatic", "weatherlink_v1", "wunderground", "weatherlink_v2", "holfuy", "thingspeak", "ecowitt"]:
             raise ValueError("Invalid type")
 #endregion
 
@@ -99,10 +101,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         elif station[1] == 'thingspeak':
             record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, station[2:5], station_id=station[0])
         else:
-            message = f"Unknown station type {station[1]} for station {station[0]}"
-            print(f"[{station[0]}]: {message}")
-            logging.error(f"[{station[0]}]: {message}")
-            return {"status": "error", "error": message}
+            record = api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, station[2:5], station_id=station[0])
         
         if record is None:
             message = f"No data retrieved for station {station[0]}"
