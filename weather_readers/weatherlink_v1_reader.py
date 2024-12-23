@@ -7,11 +7,9 @@ import logging
 
 # https://api.weather.com/v2/pws/observations/current?stationId=ISOTOYAM2&apiKey=317bd2820daf46edbbd2820daf26ede4&format=json&units=s&numericPrecision=decimal
 
-
-
 class WeatherLinkV1Reader:
     @staticmethod
-    def parse(str_data: str, station_id: str = None) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
@@ -66,6 +64,7 @@ class WeatherLinkV1Reader:
 
         return wr
     
+    
     @staticmethod
     def curl_endpoint(endpoint: str, user_did: str, password: str, apiToken: str) -> str:
         response = requests.get(endpoint, {
@@ -81,11 +80,11 @@ class WeatherLinkV1Reader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None) -> dict:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: str = "Etc/UTC") -> dict:
         assert params[0] is not None
         assert params[1] is not None
         assert params[2] is not None
         
         response = WeatherLinkV1Reader.curl_endpoint(endpoint, params[0], params[2], params[1])#did, password, apiToken are field1, field3, field2
-        parsed = WeatherLinkV1Reader.parse(response, station_id)
+        parsed = WeatherLinkV1Reader.parse(response, station_id, timezone)
         return parsed

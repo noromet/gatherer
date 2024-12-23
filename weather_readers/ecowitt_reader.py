@@ -1,12 +1,12 @@
 from schema import WeatherRecord
-from .utils import is_date_too_old, UnitConverter, safe_float, safe_int
+from .utils import is_date_too_old, safe_float, safe_int
 import json
 import requests
 import datetime
 
 class EcowittReader:
     @staticmethod
-    def parse(live_str_data: str, daily_str_data: str, station_id: str = None) -> WeatherRecord:
+    def parse(live_str_data: str, daily_str_data: str, station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
         try:
             live_data = json.loads(live_str_data)["data"]
             daily_data = json.loads(daily_str_data)["data"]
@@ -92,7 +92,7 @@ class EcowittReader:
 
     
     @staticmethod
-    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = (), station_id: str = None) -> WeatherRecord:
+    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = (), station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
         assert params[1] is not None, "api_key is null"  # api key
         assert params[2] is not None, "application_key is null"  # application key
@@ -100,6 +100,6 @@ class EcowittReader:
         live_response = EcowittReader.curl_live_endpoint(live_endpoint, params[0], params[1], params[2])
         daily_response = EcowittReader.curl_daily_endpoint(daily_endpoint, params[0], params[1], params[2])
         
-        parsed = EcowittReader.parse(live_response, daily_response, station_id)
+        parsed = EcowittReader.parse(live_response, daily_response, station_id, timezone)
 
         return parsed

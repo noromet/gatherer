@@ -78,38 +78,50 @@ def validate_args(args):
 #endregion
 
 # region processing
-def process_station(station: tuple): # station is a tuple like id, connection_type, field1, field2, field3, pressure_offset
-    print_yellow(f"Processing station {station[0]}, type {station[1]}")
+def process_station(station: tuple): # station is a tuple like id, connection_type, field1, field2, field3, pressure_offset, timezone
+    station_id, connection_type, field1, field2, field3, _, timezone = station
+    print_yellow(f"Processing station {station_id}, type {connection_type}")
+
+    # Validate timezone
+    valid_timezones = [
+        'Europe/Madrid',
+        'Europe/Lisbon',
+        'Etc/UTC'
+    ]
+
+    if timezone not in valid_timezones:
+        print_red(f"Invalid timezone for station {station_id}. Defaulting to 'Etc/UTC'.")
+        timezone = 'Etc/UTC'
     
     try:
-        if station[1] == 'connection_disabled':
-            message = f"Connection disabled for station {station[0]}"
+        if connection_type == 'connection_disabled':
+            message = f"Connection disabled for station {station_id}"
             print(message)
             return {"status": "success"}
 
-        if station[1] == 'meteoclimatic':
-            record = api.MeteoclimaticReader.get_data(station[2], station_id=station[0])
-        elif station[1] == 'weatherlink_v1':
-            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, station[2:5], station_id=station[0])
-        elif station[1] == 'wunderground':
-            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, station[2:5], station_id=station[0])
-        elif station[1] == 'weatherlink_v2':
+        if connection_type == 'meteoclimatic':
+            record = api.MeteoclimaticReader.get_data(field1, station_id=station_id, timezone=timezone)
+        elif connection_type == 'weatherlink_v1':
+            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+        elif connection_type == 'wunderground':
+            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+        elif connection_type == 'weatherlink_v2':
             raise NotImplementedError("Weatherlink V2 is not implemented yet")
-            # record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, station[2:5], station_id=station[0])
-        elif station[1] == 'holfuy':
-            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, station[2:5], station_id=station[0])
-        elif station[1] == 'thingspeak':
-            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, station[2:5], station_id=station[0])
+            # record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+        elif connection_type == 'holfuy':
+            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+        elif connection_type == 'thingspeak':
+            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
         else:
-            record = api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, station[2:5], station_id=station[0])
+            record = api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
 
         if record is None:
-            message = f"No data retrieved for station {station[0]}"
-            print(f"[{station[0]}]: {message}")
-            logging.error(f"[{station[0]}]: {message}")
+            message = f"No data retrieved for station {station_id}"
+            print(f"[{station_id}]: {message}")
+            logging.error(f"[{station_id}]: {message}")
             return {"status": "error", "error": message}
 
-        record.station_id = station[0]
+        record.station_id = station_id
         record.gatherer_run_id = RUN_ID
 
         record.sanity_check()
@@ -117,18 +129,18 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
 
         if not DRY_RUN:
             Database.save_record(record)
-            print_green(f"Record saved for station {station[0]}")
+            print_green(f"Record saved for station {station_id}")
             return {"status": "success"}
         else:
             print(json.dumps(record.__dict__, indent=4, sort_keys=True, default=str))
-            print_green(f"Dry run enabled, record not saved for station {station[0]}")
+            print_green(f"Dry run enabled, record not saved for station {station_id}")
             return {"status": "success"}
 
     except Exception as e:
-        print_red(f"Error processing station {station[0]}: {e}")
-        logging.error(f"Error processing station {station[0]}: {e}")
+        print_red(f"Error processing station {station_id}: {e}")
+        logging.error(f"Error processing station {station_id}: {e}")
         if not DRY_RUN:
-            increment_incident_count(station[0])
+            increment_incident_count(station_id)
         return {"status": "error", "error": str(e)}
     
 def process_chunk(chunk, chunk_number, result_queue):

@@ -66,7 +66,7 @@ class MeteoclimaticReader:
         
         
     @staticmethod
-    def parse(str_data: str, station_id: str = None) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None, timezone: str = None) -> WeatherRecord:
         data = {}
         for line in str_data.strip().split("*"):
             line = line.strip()
@@ -154,6 +154,6 @@ class MeteoclimaticReader:
         return response.text
     
     @staticmethod
-    def get_data(endpoint: str, station_id: str = None) -> dict:
+    def get_data(endpoint: str, station_id: str = None, timezone: str = "Etc/UTC") -> dict:
         raw_data = MeteoclimaticReader.curl_endpoint(endpoint)
-        return MeteoclimaticReader.parse(raw_data, station_id=station_id)
+        return MeteoclimaticReader.parse(raw_data, station_id=station_id, timezone=timezone)

@@ -9,7 +9,7 @@ import logging
 
 class WundergroundReader:
     @staticmethod
-    def parse(live_data_str: str, daily_data_str: str, station_id: str = None) -> WeatherRecord:
+    def parse(live_data_str: str, daily_data_str: str, station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
         try:
             live_data = json.loads(live_data_str)["observations"][0]
             last_daily_data = json.loads(daily_data_str)["summaries"][-1]
@@ -75,7 +75,7 @@ class WundergroundReader:
         return response.text
     
     @staticmethod
-    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = (), station_id: str = None) -> dict:
+    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = (), station_id: str = None, timezone: str = "Etc/UTC") -> dict:
         assert params[0] is not None #did
         assert params[1] is not None #apiToken
         
@@ -86,5 +86,5 @@ class WundergroundReader:
         live_response = WundergroundReader.curl_endpoint(live_endpoint, params[0], params[1])
         daily_response = WundergroundReader.curl_endpoint(daily_endpoint, params[0], params[1])
 
-        parsed = WundergroundReader.parse(live_response, daily_response, station_id=station_id)
+        parsed = WundergroundReader.parse(live_response, daily_response, station_id=station_id, timezone=timezone)
         return parsed

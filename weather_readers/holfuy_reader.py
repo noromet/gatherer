@@ -7,7 +7,7 @@ import logging
 
 class HolfuyReader:
     @staticmethod
-    def parse(str_data: str, station_id: str = None) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
@@ -50,7 +50,7 @@ class HolfuyReader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None) -> WeatherRecord:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
         assert params[2] is not None, "password is null"  # password
         
@@ -59,5 +59,5 @@ class HolfuyReader:
             logging.warning(f"{[station_id]} Warning: HolfuyReader does not use api key, but it was provided.")
 
         response = HolfuyReader.curl_endpoint(endpoint, params[0], params[2])
-        parsed = HolfuyReader.parse(response, station_id)
+        parsed = HolfuyReader.parse(response, station_id, timezone)
         return parsed
