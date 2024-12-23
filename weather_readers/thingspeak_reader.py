@@ -3,6 +3,7 @@ from .utils import is_date_too_old, safe_float
 import json
 import requests
 import datetime
+from datetime import tzinfo, timezone
 
 field_map = {
     "temperature": "field1",
@@ -12,17 +13,23 @@ field_map = {
 
 class ThingspeakReader:
     @staticmethod
-    def parse(str_data: str, station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        observation_time = datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-        observation_time = observation_time.replace(tzinfo=datetime.timezone.utc) # LAS FECHAS DE THINGSPEAK SON UTC (CREO)
+        observation_time = datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone)
+        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
+
+        #print the above pipeline
+        print(data["feeds"][0]["created_at"])
+        print(datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
+        print(datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone))
+        print(observation_time_utc)
         
-        if is_date_too_old(observation_time):
-            raise ValueError("Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
+        if is_date_too_old(observation_time_utc):
+            raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
 
         return WeatherRecord(
             id=None,
@@ -55,7 +62,7 @@ class ThingspeakReader:
         return response.text
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
 
         if params[1] not in (None, "NA", "na", ""):

@@ -3,10 +3,11 @@ from .utils import is_date_too_old, safe_float, safe_int
 import json
 import requests
 import datetime
+from datetime import tzinfo, timezone
 
 class EcowittReader:
     @staticmethod
-    def parse(live_str_data: str, daily_str_data: str, station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
+    def parse(live_str_data: str, daily_str_data: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             live_data = json.loads(live_str_data)["data"]
             daily_data = json.loads(daily_str_data)["data"]
@@ -14,9 +15,10 @@ class EcowittReader:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
         #parse timestamp in seconds
-        observation_time = datetime.datetime.fromtimestamp(safe_int(live_data["outdoor"]["temperature"]["time"]))
+        observation_time = datetime.datetime.fromtimestamp(safe_int(live_data["outdoor"]["temperature"]["time"])).replace(tzinfo=timezone)
+        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
         
-        if is_date_too_old(observation_time):
+        if is_date_too_old(observation_time_utc):
             raise ValueError(f"[{station_id}]: Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
 
         wr = WeatherRecord(
@@ -92,7 +94,7 @@ class EcowittReader:
 
     
     @staticmethod
-    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = (), station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
+    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = (), station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
         assert params[1] is not None, "api_key is null"  # api key
         assert params[2] is not None, "application_key is null"  # application key

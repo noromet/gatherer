@@ -11,6 +11,8 @@ from datetime import datetime
 from uuid import uuid4
 import logging
 from logging.handlers import RotatingFileHandler
+from weather_readers.utils import get_tzinfo
+
 # region definitions
 print_red = lambda text: print(f"\033[91m{text}\033[00m")
 print_green = lambda text: print(f"\033[92m{text}\033[00m")
@@ -92,6 +94,8 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
     if timezone not in valid_timezones:
         print_red(f"Invalid timezone for station {station_id}. Defaulting to 'Etc/UTC'.")
         timezone = 'Etc/UTC'
+
+    timezone = get_tzinfo(timezone)
     
     try:
         if connection_type == 'connection_disabled':

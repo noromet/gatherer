@@ -1,7 +1,6 @@
 import datetime
 from dateutil import parser
 from typing import Any
-import logging
 
 def smart_azimuth(azimuth) -> float:
     if azimuth is None or azimuth == "-":
@@ -50,18 +49,18 @@ def safe_float(value):
 def safe_int(value):
     return int(value) if value is not None else None
 
-def smart_parse_date(date_str: str) -> datetime.datetime:
+def smart_parse_date(date_str: str, timezone: datetime.tzinfo = None) -> datetime.datetime:
     # Try Spanish formatting
     spanish = None
     try:
-        spanish_long_year_format_date = datetime.datetime.strptime(date_str, "%d/%m/%Y %H:%M")
+        spanish_long_year_format_date = datetime.datetime.strptime(date_str, "%d/%m/%Y %H:%M").replace(tzinfo=timezone)
         spanish = spanish_long_year_format_date
     except ValueError:
         pass
 
     if spanish is None:
         try:
-            spanish_short_year_format_date = datetime.datetime.strptime(date_str, "%d/%m/%y %H:%M")
+            spanish_short_year_format_date = datetime.datetime.strptime(date_str, "%d/%m/%y %H:%M").replace(tzinfo=timezone)
             spanish = spanish_short_year_format_date
         except ValueError:
             pass
@@ -69,7 +68,7 @@ def smart_parse_date(date_str: str) -> datetime.datetime:
     # Try American formatting
     american = None
     try:
-        american_format_date = parser.parse(date_str)
+        american_format_date = parser.parse(date_str).replace(tzinfo=timezone)
         american = american_format_date
     except ValueError:
         pass
@@ -77,7 +76,7 @@ def smart_parse_date(date_str: str) -> datetime.datetime:
     if spanish is None and american is None:
         raise ValueError(f"Invalid date format: {date_str}")
 
-    now = datetime.datetime.now()
+    now = datetime.datetime.now().replace(tzinfo=timezone)
 
     if spanish is not None and american is not None:
         if spanish > now:
@@ -116,9 +115,22 @@ def smart_parse_float(float_str: str) -> float:
 
     return float_val
 
-def is_date_too_old(date: datetime.datetime) -> bool: #1hr
-    now_minus_1_hour = (datetime.datetime.now(date.tzinfo) - datetime.timedelta(hours=1))
-    return date < now_minus_1_hour
+def is_date_too_old(date: datetime.datetime) -> bool:
+    # ASSUME date IS UTC
+    # MAX 30 MINUTES OLD
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return (now - date).total_seconds() > 1800
+
+def get_tzinfo(tz_str: str) -> datetime.tzinfo:
+    match tz_str:
+        case "Etc/UTC":
+            return datetime.timezone.utc
+        case "Europe/Madrid":
+            return datetime.timezone(datetime.timedelta(hours=1))
+        case "Europe/Lisbon":
+            return datetime.timezone(datetime.timedelta(hours=0))
+        case _:
+            raise ValueError(f"Invalid timezone: {tz_str}")
 
 class UnitConverter:
     @staticmethod

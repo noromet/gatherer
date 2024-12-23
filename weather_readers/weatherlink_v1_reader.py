@@ -4,21 +4,31 @@ import json
 import requests
 import datetime
 import logging
+from datetime import tzinfo, timezone
 
 # https://api.weather.com/v2/pws/observations/current?stationId=ISOTOYAM2&apiKey=317bd2820daf46edbbd2820daf26ede4&format=json&units=s&numericPrecision=decimal
 
 class WeatherLinkV1Reader:
     @staticmethod
-    def parse(str_data: str, station_id: str = None, timezone: str = "Etc/UTC") -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        observation_time = datetime.datetime.strptime(data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z")
+        observation_time = datetime.datetime.strptime(data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z").replace(tzinfo=timezone)
+        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
         
-        if is_date_too_old(observation_time):
+        if is_date_too_old(observation_time_utc):
             raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
+        
+        current_date = datetime.datetime.now(timezone).date()
+        observation_date = observation_time.date()
+
+        if observation_time.time() >= datetime.time(0, 0) and observation_time.time() <= datetime.time(0, 15) and observation_date == current_date:
+            use_daily = False
+        else:
+            use_daily = True
         
         temperature = data.get("temp_c", None)
         
@@ -41,26 +51,27 @@ class WeatherLinkV1Reader:
             maxWindGust=None
         )
 
-        obstime_local_tz = observation_time.astimezone(datetime.datetime.now().astimezone().tzinfo)
-
-        if not (observation_time.hour == 0 and observation_time.minute < 15) \
-            and obstime_local_tz.date() == datetime.datetime.now().date():
+        if use_daily:
             wr.max_wind_speed = UnitConverter.mph_to_kph(
-                safe_float(data["davis_current_observation"].get("wind_day_high_mph")
-            ))
+                safe_float(data["davis_current_observation"].get("wind_day_high_mph"))
+            )
             wr.maxWindGust = UnitConverter.mph_to_kph(
-                safe_float(data["davis_current_observation"].get("wind_ten_min_gust_mph")))
+                safe_float(data["davis_current_observation"].get("wind_ten_min_gust_mph"))
+            )
 
             wr.maxTemp = UnitConverter.fahrenheit_to_celsius(
-                safe_float(data["davis_current_observation"].get("temp_day_high_f")))
+                safe_float(data["davis_current_observation"].get("temp_day_high_f"))
+            )
 
             wr.minTemp = UnitConverter.fahrenheit_to_celsius(
-                safe_float(data["davis_current_observation"].get("temp_day_low_f")))
+                safe_float(data["davis_current_observation"].get("temp_day_low_f"))
+            )
 
             wr.cumulativeRain = UnitConverter.inches_to_mm(
-                safe_float(data["davis_current_observation"].get("rain_day_in")))
+                safe_float(data["davis_current_observation"].get("rain_day_in"))
+            )
         else:
-            logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, Local time: {obstime_local_tz}")
+            logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(timezone)}")
 
         return wr
     
@@ -80,7 +91,7 @@ class WeatherLinkV1Reader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: str = "Etc/UTC") -> dict:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: tzinfo = timezone.utc) -> dict:
         assert params[0] is not None
         assert params[1] is not None
         assert params[2] is not None

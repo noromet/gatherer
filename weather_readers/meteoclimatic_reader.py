@@ -4,6 +4,7 @@ import requests
 import logging
 import json
 import datetime
+from datetime import tzinfo, timezone
 
 class MeteoclimaticReader:
     code_to_name_map = {
@@ -66,7 +67,7 @@ class MeteoclimaticReader:
         
         
     @staticmethod
-    def parse(str_data: str, station_id: str = None, timezone: str = None) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
         data = {}
         for line in str_data.strip().split("*"):
             line = line.strip()
@@ -79,8 +80,9 @@ class MeteoclimaticReader:
             if key in MeteoclimaticReader.code_to_name_map.keys() and key in MeteoclimaticReader.values_to_keep:
                 data[MeteoclimaticReader.code_to_name_map[key]] = value
 
-        data["record_timestamp"] = smart_parse_date(data["record_timestamp"])
-        if is_date_too_old(data["record_timestamp"]):
+        data["record_timestamp"] = smart_parse_date(data["record_timestamp"], timezone=timezone)
+        observation_time_utc = data["record_timestamp"].astimezone(datetime.timezone.utc)
+        if is_date_too_old(observation_time_utc):
             raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {data['record_timestamp']}, local time: {datetime.datetime.now()}")
             
         try:
@@ -154,6 +156,6 @@ class MeteoclimaticReader:
         return response.text
     
     @staticmethod
-    def get_data(endpoint: str, station_id: str = None, timezone: str = "Etc/UTC") -> dict:
+    def get_data(endpoint: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> dict:
         raw_data = MeteoclimaticReader.curl_endpoint(endpoint)
         return MeteoclimaticReader.parse(raw_data, station_id=station_id, timezone=timezone)
