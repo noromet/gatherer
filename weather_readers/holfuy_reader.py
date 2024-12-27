@@ -56,8 +56,8 @@ class HolfuyReader:
         return wr
     
     @staticmethod
-    def curl_endpoint(endpoint: str, station_id: str, password: str) -> str:
-        endpoint = f"{endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=m/s&daily=True"
+    def curl_endpoint(endpoint: str, station_id: str, key: str) -> str:
+        endpoint = f"{endpoint}?s={station_id}&pw={key}&m=JSON&tu=C&su=m/s&daily=True"
 
         response = requests.get(endpoint)
         
@@ -70,12 +70,12 @@ class HolfuyReader:
     @staticmethod
     def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
-        assert params[2] is not None, "password is null"  # password
+        assert params[1] is not None, "key is null"  # key
         
-        if params[1] not in (None, "NA", "na", ""):
-            print("Warning: HolfuyReader does not use api key, but it was provided.")
-            logging.warning(f"{[station_id]} Warning: HolfuyReader does not use api key, but it was provided.")
+        if params[2] not in (None, "NA", "na", ""):
+            print("Warning: HolfuyReader does not use password, but it was provided.")
+            logging.warning(f"{[station_id]} Warning: HolfuyReader does not use password, but it was provided.")
 
-        response = HolfuyReader.curl_endpoint(endpoint, params[0], params[2])
+        response = HolfuyReader.curl_endpoint(endpoint, params[0], params[1])
         parsed = HolfuyReader.parse(response, station_id, timezone)
         return parsed
