@@ -6,14 +6,32 @@ import json
 import requests
 import datetime
 import logging
+from datetime import tzinfo, timezone
 
 def read_sensor_data(sensors: list, station_id: str = None) -> dict:
-    possible_data_values = {
-
+    live_response_keys = {
+        "timestamp": {
+            "ts": []   
+        },
+        "temperature": {
+            "temp": [],
+            "temp_out": []
+        },
+        "wind_speed": {
+            "wind_speed": [],
+            "wind_speed_last": []
+        },
+        "wind_direction": {
+            "wind_dir": [],
+            "wind_dir_last": []
+        },
+        "rain": {
+            "rain_rate_mm": [],
+            "rain_rate_last_mm": [],
+        },
     }
 
-    for sensor in sensors:
-        ...
+    historical_response_keys = ["max_wind_speed", "cumulative_rain"]
 
 class WeatherlinkV2Reader:
     @staticmethod
@@ -105,14 +123,21 @@ class WeatherlinkV2Reader:
             return response.text
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None) -> dict:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone = timezone.utc) -> dict:
         assert params[0] is not None, "station id is null"
         assert params[1] is not None, "api key is null"
         assert params[2] is not None, "api secret is null"
         
         current_response = WeatherlinkV2Reader.curl_current_endpoint(endpoint, params[0], params[1], params[2])
-        # historic_response = WeatherlinkV2Reader.curl_historic_endpoint(endpoint, params[0], params[1], params[2])
-        historic_response = None
-        parsed = WeatherlinkV2Reader.parse(current_response, historic_response, station_id=station_id)
 
-        return parsed
+        # print(json.dumps(json.loads(current_response), indent=4))
+
+        #write to station_id.json
+        with open(f"{station_id}.json", "w") as f:
+            f.write(json.dumps(json.loads(current_response), indent=4))
+
+        # historic_response = WeatherlinkV2Reader.curl_historic_endpoint(endpoint, params[0], params[1], params[2])
+        # historic_response = None
+        # parsed = WeatherlinkV2Reader.parse(current_response, historic_response, station_id=station_id)
+
+        # return parsed

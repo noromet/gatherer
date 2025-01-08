@@ -21,18 +21,30 @@ class EcowittReader:
         if is_date_too_old(observation_time_utc):
             raise ValueError(f"[{station_id}]: Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
 
+        outdoor = live_data.get("outdoor", {})
+        wind = live_data.get("wind", {})
+        rainfall = live_data.get("rainfall", {})
+
+        temperature = outdoor.get("temperature", {}).get("value")
+        wind_speed = wind.get("wind_speed", {}).get("value")
+        wind_direction = wind.get("wind_direction", {}).get("value")
+        rain = rainfall.get("rain_rate", {}).get("value")
+        cumulative_rain = rainfall.get("daily", {}).get("value")
+        humidity = outdoor.get("humidity", {}).get("value")
+        pressure = live_data.get("pressure", {}).get("relative", {}).get("value")
+
         wr = WeatherRecord(
             id=None,
             station_id=None,
             source_timestamp=observation_time,
-            temperature=safe_float(live_data["outdoor"]["temperature"]["value"]),
-            wind_speed=safe_float(live_data["wind"]["wind_speed"]["value"]),
-            wind_direction=safe_float(live_data["wind"]["wind_direction"]["value"]),
+            temperature=safe_float(temperature),
+            wind_speed=safe_float(wind_speed),
+            wind_direction=safe_float(wind_direction),
             max_wind_speed=None,
-            rain=safe_float(live_data["rainfall"]["rain_rate"]["value"]),
-            cumulativeRain=safe_float(live_data["rainfall"]["daily"]["value"]),
-            humidity=safe_float(live_data["outdoor"]["humidity"]["value"]),
-            pressure=safe_float(live_data["pressure"]["relative"]["value"]),
+            rain=safe_float(rain),
+            cumulativeRain=safe_float(cumulative_rain),
+            humidity=safe_float(humidity),
+            pressure=safe_float(pressure),
             flagged=False,
             gathererRunId=None,
             minTemp=None,
