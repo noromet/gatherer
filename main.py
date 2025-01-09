@@ -110,8 +110,8 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         elif connection_type == 'wunderground':
             record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
         elif connection_type == 'weatherlink_v2':
-            raise NotImplementedError("Weatherlink V2 is not implemented yet")
-            # record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+            # raise NotImplementedError("Weatherlink V2 is not implemented yet")
+            record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
         elif connection_type == 'holfuy':
             record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
         elif connection_type == 'thingspeak':

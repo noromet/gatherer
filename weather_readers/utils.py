@@ -2,6 +2,18 @@ import datetime
 from dateutil import parser
 from typing import Any
 
+def max_or_none(arglist) -> Any:
+    return max(arglist) if arglist and len(arglist) > 0 else None
+
+def min_or_none(arglist) -> Any:
+    return min(arglist) if arglist and len(arglist) > 0 else None
+
+def coalesce(arglist):
+    for arg in arglist:
+        if arg is not None:
+            return arg
+    return None
+
 def smart_azimuth(azimuth) -> float:
     if azimuth is None or azimuth == "-":
         return None

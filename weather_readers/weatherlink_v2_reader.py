@@ -1,14 +1,14 @@
 # https://api.weatherlink.com/v2/current/{station-id}?api-key={YOUR API KEY}
 
 from schema import WeatherRecord
-from .utils import is_date_too_old, UnitConverter
+from .utils import is_date_too_old, UnitConverter, coalesce, max_or_none, min_or_none
 import json
 import requests
 import datetime
 import logging
 from datetime import tzinfo, timezone
 
-def read_sensor_data(sensors: list, station_id: str = None) -> dict:
+def handle_current_data(current: list) -> dict:
     live_response_keys = {
         "timestamp": {
             "ts": []   
@@ -29,27 +29,98 @@ def read_sensor_data(sensors: list, station_id: str = None) -> dict:
             "rain_rate_mm": [],
             "rain_rate_last_mm": [],
         },
+        "cumulative_rain": {
+            "rain_day_mm": [],
+            "rainfall_daily_mm": []
+        },
+        "humidity": {
+            "hum": [],
+            "hum_out": []
+        },
+        "pressure": {
+            "bar": [],
+            "bar_sea_level": [],
+        }
     }
 
-    historical_response_keys = ["max_wind_speed", "cumulative_rain"]
+    for sensor in current:
+        for data_point in sensor.get("data", []):
+            for keyset in live_response_keys.values():
+                for key in keyset:
+                    if key in data_point:
+                        keyset[key].append(data_point[key])
+
+    timestamp = max_or_none(live_response_keys["timestamp"]["ts"])
+
+    temperature = coalesce([coalesce(live_response_keys["temperature"]["temp"]), coalesce(live_response_keys["temperature"]["temp_out"])])
+    wind_speed = coalesce([coalesce(live_response_keys["wind_speed"]["wind_speed"]), max_or_none(live_response_keys["wind_speed"]["wind_speed_last"])])
+    wind_direction = coalesce([coalesce(live_response_keys["wind_direction"]["wind_dir"]), max_or_none(live_response_keys["wind_direction"]["wind_dir_last"])])
+    rain = coalesce([coalesce(live_response_keys["rain"]["rain_rate_mm"]), coalesce(live_response_keys["rain"]["rain_rate_last_mm"])])
+    cumulative_rain = coalesce([max_or_none(live_response_keys["cumulative_rain"]["rain_day_mm"]), max_or_none(live_response_keys["cumulative_rain"]["rainfall_daily_mm"])])
+    humidity = coalesce([coalesce(live_response_keys["humidity"]["hum"]), coalesce(live_response_keys["humidity"]["hum_out"])])
+    pressure = coalesce([coalesce(live_response_keys["pressure"]["bar"]), coalesce(live_response_keys["pressure"]["bar_sea_level"])])
+    
+    return timestamp, temperature, wind_speed, wind_direction, rain, cumulative_rain, humidity, pressure
+
+def handle_historic_data(historic: list) -> dict:
+    historical_response_keys = {
+        "max_wind_speed": {
+            "wind_speed_hi": [],
+        },
+        "cumulative_rain": {
+            "rainfall_mm": [],
+        },
+        "max_temp": {
+            "temp_hi": []
+        },
+        "min_temp": {
+            "temp_lo": []
+        },
+        "max_wind_gust": {
+            "wind_speed_hi": []
+        }
+    }
+
+    for sensor in historic:
+        for data_point in sensor.get("data", []):
+            for keyset in historical_response_keys.values():
+                for key in keyset:
+                    if key in data_point:
+                        keyset[key].append(data_point[key])
+
+    max_wind_speed = max_or_none(historical_response_keys["max_wind_speed"]["wind_speed_hi"])
+    cumulative_rain = max_or_none(historical_response_keys["cumulative_rain"]["rainfall_mm"])
+    max_temp = max_or_none(historical_response_keys["max_temp"]["temp_hi"])
+    min_temp = min_or_none(historical_response_keys["min_temp"]["temp_lo"])
+    max_wind_gust = max_or_none(historical_response_keys["max_wind_gust"]["wind_speed_hi"])
+
+    return max_wind_speed, cumulative_rain, max_temp, min_temp, max_wind_gust
 
 class WeatherlinkV2Reader:
     @staticmethod
-    def parse(current_str_data: str, historic_str_data: str, station_id: str = None) -> WeatherRecord:
+    def parse(current_str_data: str, historic_str_data: str, station_id: str = None, timezone=timezone.utc) -> WeatherRecord:
         try:
             current_data = json.loads(current_str_data)
-            current_data = current_data["sensors"][0]["data"][0]
+            current_data = current_data.get("sensors", None)
 
+            historic_data = None
             if historic_str_data is not None:
                 historic_data = json.loads(historic_str_data)
-                historic_data 
+                historic_data = historic_data.get("sensors", None)
+
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        observation_time = datetime.datetime.fromtimestamp(current_data["ts"], tz=datetime.timezone(datetime.timedelta(seconds=current_data["tz_offset"])))
+        timestamp, temperature, wind_speed, wind_direction, rain, cumulative_rain, humidity, pressure = handle_current_data(current_data)
+        
+        if historic_data is not None:
+            max_wind_speed, cumulative_rain_historic, max_temp, min_temp, max_wind_gust = handle_historic_data(historic_data)
+        else:
+            max_wind_speed, cumulative_rain_historic, max_temp, min_temp, max_wind_gust = None, None, None, None, None
 
-        print(f"Observation time: {observation_time}")
+        final_cumulative_rain = coalesce([cumulative_rain, cumulative_rain_historic])
 
+        observation_time = datetime.datetime.fromtimestamp(timestamp, tz=timezone)
         if is_date_too_old(observation_time):
             raise ValueError("Record timestamp is too old to be stored as current.")
 
@@ -57,27 +128,22 @@ class WeatherlinkV2Reader:
             id=None,
             station_id=None,
             source_timestamp=observation_time,
-            temperature=current_data["temp_out"],
-            wind_speed=UnitConverter.mph_to_kph(float(current_data["wind_speed"])),
-            wind_direction=current_data["wind_dir"],
-            max_wind_speed=None,
-            rain=current_data["rain_rate_mm"],
-            cumulativeRain=None,
-            humidity=current_data["hum_out"],
-            pressure=None,
+            temperature=UnitConverter.fahrenheit_to_celsius(temperature),
+            wind_speed=UnitConverter.mph_to_kph(wind_speed),
+            wind_direction=wind_direction,
+            max_wind_speed=UnitConverter.mph_to_kph(max_wind_speed),
+            rain=rain,
+            cumulativeRain=final_cumulative_rain,
+            humidity=humidity,
+            pressure=UnitConverter.psi_to_hpa(pressure),
             flagged=False,
             gathererRunId=None,
-            maxTemp=None,
-            minTemp=None,
-            maxWindGust=None
+            maxTemp=UnitConverter.fahrenheit_to_celsius(max_temp),
+            minTemp=UnitConverter.fahrenheit_to_celsius(min_temp),
+            maxWindGust=max_wind_gust
         )
 
-        obstime_local_tz = observation_time.astimezone(datetime.datetime.now().astimezone().tzinfo)
-
-        if not (observation_time.hour == 0 and observation_time.minute < 15) \
-            and obstime_local_tz.date() == datetime.datetime.now().date() \
-            and historic_str_data is not None:
-            ...
+        return wr
 
     @staticmethod
     def curl_current_endpoint(endpoint: str, station_id: str, api_key: str, api_secret: str) -> str:
@@ -94,18 +160,27 @@ class WeatherlinkV2Reader:
         
         #print full url
         print(f"Requesting {response.url}")
+
+        if response.status_code != 200:
+            logging.error(f"Request failed with status code {response.status_code}. Check station connection parameters.")
+            return None
         
+        # with open("response.json", "w") as f:
+        #     f.write(response.text)
+
         return response.text
 
     @staticmethod
     def curl_historic_endpoint(endpoint: str, station_id: str, api_key: str, api_secret: str) -> str:
         endpoint = endpoint.format(mode="historic", station_id=station_id)
 
-        #start timestamp is today at 00:00:00, end timestamp is today at 23:59:59
+        #start timestamp is today 5 minutes ago, end timestamp is today at 23:59:59
+        _15_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes=15)
+
         params = {
             "api-key": api_key,
             "t": int(datetime.datetime.now().timestamp()),
-            "start-timestamp": int(datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()),
+            "start-timestamp": int(_15_minutes_ago.timestamp()),
             "end-timestamp": int(datetime.datetime.now().replace(hour=23, minute=59, second=59, microsecond=0).timestamp())
         }
         headers = {
@@ -129,15 +204,11 @@ class WeatherlinkV2Reader:
         assert params[2] is not None, "api secret is null"
         
         current_response = WeatherlinkV2Reader.curl_current_endpoint(endpoint, params[0], params[1], params[2])
+        historic_response = WeatherlinkV2Reader.curl_historic_endpoint(endpoint, params[0], params[1], params[2])
 
-        # print(json.dumps(json.loads(current_response), indent=4))
+        if current_response is None:
+            return None
 
-        #write to station_id.json
-        with open(f"{station_id}.json", "w") as f:
-            f.write(json.dumps(json.loads(current_response), indent=4))
+        parsed = WeatherlinkV2Reader.parse(current_response, historic_response, station_id=station_id, timezone=timezone)
 
-        # historic_response = WeatherlinkV2Reader.curl_historic_endpoint(endpoint, params[0], params[1], params[2])
-        # historic_response = None
-        # parsed = WeatherlinkV2Reader.parse(current_response, historic_response, station_id=station_id)
-
-        # return parsed
+        return parsed
