@@ -80,6 +80,8 @@ class MeteoclimaticReader:
             if key in MeteoclimaticReader.code_to_name_map.keys() and key in MeteoclimaticReader.values_to_keep:
                 data[MeteoclimaticReader.code_to_name_map[key]] = value
 
+        print(data)
+
         data["record_timestamp"] = smart_parse_date(data["record_timestamp"], timezone=timezone)
         observation_time_utc = data["record_timestamp"].astimezone(datetime.timezone.utc)
         if is_date_too_old(observation_time_utc):

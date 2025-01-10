@@ -15,7 +15,7 @@ def coalesce(arglist):
     return None
 
 def smart_azimuth(azimuth) -> float:
-    if azimuth is None or azimuth == "-":
+    if azimuth is None or azimuth == "-" or azimuth == "N/A":
         return None
 
     if type(azimuth) is not str:
@@ -62,28 +62,28 @@ def safe_int(value):
     return int(value) if value is not None else None
 
 def smart_parse_date(date_str: str, timezone: datetime.tzinfo = None) -> datetime.datetime:
-    # Try Spanish formatting
-    spanish = None
-    try:
-        spanish_long_year_format_date = datetime.datetime.strptime(date_str, "%d/%m/%Y %H:%M").replace(tzinfo=timezone)
-        spanish = spanish_long_year_format_date
-    except ValueError:
-        pass
-
-    if spanish is None:
+    def try_parse_date(date_str, date_format):
         try:
-            spanish_short_year_format_date = datetime.datetime.strptime(date_str, "%d/%m/%y %H:%M").replace(tzinfo=timezone)
-            spanish = spanish_short_year_format_date
+            return datetime.datetime.strptime(date_str, date_format).replace(tzinfo=timezone)
         except ValueError:
-            pass
+            return None
+
+    def get_closest_date(dates, now):
+        valid_dates = [date for date in dates if date is not None and date <= now]
+        if not valid_dates:
+            return None
+        return min(valid_dates, key=lambda date: abs((date - now).days))
+
+    # Try Spanish formatting
+    spanish_formats = ["%d/%m/%Y %H:%M", "%d-%m-%Y %H:%M", "%d/%m/%y %H:%M"]
+    spanish_dates = [try_parse_date(date_str, fmt) for fmt in spanish_formats]
+    spanish = next((date for date in spanish_dates if date is not None), None)
 
     # Try American formatting
-    american = None
     try:
-        american_format_date = parser.parse(date_str).replace(tzinfo=timezone)
-        american = american_format_date
+        american = parser.parse(date_str).replace(tzinfo=timezone)
     except ValueError:
-        pass
+        american = None
 
     if spanish is None and american is None:
         raise ValueError(f"Invalid date format: {date_str}")
@@ -91,19 +91,9 @@ def smart_parse_date(date_str: str, timezone: datetime.tzinfo = None) -> datetim
     now = datetime.datetime.now().replace(tzinfo=timezone)
 
     if spanish is not None and american is not None:
-        if spanish > now:
-            return american if american <= now else None
-        if american > now:
-            return spanish if spanish <= now else None
-        return spanish if abs((spanish - now).days) < abs((american - now).days) else american
+        return get_closest_date([spanish, american], now)
 
-    if spanish is not None:
-        return spanish if spanish <= now else None
-
-    if american is not None:
-        return american if american <= now else None
-
-    raise ValueError(f"Invalid date format: {date_str}")
+    return spanish if spanish is not None else american
     
 def smart_parse_float(float_str: str) -> float:
     """
