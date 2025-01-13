@@ -120,6 +120,7 @@ class MeteoclimaticReader:
                 logging.error(f"[{station_id}]: Max temperature == 100: {maxTemp}. Dump: {json.dumps(data)}")
             
             minTemp = smart_parse_float(data.get("daily_min_temperature", None))
+
             if minTemp == 100:
                 logging.error(f"[{station_id}]: Min temperature == 100: {minTemp}. Dump: {json.dumps(data)}")
 

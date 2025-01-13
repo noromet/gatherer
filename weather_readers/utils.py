@@ -100,8 +100,6 @@ def smart_parse_float(float_str: str) -> float:
     Handles both comma and dot as decimal separator. Removes any non-numeric character other than the separator. Pray.
     """
 
-    orig_float_str = float_str
-
     if not float_str:
         return 0.0
     
@@ -111,7 +109,7 @@ def smart_parse_float(float_str: str) -> float:
     if "," in float_str:
         float_str = float_str.replace(".", "").replace(",", ".")
     
-    float_str = "".join([c for c in float_str if c.isdigit() or c == "."])
+    float_str = "".join([c for c in float_str if c.isdigit() or c == "." or c == "-"])
     
     float_val = float(float_str)
 
