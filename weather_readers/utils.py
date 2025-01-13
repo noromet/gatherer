@@ -115,23 +115,6 @@ def smart_parse_float(float_str: str) -> float:
 
     return float_val
 
-def is_date_too_old(date: datetime.datetime) -> bool:
-    # ASSUME date IS UTC
-    # MAX 30 MINUTES OLD
-    now = datetime.datetime.now(datetime.timezone.utc)
-    return (now - date).total_seconds() > 1800
-
-def get_tzinfo(tz_str: str) -> datetime.tzinfo:
-    match tz_str:
-        case "Etc/UTC":
-            return datetime.timezone.utc
-        case "Europe/Madrid":
-            return datetime.timezone(datetime.timedelta(hours=1))
-        case "Europe/Lisbon":
-            return datetime.timezone(datetime.timedelta(hours=0))
-        case _:
-            raise ValueError(f"Invalid timezone: {tz_str}")
-
 class UnitConverter:
     @staticmethod
     def fahrenheit_to_celsius(fahrenheit: float) -> float:

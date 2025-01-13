@@ -1,5 +1,6 @@
 from schema import WeatherRecord
-from .utils import is_date_too_old, UnitConverter
+from .utils import UnitConverter
+from .common import assert_date_age
 import json
 import requests
 import datetime
@@ -17,8 +18,7 @@ class HolfuyReader:
         observation_time = datetime.datetime.strptime(data["dateTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone)
         observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
         
-        if is_date_too_old(observation_time_utc):
-            raise ValueError(f"[{station_id}]: Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
+        assert_date_age(observation_time_utc)
 
         current_date = datetime.datetime.now(timezone).date()
         observation_date = observation_time.date()

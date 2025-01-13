@@ -1,7 +1,8 @@
 # https://api.weatherlink.com/v2/current/{station-id}?api-key={YOUR API KEY}
 
 from schema import WeatherRecord
-from .utils import is_date_too_old, UnitConverter, coalesce, max_or_none, min_or_none
+from .utils import UnitConverter, coalesce, max_or_none, min_or_none
+from .common import assert_date_age
 import json
 import requests
 import datetime
@@ -121,8 +122,8 @@ class WeatherlinkV2Reader:
         final_cumulative_rain = coalesce([cumulative_rain, cumulative_rain_historic])
 
         observation_time = datetime.datetime.fromtimestamp(timestamp, tz=timezone)
-        if is_date_too_old(observation_time):
-            raise ValueError("Record timestamp is too old to be stored as current.")
+        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
+        assert_date_age(observation_time_utc)
 
         wr = WeatherRecord(
             id=None,

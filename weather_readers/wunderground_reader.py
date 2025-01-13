@@ -1,7 +1,7 @@
 #https://api.weather.com/v2/pws/observations/current?stationId=ISOTODEL6&format=json&units=e&apiKey=a952662893aa49f992662893aad9f98d
 
 from schema import WeatherRecord
-from .utils import is_date_too_old
+from .common import assert_date_age
 import json
 import requests
 import datetime
@@ -24,8 +24,7 @@ class WundergroundReader:
         observation_time = datetime.datetime.strptime(live_data["obsTimeLocal"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone)
         observation_time_utc = datetime.datetime.strptime(live_data["obsTimeUtc"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
         
-        if is_date_too_old(observation_time_utc):
-            raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
+        assert_date_age(observation_time_utc)
         
         current_date = datetime.datetime.now(timezone).date()
         observation_date = observation_time.date()

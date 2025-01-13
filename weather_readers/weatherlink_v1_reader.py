@@ -1,5 +1,6 @@
 from schema import WeatherRecord
-from .utils import is_date_too_old, UnitConverter, safe_float
+from .utils import UnitConverter, safe_float
+from .common import assert_date_age
 import json
 import requests
 import datetime
@@ -19,9 +20,8 @@ class WeatherLinkV1Reader:
         observation_time = datetime.datetime.strptime(data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z").replace(tzinfo=timezone)
         observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
         
-        if is_date_too_old(observation_time_utc):
-            raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
-        
+        assert_date_age(observation_time_utc)
+    
         current_date = datetime.datetime.now(timezone).date()
         observation_date = observation_time.date()
 

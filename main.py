@@ -11,7 +11,7 @@ from datetime import datetime
 from uuid import uuid4
 import logging
 from logging.handlers import RotatingFileHandler
-from weather_readers.utils import get_tzinfo
+from weather_readers import get_tzinfo
 
 # region definitions
 print_red = lambda text: print(f"\033[91m{text}\033[00m")

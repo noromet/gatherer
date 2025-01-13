@@ -1,5 +1,6 @@
 from schema import WeatherRecord
-from .utils import is_date_too_old, safe_float
+from .utils import safe_float
+from .common import assert_date_age
 import json
 import requests
 import datetime
@@ -22,14 +23,7 @@ class ThingspeakReader:
         observation_time = datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone)
         observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
 
-        #print the above pipeline
-        print(data["feeds"][0]["created_at"])
-        print(datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
-        print(datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone))
-        print(observation_time_utc)
-        
-        if is_date_too_old(observation_time_utc):
-            raise ValueError(f"Record timestamp is too old to be stored as current. Observation time: {observation_time}, local time: {datetime.datetime.now()}")
+        assert_date_age(observation_time_utc)
 
         return WeatherRecord(
             id=None,
