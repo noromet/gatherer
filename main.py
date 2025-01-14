@@ -115,7 +115,6 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
             return {"status": "success"}
 
     except Exception as e:
-        logging.info(f"Error processing station {station_id}: {e}")
         logging.error(f"Error processing station {station_id}: {e}")
         if not DRY_RUN:
             increment_incident_count(station_id)
