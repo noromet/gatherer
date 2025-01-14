@@ -19,27 +19,25 @@ class WundergroundReader:
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-
         # datetime management
-        observation_time = datetime.datetime.strptime(live_data["obsTimeLocal"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone)
-        observation_time_utc = datetime.datetime.strptime(live_data["obsTimeUtc"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
-        
+        observation_time = datetime.datetime.strptime(live_data["obsTimeLocal"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=data_timezone)
+        observation_time_utc = datetime.datetime.strptime(live_data["obsTimeUtc"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
         assert_date_age(observation_time_utc)
         
-        current_date = datetime.datetime.now(timezone).date()
-        observation_date = observation_time.date()
+        local_observation_time = observation_time.astimezone(local_timezone)
 
+        current_date = datetime.datetime.now(tz=data_timezone).date()
+        observation_date = observation_time.date()
         if observation_time.time() >= datetime.time(0, 0) and observation_time.time() <= datetime.time(0, 15) and observation_date == current_date:
             use_daily = False
         else:
             use_daily = True
         ##
 
-
         wr = WeatherRecord(
             id=None,
             station_id=None,
-            source_timestamp=observation_time,
+            source_timestamp=local_observation_time,
             temperature=live_data["metric"]["temp"],
             wind_speed=live_data["metric"]["windSpeed"],
             max_wind_speed=None,

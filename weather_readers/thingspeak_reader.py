@@ -20,15 +20,15 @@ class ThingspeakReader:
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        observation_time = datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone)
-        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
-
+        observation_time = datetime.datetime.strptime(data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=data_timezone)
+        observation_time_utc = observation_time.astimezone(timezone.utc)
+        local_observation_time = observation_time.astimezone(local_timezone)
         assert_date_age(observation_time_utc)
 
         return WeatherRecord(
             id=None,
             station_id=None,
-            source_timestamp=observation_time,
+            source_timestamp=local_observation_time,
             temperature=safe_float(data["feeds"][0].get("field1", None)),
             wind_speed=None,
             wind_direction=None,
@@ -66,5 +66,5 @@ class ThingspeakReader:
             print("Warning: ThingspeakReader does not use password, but it was provided.")
         
         response = ThingspeakReader.curl_endpoint(endpoint, params[0], params[2])
-        parsed = ThingspeakReader.parse(response, station_id, data_timezone, local_timezone)
+        parsed = ThingspeakReader.parse(response, data_timezone, local_timezone)
         return parsed

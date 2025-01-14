@@ -9,18 +9,18 @@ from datetime import tzinfo, timezone
 
 class HolfuyReader:
     @staticmethod
-    def parse(str_data: str, timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def parse(str_data: str, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        observation_time = datetime.datetime.strptime(data["dateTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone)
-        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
-        
+        observation_time = datetime.datetime.strptime(data["dateTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=data_timezone)
+        observation_time_utc = observation_time.astimezone(timezone.utc)
         assert_date_age(observation_time_utc)
+        local_observation_time = observation_time.astimezone(local_timezone)
 
-        current_date = datetime.datetime.now(timezone).date()
+        current_date = datetime.datetime.now(tz=data_timezone).date()
         observation_date = observation_time.date()
 
         if observation_time.time() >= datetime.time(0, 0) and observation_time.time() <= datetime.time(0, 15) and observation_date == current_date:
@@ -31,7 +31,7 @@ class HolfuyReader:
         wr = WeatherRecord(
             id=None,
             station_id=None,
-            source_timestamp=observation_time,
+            source_timestamp=local_observation_time,
             temperature=data["temperature"],  # Already in Celsius
             wind_speed=UnitConverter.mph_to_kph(data["wind"]["speed"]),
             wind_direction=data["wind"]["direction"],
@@ -83,5 +83,5 @@ class HolfuyReader:
             logging.warning(f"{[station_id]} Warning: HolfuyReader does not use api key, but it was provided.")
 
         response = HolfuyReader.curl_endpoint(endpoint, params[0], params[2])
-        parsed = HolfuyReader.parse(response, station_id, data_timezone, local_timezone)
+        parsed = HolfuyReader.parse(str_data=response, data_timezone=data_timezone, local_timezone=local_timezone)
         return parsed

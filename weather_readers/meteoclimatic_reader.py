@@ -22,15 +22,16 @@ class MeteoclimaticReader:
             if key in CODE_TO_NAME.keys() and key in WHITELIST:
                 data[CODE_TO_NAME[key]] = value
 
-        data["record_timestamp"] = smart_parse_date(data["record_timestamp"], timezone=timezone)
+        data["record_timestamp"] = smart_parse_date(data["record_timestamp"], timezone=data_timezone)
         if data["record_timestamp"] is None:
             raise ValueError("Cannot accept a reading without a timestamp.")
-        observation_time_utc = data["record_timestamp"].astimezone(datetime.timezone.utc)
         
+        observation_time_utc = data["record_timestamp"].astimezone(timezone.utc)
         assert_date_age(observation_time_utc)
+
+        local_observation_time = observation_time_utc.astimezone(local_timezone)
             
         try:
-            source_timestamp = data.get("record_timestamp", None)
             wind_direction = smart_azimuth(data.get("current_wind_direction", None))
             
             temperature = smart_parse_float(data.get("current_temperature_celsius", None))
@@ -69,7 +70,7 @@ class MeteoclimaticReader:
             wr = WeatherRecord(
                 id=None,
                 station_id=None,
-                source_timestamp=source_timestamp,
+                source_timestamp=local_observation_time,
                 temperature=temperature,
                 wind_speed=wind_speed,
                 max_wind_speed=max_wind_speed,

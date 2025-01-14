@@ -32,7 +32,7 @@ class WeatherRecord:
         self.humidity = humidity
         self.pressure = pressure
         self.flagged = flagged
-        self.taken_timestamp = datetime.datetime.now()
+        self.taken_timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
         self.gathererRunId = gathererRunId
         self.maxTemp = maxTemp # today
         self.minTemp = minTemp # today

@@ -16,8 +16,10 @@ class EcowittReader:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
         #parse timestamp in seconds
-        observation_time = datetime.datetime.fromtimestamp(safe_int(live_data["outdoor"]["temperature"]["time"])).replace(tzinfo=timezone)
-        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
+        observation_time = datetime.datetime.fromtimestamp(safe_int(live_data["outdoor"]["temperature"]["time"])).replace(tzinfo=data_timezone)
+        observation_time_utc = observation_time.astimezone(timezone.utc)
+
+        local_observation_time = observation_time.astimezone(local_timezone)
         
         assert_date_age(observation_time_utc)
 
@@ -36,7 +38,7 @@ class EcowittReader:
         wr = WeatherRecord(
             id=None,
             station_id=None,
-            source_timestamp=observation_time,
+            source_timestamp=local_observation_time,
             temperature=safe_float(temperature),
             wind_speed=safe_float(wind_speed),
             wind_direction=safe_float(wind_direction),
@@ -114,6 +116,6 @@ class EcowittReader:
         live_response = EcowittReader.curl_live_endpoint(live_endpoint, params[0], params[1], params[2])
         daily_response = EcowittReader.curl_daily_endpoint(daily_endpoint, params[0], params[1], params[2])
         
-        parsed = EcowittReader.parse(live_response, daily_response, station_id, data_timezone, local_timezone)
+        parsed = EcowittReader.parse(live_response, daily_response, data_timezone, local_timezone)
 
         return parsed

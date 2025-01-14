@@ -17,14 +17,13 @@ class WeatherLinkV1Reader:
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        observation_time = datetime.datetime.strptime(data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z").replace(tzinfo=timezone)
-        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
-        
+        observation_time = datetime.datetime.strptime(data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z").replace(tzinfo=data_timezone)
+        observation_time_utc = observation_time.astimezone(timezone.utc)
         assert_date_age(observation_time_utc)
+        local_observation_time = observation_time.astimezone(local_timezone)
     
-        current_date = datetime.datetime.now(timezone).date()
+        current_date = datetime.datetime.now(tz=data_timezone).date()
         observation_date = observation_time.date()
-
         if observation_time.time() >= datetime.time(0, 0) and observation_time.time() <= datetime.time(0, 15) and observation_date == current_date:
             use_daily = False
         else:
@@ -35,7 +34,7 @@ class WeatherLinkV1Reader:
         wr = WeatherRecord(
             id=None,
             station_id=None,
-            source_timestamp=observation_time,
+            source_timestamp=local_observation_time,
             temperature=safe_float(temperature),
             wind_speed=UnitConverter.mph_to_kph(safe_float(data.get("wind_mph"))),
             wind_direction=safe_float(data.get("wind_degrees")),

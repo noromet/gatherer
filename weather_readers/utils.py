@@ -88,8 +88,7 @@ def smart_parse_date(date_str: str, timezone: datetime.tzinfo = None) -> datetim
     if spanish is None and american is None:
         raise ValueError(f"Invalid date format: {date_str}")
 
-    now = datetime.datetime.now().replace(tzinfo=timezone)
-
+    now = datetime.datetime.now(tz=timezone)
     if spanish is not None and american is not None:
         return get_closest_date([spanish, american], now)
 

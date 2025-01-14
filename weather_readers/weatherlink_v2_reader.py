@@ -121,14 +121,15 @@ class WeatherlinkV2Reader:
 
         final_cumulative_rain = coalesce([cumulative_rain, cumulative_rain_historic])
 
-        observation_time = datetime.datetime.fromtimestamp(timestamp, tz=timezone)
-        observation_time_utc = observation_time.astimezone(datetime.timezone.utc)
+        observation_time = datetime.datetime.fromtimestamp(timestamp, tz=data_timezone)
+        observation_time_utc = observation_time.astimezone(timezone.utc)
         assert_date_age(observation_time_utc)
+        local_observation_time = observation_time.astimezone(local_timezone)
 
         wr = WeatherRecord(
             id=None,
             station_id=None,
-            source_timestamp=observation_time,
+            source_timestamp=local_observation_time,
             temperature=UnitConverter.fahrenheit_to_celsius(temperature),
             wind_speed=UnitConverter.mph_to_kph(wind_speed),
             wind_direction=wind_direction,
@@ -210,6 +211,6 @@ class WeatherlinkV2Reader:
         if current_response is None:
             return None
 
-        parsed = WeatherlinkV2Reader.parse(current_response, historic_response, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
+        parsed = WeatherlinkV2Reader.parse(current_response, historic_response, data_timezone=data_timezone, local_timezone=local_timezone)
 
         return parsed
