@@ -9,7 +9,7 @@ from datetime import tzinfo, timezone
 
 class HolfuyReader:
     @staticmethod
-    def parse(str_data: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def parse(str_data: str, timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
@@ -52,6 +52,12 @@ class HolfuyReader:
             wr.minTemp = data["daily"]["min_temp"]
             wr.maxTemp = data["daily"]["max_temp"]
             wr.cumulativeRain = round(data["daily"]["sum_rain"], 2)
+        else:
+            logging.info(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(timezone)}")
+            wr.minTemp = None
+            wr.maxTemp = None
+            wr.cumulativeRain = None
+            wr.maxWindGust = None
 
         return wr
     
@@ -68,7 +74,7 @@ class HolfuyReader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
         assert params[2] is not None, "password is null"  # password
         
@@ -77,5 +83,5 @@ class HolfuyReader:
             logging.warning(f"{[station_id]} Warning: HolfuyReader does not use api key, but it was provided.")
 
         response = HolfuyReader.curl_endpoint(endpoint, params[0], params[2])
-        parsed = HolfuyReader.parse(response, station_id, timezone)
+        parsed = HolfuyReader.parse(response, station_id, data_timezone, local_timezone)
         return parsed

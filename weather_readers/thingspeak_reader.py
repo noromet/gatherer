@@ -14,7 +14,7 @@ field_map = {
 
 class ThingspeakReader:
     @staticmethod
-    def parse(str_data: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def parse(str_data: str, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
@@ -56,7 +56,7 @@ class ThingspeakReader:
         return response.text
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
 
         if params[1] not in (None, "NA", "na", ""):
@@ -66,5 +66,5 @@ class ThingspeakReader:
             print("Warning: ThingspeakReader does not use password, but it was provided.")
         
         response = ThingspeakReader.curl_endpoint(endpoint, params[0], params[2])
-        parsed = ThingspeakReader.parse(response, station_id, timezone)
+        parsed = ThingspeakReader.parse(response, station_id, data_timezone, local_timezone)
         return parsed

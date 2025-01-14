@@ -97,7 +97,7 @@ class CursorFromConnectionFromPool:
 
 STATION_FIELDS = [
     "id", "connection_type", "field1", "field2", "field3", 
-    "pressure_offset", "timezone"
+    "pressure_offset", "data_timezone", "local_timezone"
 ]
 
 def get_all_stations() -> List[Tuple]:

@@ -99,7 +99,7 @@ def handle_historic_data(historic: list) -> dict:
 
 class WeatherlinkV2Reader:
     @staticmethod
-    def parse(current_str_data: str, historic_str_data: str, station_id: str = None, timezone=timezone.utc) -> WeatherRecord:
+    def parse(current_str_data: str, historic_str_data: str, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             current_data = json.loads(current_str_data)
             current_data = current_data.get("sensors", None)
@@ -199,7 +199,7 @@ class WeatherlinkV2Reader:
             return response.text
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone = timezone.utc) -> dict:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> dict:
         assert params[0] is not None, "station id is null"
         assert params[1] is not None, "api key is null"
         assert params[2] is not None, "api secret is null"
@@ -210,6 +210,6 @@ class WeatherlinkV2Reader:
         if current_response is None:
             return None
 
-        parsed = WeatherlinkV2Reader.parse(current_response, historic_response, station_id=station_id, timezone=timezone)
+        parsed = WeatherlinkV2Reader.parse(current_response, historic_response, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
 
         return parsed

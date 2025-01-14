@@ -57,8 +57,8 @@ def validate_args(args):
 #endregion
 
 # region processing
-def process_station(station: tuple): # station is a tuple like id, connection_type, field1, field2, field3, pressure_offset, timezone
-    station_id, connection_type, field1, field2, field3, _, timezone = station
+def process_station(station: tuple): # station is a tuple like id, connection_type, field1, field2, field3, pressure_offset, data_timezone, local_timezone
+    station_id, connection_type, field1, field2, field3, _, data_timezone, local_timezone = station
     logging.info(f"Processing station {station_id}, type {connection_type}")
 
     # Validate timezone
@@ -68,11 +68,16 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         'Etc/UTC'
     ]
 
-    if timezone not in valid_timezones:
-        logging.error(f"Invalid timezone for station {station_id}. Defaulting to 'Etc/UTC'.")
-        timezone = 'Etc/UTC'
+    if data_timezone not in valid_timezones:
+        logging.error(f"Invalid data timezone for station {station_id}. Defaulting to UTC.")
+        data_timezone = 'Etc/UTC'
 
-    timezone = get_tzinfo(timezone)
+    if local_timezone not in valid_timezones:
+        logging.error(f"Invalid local timezone for station {station_id}. Defaulting to UTC.")
+        local_timezone = 'Etc/UTC'
+
+    data_timezone = get_tzinfo(data_timezone)
+    local_timezone = get_tzinfo(local_timezone)
     
     try:
         if connection_type == 'connection_disabled':
@@ -80,19 +85,19 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
             return {"status": "success"}
 
         if connection_type == 'meteoclimatic':
-            record = api.MeteoclimaticReader.get_data(field1, station_id=station_id, timezone=timezone)
+            record = api.MeteoclimaticReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         elif connection_type == 'weatherlink_v1':
-            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         elif connection_type == 'wunderground':
-            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         elif connection_type == 'weatherlink_v2':
-            record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+            record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         elif connection_type == 'holfuy':
-            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         elif connection_type == 'thingspeak':
-            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         else:
-            record = api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, timezone=timezone)
+            record = api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
 
         if record is None:
             message = f"No data retrieved for station {station_id}"

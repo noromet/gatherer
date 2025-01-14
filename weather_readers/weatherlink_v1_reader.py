@@ -11,7 +11,7 @@ from datetime import tzinfo, timezone
 
 class WeatherLinkV1Reader:
     @staticmethod
-    def parse(str_data: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def parse(str_data: str, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             data = json.loads(str_data)
         except json.JSONDecodeError as e:
@@ -71,7 +71,7 @@ class WeatherLinkV1Reader:
                 safe_float(data["davis_current_observation"].get("rain_day_in"))
             )
         else:
-            logging.warning(f"[{station_id}]: Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(timezone)}")
+            logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(timezone)}")
 
         return wr
     
@@ -91,11 +91,11 @@ class WeatherLinkV1Reader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None, timezone: tzinfo = timezone.utc) -> dict:
+    def get_data(endpoint: str, params: tuple = (), station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> dict:
         assert params[0] is not None
         assert params[1] is not None
         assert params[2] is not None
         
         response = WeatherLinkV1Reader.curl_endpoint(endpoint, params[0], params[2], params[1])#did, password, apiToken are field1, field3, field2
-        parsed = WeatherLinkV1Reader.parse(response, station_id, timezone)
+        parsed = WeatherLinkV1Reader.parse(response, data_timezone, local_timezone)
         return parsed

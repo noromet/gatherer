@@ -9,7 +9,7 @@ from datetime import tzinfo, timezone
 
 class MeteoclimaticReader:        
     @staticmethod
-    def parse(str_data: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def parse(str_data: str, station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         data = {}
         for line in str_data.strip().split("*"):
             line = line.strip()
@@ -101,9 +101,9 @@ class MeteoclimaticReader:
         return response.text
     
     @staticmethod
-    def get_data(endpoint: str, station_id: str = None, timezone: tzinfo = timezone.utc) -> dict:
+    def get_data(endpoint: str, station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> dict:
         raw_data = MeteoclimaticReader.curl_endpoint(endpoint)
-        return MeteoclimaticReader.parse(raw_data, station_id=station_id, timezone=timezone)
+        return MeteoclimaticReader.parse(raw_data, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
     
 
 CODE_TO_NAME = {
