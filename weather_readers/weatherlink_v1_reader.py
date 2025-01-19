@@ -70,7 +70,7 @@ class WeatherLinkV1Reader:
                 safe_float(data["davis_current_observation"].get("rain_day_in"))
             )
         else:
-            logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(timezone)}")
+            logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
 
         return wr
     

@@ -25,7 +25,6 @@ class WundergroundReader:
         assert_date_age(observation_time_utc)
         
         local_observation_time = observation_time.astimezone(local_timezone)
-
         current_date = datetime.datetime.now(tz=data_timezone).date()
         observation_date = observation_time.date()
         if observation_time.time() >= datetime.time(0, 0) and observation_time.time() <= datetime.time(0, 15) and observation_date == current_date:
@@ -53,6 +52,9 @@ class WundergroundReader:
             maxWindGust=None
         )
 
+        print("AAAAAE")
+
+
         if use_daily:
             wr.maxWindGust = last_daily_data["metric"]["windgustHigh"]
             wr.max_wind_speed = last_daily_data["metric"]["windspeedHigh"]
@@ -61,7 +63,7 @@ class WundergroundReader:
             wr.cumulativeRain = last_daily_data["metric"]["precipTotal"]
 
         else:
-            logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(timezone)}")
+            logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
 
         return wr
     

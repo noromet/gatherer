@@ -167,7 +167,7 @@ class WeatherlinkV2Reader:
             logging.error(f"Request failed with status code {response.status_code}. Check station connection parameters.")
             return None
         
-        # with open("response.json", "w") as f:
+        # with open(f"./debug/{station_id}_current.json", "w") as f:
         #     f.write(response.text)
 
         return response.text
@@ -196,8 +196,11 @@ class WeatherlinkV2Reader:
         if response.status_code != 200:
             logging.warning(f"Request failed with status code {response.status_code}. Is the subscription active?")
             return None
-        else:
-            return response.text
+
+        # with open(f"./debug/{station_id}_historic.json", "w") as f:
+        #     f.write(response.text)
+
+        return response.text
     
     @staticmethod
     def get_data(endpoint: str, params: tuple = (), station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> dict:

@@ -83,7 +83,6 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         if connection_type == 'connection_disabled':
             logging.warning(f"Connection disabled for station {station_id}")
             return {"status": "success"}
-
         if connection_type == 'meteoclimatic':
             record = api.MeteoclimaticReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         elif connection_type == 'weatherlink_v1':
