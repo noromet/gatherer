@@ -52,8 +52,6 @@ class WundergroundReader:
             maxWindGust=None
         )
 
-        print("AAAAAE")
-
 
         if use_daily:
             wr.maxWindGust = last_daily_data["metric"]["windgustHigh"]
