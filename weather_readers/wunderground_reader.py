@@ -42,7 +42,7 @@ class WundergroundReader:
             max_wind_speed=None,
             wind_direction=live_data["winddir"] if "winddir" in live_data else None,
             rain=live_data["metric"]["precipRate"],
-            cumulativeRain=None,
+            cumulativeRain=live_data["metric"]["precipTotal"],
             humidity=live_data["humidity"],
             pressure=live_data["metric"]["pressure"],
             flagged=False,
@@ -58,7 +58,6 @@ class WundergroundReader:
             wr.max_wind_speed = last_daily_data["metric"]["windspeedHigh"]
             wr.maxTemp = last_daily_data["metric"]["tempHigh"]
             wr.minTemp = last_daily_data["metric"]["tempLow"]
-            wr.cumulativeRain = last_daily_data["metric"]["precipTotal"]
 
         else:
             logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
@@ -90,7 +89,14 @@ class WundergroundReader:
             print("\t It is, however, expected to be required in the future.")
 
         live_response = WundergroundReader.curl_endpoint(live_endpoint, params[0], params[1])
+
+        # with open(f"./debug/{station_id}_live.json", "w") as f:
+        #     f.write(live_response)
+
         daily_response = WundergroundReader.curl_endpoint(daily_endpoint, params[0], params[1])
+
+        # with open(f"./debug/{station_id}_daily.json", "w") as f:
+        #     f.write(daily_response)
 
         parsed = WundergroundReader.parse(live_response, daily_response, data_timezone=data_timezone, local_timezone=local_timezone)
         return parsed
