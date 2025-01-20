@@ -98,6 +98,8 @@ def smart_parse_float(float_str: str) -> float:
     """
     Handles both comma and dot as decimal separator. Removes any non-numeric character other than the separator. Pray.
     """
+    if is_na_value(float_str):
+        return None
 
     if not float_str:
         return 0.0
@@ -113,6 +115,9 @@ def smart_parse_float(float_str: str) -> float:
     float_val = float(float_str)
 
     return float_val
+
+def is_na_value(value: str) -> bool:
+    return value is None or value == "-" or value == "N/A" or value == "NA" or value == "NaN"
 
 class UnitConverter:
     @staticmethod

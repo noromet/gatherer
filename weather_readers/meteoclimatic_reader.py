@@ -37,7 +37,6 @@ class MeteoclimaticReader:
             temperature = smart_parse_float(data.get("current_temperature_celsius", None))
             if temperature == 100:
                 logging.error(f"[{station_id}]: Temperature == 100: {temperature}. Dump: {json.dumps(data)}")
-            
             wind_speed = smart_parse_float(data.get("current_wind_speed_kph", None))
             if wind_speed == 100:
                 logging.error(f"[{station_id}]: Wind speed == 100: {wind_speed}. Dump: {json.dumps(data)}")
