@@ -9,13 +9,14 @@ from datetime import tzinfo, timezone
 
 class HolfuyReader:
     @staticmethod
-    def parse(str_data: str, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def parse(live_data: str, historic_data: str, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
-            data = json.loads(str_data)
+            live_data = json.loads(live_data)
+            historic_data = json.loads(historic_data)
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        observation_time = datetime.datetime.strptime(data["dateTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=data_timezone)
+        observation_time = datetime.datetime.strptime(live_data["dateTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=data_timezone)
         observation_time_utc = observation_time.astimezone(timezone.utc)
         assert_date_age(observation_time_utc)
         local_observation_time = observation_time.astimezone(local_timezone)
@@ -32,14 +33,14 @@ class HolfuyReader:
             id=None,
             station_id=None,
             source_timestamp=local_observation_time,
-            temperature=data["temperature"],  # Already in Celsius
-            wind_speed=UnitConverter.mph_to_kph(data["wind"]["speed"]),
-            wind_direction=data["wind"]["direction"],
+            temperature=live_data["temperature"],  # Already in Celsius
+            wind_speed=live_data["wind"]["speed"],
+            wind_direction=live_data["wind"]["direction"],
             max_wind_speed=None,
-            rain=data["rain"],  # Assuming rain is in mm
+            rain=live_data["rain"],  # Assuming rain is in mm
             cumulativeRain=None,  # Assuming rain is in mm
-            humidity=data["humidity"],
-            pressure=data["pressure"],  # Assuming pressure is in hPa
+            humidity=live_data["humidity"],
+            pressure=live_data["pressure"],  # Assuming pressure is in hPa
             flagged=False,
             gathererRunId=None,
             minTemp=None,
@@ -48,10 +49,10 @@ class HolfuyReader:
         )
 
         if use_daily:
-            wr.maxWindGust = UnitConverter.mph_to_kph(data["wind"]["gust"])
-            wr.minTemp = data["daily"]["min_temp"]
-            wr.maxTemp = data["daily"]["max_temp"]
-            wr.cumulativeRain = round(data["daily"]["sum_rain"], 2)
+            wr.maxWindGust = historic_data["measurements"][0]["wind"]["gust"]
+            wr.minTemp = live_data["daily"]["min_temp"]
+            wr.maxTemp = live_data["daily"]["max_temp"]
+            wr.cumulativeRain = round(live_data["daily"]["sum_rain"], 2)
         else:
             logging.info(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
             wr.minTemp = None
@@ -62,8 +63,19 @@ class HolfuyReader:
         return wr
     
     @staticmethod
-    def curl_endpoint(endpoint: str, station_id: str, password: str) -> str:
-        endpoint = f"{endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=m/s&daily=True"
+    def curl_live_endpoint(endpoint: str, station_id: str, password: str) -> str:
+        endpoint = f"{endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=km/h&daily=True"
+
+        response = requests.get(endpoint)
+        
+        # Print full URL
+        print(f"Requesting {response.url}")
+        
+        return response.text
+    
+    @staticmethod
+    def curl_historic_endpoint(endpoint: str, station_id: str, password: str) -> str:
+        endpoint = f"{endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=km/h&type=2&mback=60"
 
         response = requests.get(endpoint)
         
@@ -74,7 +86,7 @@ class HolfuyReader:
 
     
     @staticmethod
-    def get_data(endpoint: str, params: tuple = (), station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def get_data(live_endpoint: str, historic_endpoint: str, params: tuple = (), station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
         assert params[2] is not None, "password is null"  # password
         
@@ -82,6 +94,11 @@ class HolfuyReader:
             print("Warning: HolfuyReader does not use api key, but it was provided.")
             logging.warning(f"{[station_id]} Warning: HolfuyReader does not use api key, but it was provided.")
 
-        response = HolfuyReader.curl_endpoint(endpoint, params[0], params[2])
-        parsed = HolfuyReader.parse(str_data=response, data_timezone=data_timezone, local_timezone=local_timezone)
+        live_response = HolfuyReader.curl_live_endpoint(live_endpoint, params[0], params[2])
+
+        historical_response = HolfuyReader.curl_historic_endpoint(historic_endpoint, params[0], params[2])
+
+        print(json.dumps(json.loads(historical_response), indent=4))
+
+        parsed = HolfuyReader.parse(live_data=live_response, historic_data=historical_response, data_timezone=data_timezone, local_timezone=local_timezone)
         return parsed

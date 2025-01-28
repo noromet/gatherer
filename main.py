@@ -21,7 +21,8 @@ WEATHERLINK_V1_ENDPOINT = os.getenv("WEATHERLINK_V1_ENDPOINT")
 WEATHERLINK_V2_ENDPOINT = os.getenv("WEATHERLINK_V2_ENDPOINT")
 WUNDERGROUND_ENDPOINT = os.getenv("WUNDERGROUND_ENDPOINT")
 WUNDERGROUND_DAILY_ENDPOINT = os.getenv("WUNDERGROUND_DAILY_ENDPOINT")
-HOLFUY_ENDPOINT = os.getenv("HOLFUY_ENDPOINT")
+HOLFUY_LIVE_ENDPOINT = os.getenv("HOLFUY_LIVE_ENDPOINT")
+HOLFUY_HISTORIC_ENDPOINT = os.getenv("HOLFUY_HISTORIC_ENDPOINT")
 THINGSPEAK_ENDPOINT = os.getenv("THINGSPEAK_ENDPOINT")
 ECOWITT_ENDPOINT = os.getenv("ECOWITT_ENDPOINT")
 ECOWITT_DAILY_ENDPOINT = os.getenv("ECOWITT_DAILY_ENDPOINT")
@@ -92,7 +93,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
         elif connection_type == 'weatherlink_v2':
             record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         elif connection_type == 'holfuy':
-            record = api.HolfuyReader.get_data(HOLFUY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
+            record = api.HolfuyReader.get_data(HOLFUY_LIVE_ENDPOINT, HOLFUY_HISTORIC_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         elif connection_type == 'thingspeak':
             record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
         else:
