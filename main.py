@@ -109,6 +109,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
 
         record.sanity_check()
         record.apply_pressure_offset(station[5])
+        record.apply_rounding(1)
 
         if not DRY_RUN:
             Database.save_record(record)
