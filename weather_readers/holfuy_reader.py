@@ -98,7 +98,5 @@ class HolfuyReader:
 
         historical_response = HolfuyReader.curl_historic_endpoint(historic_endpoint, params[0], params[2])
 
-        print(json.dumps(json.loads(historical_response), indent=4))
-
         parsed = HolfuyReader.parse(live_data=live_response, historic_data=historical_response, data_timezone=data_timezone, local_timezone=local_timezone)
         return parsed
