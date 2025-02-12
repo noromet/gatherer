@@ -34,6 +34,7 @@ class EcowittReader:
         cumulative_rain = rainfall.get("daily", {}).get("value")
         humidity = outdoor.get("humidity", {}).get("value")
         pressure = live_data.get("pressure", {}).get("relative", {}).get("value")
+        maxWindGust = wind.get("wind_gust", {}).get("value")
 
         wr = WeatherRecord(
             id=None,
@@ -51,7 +52,7 @@ class EcowittReader:
             gathererRunId=None,
             minTemp=None,
             maxTemp=None,
-            maxWindGust=None
+            maxWindGust=safe_float(maxWindGust),
         )
 
 
@@ -65,14 +66,10 @@ class EcowittReader:
         max_wind_speed = max(
             safe_float(speed) for speed in daily_data["wind"]["wind_speed"]["list"].values()
         )
-        max_wind_gust = max(
-            safe_float(speed) for speed in daily_data["wind"]["wind_gust"]["list"].values()
-        )
 
         wr.maxTemp = max_temp
         wr.minTemp = min_temp
         wr.max_wind_speed = max_wind_speed
-        wr.maxWindGust = max_wind_gust
 
         return wr
 
