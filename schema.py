@@ -91,16 +91,27 @@ class WeatherRecord:
             self.pressure += offset
 
     def apply_rounding(self, decimals: int = 1):
-        self.temperature = round(self.temperature, decimals)
-        self.wind_speed = round(self.wind_speed, decimals)
-        self.max_wind_speed = round(self.max_wind_speed, decimals)
-        self.humidity = round(self.humidity, decimals)
-        self.pressure = round(self.pressure, decimals)
-        self.rain = round(self.rain, decimals)
-        self.cumulativeRain = round(self.cumulativeRain, decimals)
-        self.maxTemp = round(self.maxTemp, decimals)
-        self.minTemp = round(self.minTemp, decimals)
-        self.maxWindGust = round(self.maxWindGust, decimals)
+        if self.temperature is not None:
+            self.temperature = round(self.temperature, decimals)
+        if self.wind_speed is not None:
+            self.wind_speed = round(self.wind_speed, decimals)
+        if self.max_wind_speed is not None:
+            self.max_wind_speed = round(self.max_wind_speed, decimals)
+        if self.humidity is not None:
+            self.humidity = round(self.humidity, decimals)
+        if self.pressure is not None:
+            self.pressure = round(self.pressure, decimals)
+        if self.rain is not None:
+            self.rain = round(self.rain, decimals)
+        if self.cumulativeRain is not None:
+            self.cumulativeRain = round(self.cumulativeRain, decimals)
+        if self.maxTemp is not None:
+            self.maxTemp = round(self.maxTemp, decimals)
+        if self.minTemp is not None:
+            self.minTemp = round(self.minTemp, decimals)
+        if self.maxWindGust is not None:
+            self.maxWindGust = round(self.maxWindGust, decimals)
+
 
 class GathererThread:
     def __init__(self, id: uuid.uuid4, timestamp: datetime.datetime, total_stations: int, error_stations: int, errors: dict, command: str):

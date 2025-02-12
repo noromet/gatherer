@@ -33,31 +33,36 @@ class WundergroundReader:
             use_daily = True
         ##
 
+        live_metric_data = live_data.get("metric")
+        if live_metric_data is None:
+            raise ValueError("No metric data found in live data.")
+        
         wr = WeatherRecord(
             id=None,
             station_id=None,
             source_timestamp=local_observation_time,
-            temperature=live_data["metric"]["temp"],
-            wind_speed=live_data["metric"]["windSpeed"],
+            temperature=live_metric_data.get("temp", None),
+            wind_speed=live_metric_data.get("windSpeed", None),
             max_wind_speed=None,
-            wind_direction=live_data["winddir"] if "winddir" in live_data else None,
-            rain=live_data["metric"]["precipRate"],
-            cumulativeRain=live_data["metric"]["precipTotal"],
-            humidity=live_data["humidity"],
-            pressure=live_data["metric"]["pressure"],
+            wind_direction=live_data.get("winddir", None),
+            rain=live_metric_data.get("precipRate", None),
+            cumulativeRain=live_metric_data.get("precipTotal", None),
+            humidity=live_data.get("humidity", None),
+            pressure=live_metric_data.get("pressure", None),
             flagged=False,
             gathererRunId=None,
             maxTemp=None,
             minTemp=None,
-            maxWindGust=None
+            maxWindGust=live_metric_data.get("windGust", None),
         )
 
 
+        daily_metric_data = last_daily_data.get("metric")
         if use_daily:
-            wr.maxWindGust = last_daily_data["metric"]["windgustHigh"]
-            wr.max_wind_speed = last_daily_data["metric"]["windspeedHigh"]
-            wr.maxTemp = last_daily_data["metric"]["tempHigh"]
-            wr.minTemp = last_daily_data["metric"]["tempLow"]
+            # wr.maxWindGust = daily_metric_data.get("windgustHigh", None)
+            wr.max_wind_speed = daily_metric_data.get("windspeedHigh", None)
+            wr.maxTemp = daily_metric_data.get("tempHigh", None)
+            wr.minTemp = daily_metric_data.get("tempLow", None)
 
         else:
             logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
@@ -90,13 +95,7 @@ class WundergroundReader:
 
         live_response = WundergroundReader.curl_endpoint(live_endpoint, params[0], params[1])
 
-        # with open(f"./debug/{station_id}_live.json", "w") as f:
-        #     f.write(live_response)
-
         daily_response = WundergroundReader.curl_endpoint(daily_endpoint, params[0], params[1])
-
-        # with open(f"./debug/{station_id}_daily.json", "w") as f:
-        #     f.write(daily_response)
 
         parsed = WundergroundReader.parse(live_response, daily_response, data_timezone=data_timezone, local_timezone=local_timezone)
         return parsed
