@@ -5,13 +5,14 @@ import threading
 import json
 import argparse
 import queue
-from database import Database, get_all_stations, get_single_station, get_stations_by_type, increment_incident_count
+from database import Database, get_all_stations, get_single_station, get_stations_by_connection_type, increment_incident_count
 import weather_readers as api
 from datetime import datetime
 from uuid import uuid4
 from logger import setup_logger, set_debug_mode
 import logging
 from weather_readers import get_tzinfo
+from typing import Set
 
 # region definitions
 load_dotenv(verbose=True)
@@ -157,53 +158,25 @@ def multithread_processing(stations):
     
     return results
 
-def process_all(single_thread):
-    stations = get_all_stations()
 
-    result = {}
+class Gatherer:
+    def process(station_set: Set, single_thread: bool):
+        if len(station_set) == 0:
+            logging.error("No active stations found!")
+            return
+        single_thread = single_thread or len(station_set) < 30
 
-    if len(stations) == 0:
-        logging.error("No active stations found!")
-        return
+        results = {}
 
-    logging.info(f"Processing {len(stations)} stations")
-    
-    if single_thread:
-        for station in stations:
-            result[station[0]] = process_station(station)
-    else:
-        result = multithread_processing(stations)
-    
-    return result
+        if single_thread:
+            for station in station_set:
+                results[station[0]] = process_station(station)
 
-def process_single(station_id):
-    station = get_single_station(station_id)
-    if station is None:
-        logging.error(f"Station {station_id} not found")
-        return
-    process_station(station)
+        else:
+            results = multithread_processing(list(station_set))
 
-    return {station_id: {
-        "status": "success"
-    }}
+        return results
 
-def process_type(station_type, single_thread):
-    stations = get_stations_by_type(station_type)
-    if len(stations) == 0:
-        logging.error(f"No active stations found for type {station_type}")
-        return
-
-    result = {}
-    
-    logging.info(f"Processing {len(stations)} stations of type {station_type}")
-
-    if single_thread:
-        for station in stations:
-            result[station[0]] = process_station(station)
-    else:
-        result = multithread_processing(stations)
-
-    return result
 
 # endregion
 
@@ -231,12 +204,24 @@ def main():
 
     logging.info(f"Starting gatherer run {RUN_ID}")
 
+
+    station_set = set()
+
     if args.id:
-        results = process_single(args.id)
+        station_set.add(get_single_station(args.id))
+        # results = process_single(args.id)
     elif args.type:
-        results = process_type(args.type, single_thread)
+        # results = process_type(args.type, single_thread)
+        station_set.update(get_stations_by_connection_type(args.type))
     else:
-        results = process_all(single_thread)
+        # results = process_all(single_thread)
+        station_set.update(get_all_stations())
+
+    if len(station_set) == 0:
+        logging.info("No active stations found!")
+        return
+    
+    results = Gatherer.process(station_set, single_thread)
                 
     if not args.dry_run:
         logging.info("Saving thread record")

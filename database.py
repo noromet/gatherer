@@ -6,6 +6,7 @@ from typing import List, Tuple, Optional
 import datetime
 import uuid
 import json
+import logging
 
 from schema import WeatherRecord
 
@@ -51,7 +52,7 @@ class Database:
     @classmethod
     def save_thread_record(cls, id: uuid, results: dict):
         if not results:
-            print("No results to save")
+            logging.error("No results to save")
             return
         
         total_stations = len(results)
@@ -116,7 +117,7 @@ def get_single_station(station_id: str) -> Tuple:
         station = cursor.fetchone()
         return station
     
-def get_stations_by_type(station_type: str) -> List[Tuple]:
+def get_stations_by_connection_type(station_type: str) -> List[Tuple]:
     """Get all weather stations by type."""
     query = f"SELECT {', '.join(STATION_FIELDS)} FROM weather_station WHERE connection_type = %s AND status = 'active'"
     with CursorFromConnectionFromPool() as cursor:
