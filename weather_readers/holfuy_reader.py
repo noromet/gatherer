@@ -68,8 +68,7 @@ class HolfuyReader:
 
         response = requests.get(endpoint)
         
-        # Print full URL
-        print(f"Requesting {response.url}")
+        logging.info(f"Requesting {response.url}")
         
         return response.text
     
@@ -78,9 +77,8 @@ class HolfuyReader:
         endpoint = f"{endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=km/h&type=2&mback=60"
 
         response = requests.get(endpoint)
-        
-        # Print full URL
-        print(f"Requesting {response.url}")
+    
+        logging.info(f"Requesting {response.url}")
         
         return response.text
 
@@ -91,7 +89,6 @@ class HolfuyReader:
         assert params[2] is not None, "password is null"  # password
         
         if params[1] not in (None, "NA", "na", ""):
-            print("Warning: HolfuyReader does not use api key, but it was provided.")
             logging.warning(f"{[station_id]} Warning: HolfuyReader does not use api key, but it was provided.")
 
         live_response = HolfuyReader.curl_live_endpoint(live_endpoint, params[0], params[2])

@@ -79,8 +79,7 @@ class WundergroundReader:
             "numericPrecision": "decimal"
         })
         
-        #print full url
-        print(f"Requesting {response.url}")
+        logging.info(f"Requesting {response.url}")
         
         return response.text
     
@@ -90,8 +89,7 @@ class WundergroundReader:
         assert params[1] is not None #apiToken
         
         if params[2] not in (None, "NA", "na", ""):
-            print("Warning: WundergroundReader does not use password, but it was provided.")
-            print("\t It is, however, expected to be required in the future.")
+            logging.warning("Warning: WundergroundReader does not use password, but it was provided. It is, however, expected to be required in the future.")
 
         live_response = WundergroundReader.curl_endpoint(live_endpoint, params[0], params[1])
 

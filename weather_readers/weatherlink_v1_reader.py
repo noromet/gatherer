@@ -83,8 +83,7 @@ class WeatherLinkV1Reader:
             "apiToken": apiToken
         })
         
-        #print full url
-        print(f"Requesting {response.url}")
+        logging.info(f"Requesting {response.url}")
         
         return response.text
 

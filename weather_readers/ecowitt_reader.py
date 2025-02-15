@@ -5,6 +5,7 @@ import json
 import requests
 import datetime
 from datetime import tzinfo, timezone
+import logging
 
 class EcowittReader:
     @staticmethod
@@ -81,8 +82,7 @@ class EcowittReader:
     
         response = requests.get(url)
         
-        # Print full URL
-        print(f"Requesting {response.url}")
+        logging.info(f"Requesting {response.url}")
         
         return response.text
     
@@ -98,8 +98,7 @@ class EcowittReader:
 
         response = requests.get(url)
         
-        # Print full URL
-        print(f"Requesting {response.url}")
+        logging.info(f"Requesting {response.url}")
         
         return response.text
 

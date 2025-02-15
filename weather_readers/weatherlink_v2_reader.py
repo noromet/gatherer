@@ -160,16 +160,12 @@ class WeatherlinkV2Reader:
         }
         response = requests.get(endpoint, params=params, headers=headers)
         
-        #print full url
-        print(f"Requesting {response.url}")
+        logging.info(f"Requesting {response.url}")
 
         if response.status_code != 200:
             logging.error(f"Request failed with status code {response.status_code}. Check station connection parameters.")
             return None
         
-        # with open(f"./debug/{station_id}_current.json", "w") as f:
-        #     f.write(response.text)
-
         return response.text
 
     @staticmethod
@@ -190,8 +186,7 @@ class WeatherlinkV2Reader:
         }
         response = requests.get(endpoint, params=params, headers=headers)
         
-        #print full url
-        print(f"Requesting {response.url}")
+        logging.info(f"Requesting {response.url}")
 
         if response.status_code != 200:
             logging.warning(f"Request failed with status code {response.status_code}. Is the subscription active?")

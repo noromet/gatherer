@@ -5,6 +5,7 @@ import json
 import requests
 import datetime
 from datetime import tzinfo, timezone
+import logging
 
 field_map = {
     "temperature": "field1",
@@ -50,8 +51,7 @@ class ThingspeakReader:
 
         response = requests.get(endpoint)
         
-        # Print full URL
-        print(f"Requesting {response.url}")
+        logging.info(f"Requesting {response.url}")
 
         return response.text
     
@@ -60,10 +60,10 @@ class ThingspeakReader:
         assert params[0] is not None, "station_id is null"  # station id
 
         if params[1] not in (None, "NA", "na", ""):
-            print("Warning: ThingspeakReader does not use api key, but it was provided.")
+            logging.warning("Warning: ThingspeakReader does not use api key, but it was provided.")
 
         if params[2] not in (None, "NA", "na", ""):
-            print("Warning: ThingspeakReader does not use password, but it was provided.")
+            logging.warning("Warning: ThingspeakReader does not use password, but it was provided.")
         
         response = ThingspeakReader.curl_endpoint(endpoint, params[0], params[2])
         parsed = ThingspeakReader.parse(response, data_timezone, local_timezone)
