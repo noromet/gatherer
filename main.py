@@ -13,6 +13,10 @@ from logger import setup_logger, set_debug_mode
 import logging
 from weather_readers import get_tzinfo
 from typing import Set
+from time import tzset
+
+os.environ['TZ'] = 'UTC'
+tzset()
 
 # region definitions
 load_dotenv(verbose=True)
