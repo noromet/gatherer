@@ -184,7 +184,11 @@ class Gatherer:
 def main():
     setup_logger()
 
+    logging.info("Starting gatherer service.")
+    
+    logging.info(f"Connecting to database...")
     Database.initialize(DB_URL)
+    logging.info("Connected to database.")
 
     args = get_args()
     validate_args(args)
