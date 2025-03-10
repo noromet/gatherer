@@ -61,14 +61,14 @@ def safe_float(value):
 def safe_int(value):
     return int(value) if value is not None else None
 
-def smart_parse_date(date_str: str, timezone: datetime.tzinfo = None) -> datetime.datetime:
-    def try_parse_date(date_str, date_format):
+def smart_parse_datetime(date_str: str, timezone: datetime.tzinfo = None) -> datetime.datetime:
+    def try_parse_datetime(date_str, date_format):
         try:
             return datetime.datetime.strptime(date_str, date_format).replace(tzinfo=timezone)
         except ValueError:
             return None
 
-    def get_closest_date(dates, now):
+    def get_closest_datetime(dates, now):
         valid_dates = [date for date in dates if date is not None and date <= now]
         if not valid_dates:
             return None
@@ -76,7 +76,7 @@ def smart_parse_date(date_str: str, timezone: datetime.tzinfo = None) -> datetim
 
     # Try Spanish formatting
     spanish_formats = ["%d/%m/%Y %H:%M", "%d-%m-%Y %H:%M", "%d/%m/%y %H:%M"]
-    spanish_dates = [try_parse_date(date_str, fmt) for fmt in spanish_formats]
+    spanish_dates = [try_parse_datetime(date_str, fmt) for fmt in spanish_formats]
     spanish = next((date for date in spanish_dates if date is not None), None)
 
     # Try American formatting
@@ -90,10 +90,43 @@ def smart_parse_date(date_str: str, timezone: datetime.tzinfo = None) -> datetim
 
     now = datetime.datetime.now(tz=timezone)
     if spanish is not None and american is not None:
-        return get_closest_date([spanish, american], now)
+        return get_closest_datetime([spanish, american], now)
 
     return spanish if spanish is not None else american
     
+def smart_parse_date(date_str: str, timezone: datetime.tzinfo = None) -> datetime.date:
+    def try_parse_date(date_str, date_format):
+        try:
+            return datetime.datetime.strptime(date_str, date_format).date()
+        except ValueError:
+            return None
+        
+    def get_closest_date(dates, now):
+        valid_dates = [date for date in dates if date is not None and date <= now]
+        if not valid_dates:
+            return None
+        return min(valid_dates, key=lambda date: abs((date - now).days))
+
+    # Try Spanish formatting
+    spanish_formats = ["%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%d-%m-%y"]
+    spanish_dates = [try_parse_date(date_str, fmt) for fmt in spanish_formats]
+    spanish = next((date for date in spanish_dates if date is not None), None)
+
+    # Try American formatting
+    try:
+        american = parser.parse(date_str).date()
+    except ValueError:
+        american = None
+
+    if spanish is None and american is None:
+        raise ValueError(f"Invalid date format: {date_str}")
+    
+    now = datetime.datetime.now(tz=timezone).date()
+    if spanish is not None and american is not None:
+        return get_closest_date([spanish, american], now)
+
+    return spanish if spanish is not None else american
+
 def smart_parse_float(float_str: str) -> float:
     """
     Handles both comma and dot as decimal separator. Removes any non-numeric character other than the separator. Pray.

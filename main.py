@@ -34,6 +34,30 @@ ECOWITT_DAILY_ENDPOINT = os.getenv("ECOWITT_DAILY_ENDPOINT")
 DRY_RUN = False
 
 RUN_ID = uuid4().hex
+
+
+
+CONNECTION_HANDLERS = {
+    'connection_disabled': lambda station_id, *args, **kwargs: {
+        'status': 'success'
+    },
+    'meteoclimatic': lambda station_id, field1, data_timezone, local_timezone, **kwargs: 
+        api.MeteoclimaticReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+    'weatherlink_v1': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
+        api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+    'wunderground': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
+        api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+    'weatherlink_v2': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
+        api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+    'holfuy': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
+        api.HolfuyReader.get_data(HOLFUY_LIVE_ENDPOINT, HOLFUY_HISTORIC_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+    'thingspeak': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
+        api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+    'ecowitt': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
+        api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+    'realtime': lambda station_id, field1, data_timezone, local_timezone, **kwargs: 
+        api.RealtimeReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+}
 # endregion
 
 #region argument processing
@@ -86,24 +110,21 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
     local_timezone = get_tzinfo(local_timezone)
     
     try:
+        # Get the handler function based on connection_type or use a default handler
+        handler = CONNECTION_HANDLERS.get(connection_type)
+        
+        if handler is None:
+            message = f"Invalid connection type for station {station_id}"
+            logging.error(f"{message}")
+            return {"status": "error", "error": message}
+            
         if connection_type == 'connection_disabled':
-            logging.warning(f"Connection disabled for station {station_id}")
-            return {"status": "success"}
-        if connection_type == 'meteoclimatic':
-            record = api.MeteoclimaticReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
-        elif connection_type == 'weatherlink_v1':
-            record = api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
-        elif connection_type == 'wunderground':
-            record = api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
-        elif connection_type == 'weatherlink_v2':
-            record = api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
-        elif connection_type == 'holfuy':
-            record = api.HolfuyReader.get_data(HOLFUY_LIVE_ENDPOINT, HOLFUY_HISTORIC_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
-        elif connection_type == 'thingspeak':
-            record = api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
-        else:
-            record = api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
-
+            return handler(station_id)
+        
+        # Call the appropriate handler
+        record = handler(station_id=station_id, field1=field1, field2=field2, field3=field3, 
+                        data_timezone=data_timezone, local_timezone=local_timezone)
+        
         if record is None:
             message = f"No data retrieved for station {station_id}"
             logging.error(f"{message}")

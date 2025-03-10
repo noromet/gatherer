@@ -1,10 +1,9 @@
 from schema import WeatherRecord
-from .utils import smart_parse_date, smart_parse_float, smart_azimuth
+from .utils import smart_parse_datetime, smart_parse_float, smart_azimuth
 from .common import assert_date_age
 import requests
 import logging
 import json
-import datetime
 from datetime import tzinfo, timezone
 
 class MeteoclimaticReader:        
@@ -22,7 +21,7 @@ class MeteoclimaticReader:
             if key in CODE_TO_NAME.keys() and key in WHITELIST:
                 data[CODE_TO_NAME[key]] = value
 
-        data["record_timestamp"] = smart_parse_date(data["record_timestamp"], timezone=data_timezone)
+        data["record_timestamp"] = smart_parse_datetime(data["record_timestamp"], timezone=data_timezone)
         if data["record_timestamp"] is None:
             raise ValueError("Cannot accept a reading without a timestamp.")
         
@@ -68,7 +67,7 @@ class MeteoclimaticReader:
 
             wr = WeatherRecord(
                 id=None,
-                station_id=None,
+                station_id=station_id,
                 source_timestamp=local_observation_time,
                 temperature=temperature,
                 wind_speed=wind_speed,
@@ -94,7 +93,7 @@ class MeteoclimaticReader:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
         }
-        response = requests.get(endpoint, headers=headers, timeout=10)
+        response = requests.get(endpoint, headers=headers, timeout=5)
         logging.info(f"Requesting {response.url}")
         if response.status_code != 200:
             raise Exception(f"Error: Received status code {response.status_code}")
