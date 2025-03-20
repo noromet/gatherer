@@ -52,7 +52,7 @@ class HolfuyReader:
             wr.minTemp = live_data["daily"]["min_temp"]
             wr.maxTemp = live_data["daily"]["max_temp"]
             wr.cumulativeRain = round(live_data["daily"]["sum_rain"], 2)
-            wr.maxMaxWindGust = historic_data["measurements"][0]["wind"]["gust"]
+            wr.maxMaxWindGust = None
         else:
             logging.info(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
             wr.minTemp = None

@@ -1,6 +1,6 @@
 services:
   gatherer:
-    build: .
+    image: ghcr.io/noromet/gatherer:latest
     environment:
       MAX_THREADS: 4
       WEATHERLINK_V1_ENDPOINT: https://api.weatherlink.com/v1/NoaaExt.json
