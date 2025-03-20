@@ -33,7 +33,7 @@ class WundergroundReader:
             use_daily = True
         ##
 
-        live_metric_data = live_data.get("metric")
+        live_metric_data = live_data.get("metric") #esquizo
         if live_metric_data is None:
             raise ValueError("No metric data found in live data.")
         
@@ -54,6 +54,7 @@ class WundergroundReader:
             maxTemp=None,
             minTemp=None,
             maxWindGust=live_metric_data.get("windGust", None),
+            maxMaxWindGust=None
         )
 
 
@@ -63,6 +64,9 @@ class WundergroundReader:
             wr.max_wind_speed = daily_metric_data.get("windspeedHigh", None)
             wr.maxTemp = daily_metric_data.get("tempHigh", None)
             wr.minTemp = daily_metric_data.get("tempLow", None)
+            wr.maxMaxWindGust = daily_metric_data.get("windgustHigh", None)
+
+            print
 
         else:
             logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")

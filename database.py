@@ -45,8 +45,8 @@ class Database:
         
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
-                "INSERT INTO weather_record (id, station_id, source_timestamp, taken_timestamp, temperature, wind_speed, max_wind_speed, wind_direction, rain, humidity, pressure, flagged, gatherer_thread_id, cumulative_rain, max_temp, min_temp, max_wind_gust) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (record.id, record.station_id, record.source_timestamp, record.taken_timestamp, record.temperature, record.wind_speed, record.max_wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged, record.gatherer_run_id, record.cumulativeRain, record.maxTemp, record.minTemp, record.maxWindGust)
+                "INSERT INTO weather_record (id, station_id, source_timestamp, taken_timestamp, temperature, wind_speed, max_wind_speed, wind_direction, rain, humidity, pressure, flagged, gatherer_thread_id, cumulative_rain, max_temp, min_temp, max_wind_gust, max_max_wind_gust) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (record.id, record.station_id, record.source_timestamp, record.taken_timestamp, record.temperature, record.wind_speed, record.max_wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged, record.gatherer_run_id, record.cumulativeRain, record.maxTemp, record.minTemp, record.maxWindGust, record.maxMaxWindGust)
             )
 
     @classmethod
