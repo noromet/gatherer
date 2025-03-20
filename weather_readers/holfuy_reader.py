@@ -44,12 +44,11 @@ class HolfuyReader:
             gathererRunId=None,
             minTemp=None,
             maxTemp=None,
-            maxWindGust=None,
+            maxWindGust=live_data["wind"]["gust"],
             maxMaxWindGust=None,
         )
 
         if use_daily:
-            wr.maxWindGust = historic_data["measurements"][0]["wind"]["gust"]
             wr.minTemp = live_data["daily"]["min_temp"]
             wr.maxTemp = live_data["daily"]["max_temp"]
             wr.cumulativeRain = round(live_data["daily"]["sum_rain"], 2)

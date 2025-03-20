@@ -19,11 +19,10 @@ class EcowittReader:
         #parse timestamp in seconds
         observation_time = datetime.datetime.fromtimestamp(safe_int(live_data["outdoor"]["temperature"]["time"])).replace(tzinfo=data_timezone)
         observation_time_utc = observation_time.astimezone(timezone.utc)
+        assert_date_age(observation_time_utc)
 
         local_observation_time = observation_time.astimezone(local_timezone)
         
-        assert_date_age(observation_time_utc)
-
         outdoor = live_data.get("outdoor", {})
         wind = live_data.get("wind", {})
         rainfall = live_data.get("rainfall", {})
@@ -54,6 +53,7 @@ class EcowittReader:
             minTemp=None,
             maxTemp=None,
             maxWindGust=safe_float(maxWindGust),
+            maxMaxWindGust=None
         )
 
 
@@ -67,10 +67,14 @@ class EcowittReader:
         max_wind_speed = max(
             safe_float(speed) for speed in daily_data["wind"]["wind_speed"]["list"].values()
         )
+        max_max_wind_gust = max(
+            safe_float(gust) for gust in daily_data["wind"]["wind_gust"]["list"].values()
+        )
 
         wr.maxTemp = max_temp
         wr.minTemp = min_temp
         wr.max_wind_speed = max_wind_speed
+        wr.maxMaxWindGust = max_max_wind_gust
 
         return wr
 
