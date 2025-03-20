@@ -58,9 +58,6 @@ class WeatherLinkV1Reader:
             wr.maxWindGust = UnitConverter.mph_to_kph(
                 safe_float(data["davis_current_observation"].get("wind_ten_min_gust_mph"))
             )
-            wr.maxMaxWindGust = UnitConverter.mph_to_kph(
-                safe_float(data["davis_current_observation"].get("wind_day_high_mph"))
-            )
 
             wr.maxTemp = UnitConverter.fahrenheit_to_celsius(
                 safe_float(data["davis_current_observation"].get("temp_day_high_f"))

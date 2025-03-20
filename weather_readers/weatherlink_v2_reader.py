@@ -142,7 +142,8 @@ class WeatherlinkV2Reader:
             gathererRunId=None,
             maxTemp=UnitConverter.fahrenheit_to_celsius(max_temp),
             minTemp=UnitConverter.fahrenheit_to_celsius(min_temp),
-            maxWindGust=max_wind_gust
+            maxWindGust=max_wind_gust,
+            maxMaxWindGust=None,
         )
 
         return wr
@@ -165,6 +166,9 @@ class WeatherlinkV2Reader:
         if response.status_code != 200:
             logging.error(f"Request failed with status code {response.status_code}. Check station connection parameters.")
             return None
+        
+        # with open(f"./debug/{station_id}_current.json", "w") as f:
+        #     f.write(response.text)
         
         return response.text
 

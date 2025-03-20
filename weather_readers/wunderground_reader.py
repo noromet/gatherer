@@ -57,7 +57,6 @@ class WundergroundReader:
             maxMaxWindGust=None
         )
 
-
         daily_metric_data = last_daily_data.get("metric")
         if use_daily:
             # wr.maxWindGust = daily_metric_data.get("windgustHigh", None)
@@ -65,8 +64,6 @@ class WundergroundReader:
             wr.maxTemp = daily_metric_data.get("tempHigh", None)
             wr.minTemp = daily_metric_data.get("tempLow", None)
             wr.maxMaxWindGust = daily_metric_data.get("windgustHigh", None)
-
-            print
 
         else:
             logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
