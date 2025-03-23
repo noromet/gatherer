@@ -42,7 +42,8 @@ class ThingspeakReader:
             gathererRunId=None,
             minTemp=None,
             maxTemp=None,
-            maxWindGust=None
+            maxWindGust=None,
+            maxMaxWindGust=None
         )
     
     @staticmethod
