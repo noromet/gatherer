@@ -22,6 +22,12 @@ class EcowittReader:
         assert_date_age(observation_time_utc)
 
         local_observation_time = observation_time.astimezone(local_timezone)
+        current_date = datetime.datetime.now(tz=data_timezone).date()
+        observation_date = observation_time.date()
+        if observation_time.time() >= datetime.time(0, 0) and observation_time.time() <= datetime.time(0, 15) and observation_date == current_date:
+            use_daily = False
+        else:
+            use_daily = True
         
         outdoor = live_data.get("outdoor", {})
         wind = live_data.get("wind", {})
@@ -56,25 +62,24 @@ class EcowittReader:
             maxMaxWindGust=None
         )
 
+        if use_daily:
+            max_temp = max(
+                safe_float(temp) for temp in daily_data["outdoor"]["temperature"]["list"].values()
+            )
+            min_temp = min(
+                safe_float(temp) for temp in daily_data["outdoor"]["temperature"]["list"].values()
+            )
+            max_wind_speed = max(
+                safe_float(speed) for speed in daily_data["wind"]["wind_speed"]["list"].values()
+            )
+            max_max_wind_gust = max(
+                safe_float(gust) for gust in daily_data["wind"]["wind_gust"]["list"].values()
+            )
 
-        #dailies
-        max_temp = max(
-            safe_float(temp) for temp in daily_data["outdoor"]["temperature"]["list"].values()
-        )
-        min_temp = min(
-            safe_float(temp) for temp in daily_data["outdoor"]["temperature"]["list"].values()
-        )
-        max_wind_speed = max(
-            safe_float(speed) for speed in daily_data["wind"]["wind_speed"]["list"].values()
-        )
-        max_max_wind_gust = max(
-            safe_float(gust) for gust in daily_data["wind"]["wind_gust"]["list"].values()
-        )
-
-        wr.maxTemp = max_temp
-        wr.minTemp = min_temp
-        wr.max_wind_speed = max_wind_speed
-        wr.maxMaxWindGust = max_max_wind_gust
+            wr.maxTemp = max_temp
+            wr.minTemp = min_temp
+            wr.max_wind_speed = max_wind_speed
+            wr.maxMaxWindGust = max_max_wind_gust
 
         return wr
 
