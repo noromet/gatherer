@@ -16,8 +16,8 @@ class WeatherRecord:
                  flagged: bool, 
                  gatherer_run_id: uuid.uuid4, 
                  cumulative_rain: float,
-                 max_temp: float,
-                 min_temp: float,
+                 max_temperature: float,
+                 min_temperature: float,
                  wind_gust: float,
                  max_wind_gust: float):
         
@@ -35,8 +35,8 @@ class WeatherRecord:
         self.flagged = flagged
         self.taken_timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
         self.gatherer_run_id = gatherer_run_id
-        self.max_temp = max_temp  # today
-        self.min_temp = min_temp  # today
+        self.max_temperature = max_temperature  # today
+        self.min_temperature = min_temperature  # today
         self.wind_gust = wind_gust
         self.max_wind_gust = max_wind_gust
 
@@ -50,14 +50,14 @@ class WeatherRecord:
             if not temp_safe_range[0] < self.temperature < temp_safe_range[1]:
                 self.flagged = True
                 self.temperature = None
-        if self.max_temp:
-            if not temp_safe_range[0] < self.max_temp < temp_safe_range[1]:
+        if self.max_temperature:
+            if not temp_safe_range[0] < self.max_temperature < temp_safe_range[1]:
                 self.flagged = True
-                self.max_temp = None
-        if self.min_temp:
-            if not temp_safe_range[0] < self.min_temp < temp_safe_range[1]:
+                self.max_temperature = None
+        if self.min_temperature:
+            if not temp_safe_range[0] < self.min_temperature < temp_safe_range[1]:
                 self.flagged = True
-                self.min_temp = None
+                self.min_temperature = None
 
         if self.wind_speed:
             if not wind_safe_range[0] < self.wind_speed < wind_safe_range[1]:
@@ -111,10 +111,10 @@ class WeatherRecord:
             self.rain = round(self.rain, decimals)
         if self.cumulative_rain is not None:
             self.cumulative_rain = round(self.cumulative_rain, decimals)
-        if self.max_temp is not None:
-            self.max_temp = round(self.max_temp, decimals)
-        if self.min_temp is not None:
-            self.min_temp = round(self.min_temp, decimals)
+        if self.max_temperature is not None:
+            self.max_temperature = round(self.max_temperature, decimals)
+        if self.min_temperature is not None:
+            self.min_temperature = round(self.min_temperature, decimals)
         if self.wind_gust is not None:
             self.wind_gust = round(self.wind_gust, decimals)
         if self.max_wind_gust is not None:
