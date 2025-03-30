@@ -40,7 +40,7 @@ class EcowittReader:
         cumulative_rain = rainfall.get("daily", {}).get("value")
         humidity = outdoor.get("humidity", {}).get("value")
         pressure = live_data.get("pressure", {}).get("relative", {}).get("value")
-        maxWindGust = wind.get("wind_gust", {}).get("value")
+        wind_gust = wind.get("wind_gust", {}).get("value")
 
         wr = WeatherRecord(
             id=None,
@@ -48,38 +48,38 @@ class EcowittReader:
             source_timestamp=local_observation_time,
             temperature=safe_float(temperature),
             wind_speed=safe_float(wind_speed),
-            wind_direction=safe_float(wind_direction),
             max_wind_speed=None,
+            wind_direction=safe_float(wind_direction),
             rain=safe_float(rain),
-            cumulativeRain=safe_float(cumulative_rain),
             humidity=safe_float(humidity),
             pressure=safe_float(pressure),
             flagged=False,
-            gathererRunId=None,
-            minTemp=None,
-            maxTemp=None,
-            maxWindGust=safe_float(maxWindGust),
-            maxMaxWindGust=None
+            gatherer_thread_id=None,
+            cumulative_rain=safe_float(cumulative_rain),
+            max_temperature=None,
+            min_temperature=None,
+            wind_gust=safe_float(wind_gust),
+            max_wind_gust=None
         )
 
         if use_daily:
-            max_temp = max(
+            max_temperature = max(
                 safe_float(temp) for temp in daily_data["outdoor"]["temperature"]["list"].values()
             )
-            min_temp = min(
+            min_temperature = min(
                 safe_float(temp) for temp in daily_data["outdoor"]["temperature"]["list"].values()
             )
             max_wind_speed = max(
                 safe_float(speed) for speed in daily_data["wind"]["wind_speed"]["list"].values()
             )
-            max_max_wind_gust = max(
+            max_wind_gust = max(
                 safe_float(gust) for gust in daily_data["wind"]["wind_gust"]["list"].values()
             )
 
-            wr.maxTemp = max_temp
-            wr.minTemp = min_temp
+            wr.max_temperature = max_temperature
+            wr.min_temperature = min_temperature
             wr.max_wind_speed = max_wind_speed
-            wr.maxMaxWindGust = max_max_wind_gust
+            wr.max_wind_gust = max_wind_gust
 
         return wr
 

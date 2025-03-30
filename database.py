@@ -62,8 +62,8 @@ class Database:
                     record.taken_timestamp, record.temperature, record.wind_speed, 
                     record.max_wind_speed, record.wind_direction, record.rain, 
                     record.humidity, record.pressure, record.flagged, 
-                    record.gatherer_run_id, record.cumulative_rain, record.max_temperature, 
-                    record.min_temperature, record.windGust, record.maxWindGust
+                    record.gatherer_thread_id, record.cumulative_rain, record.max_temperature, 
+                    record.min_temperature, record.wind_gust, record.max_wind_gust
                 )
             )
 

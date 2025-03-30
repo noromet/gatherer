@@ -14,7 +14,7 @@ class WeatherRecord:
                  humidity: float, 
                  pressure: float, 
                  flagged: bool, 
-                 gatherer_run_id: uuid.uuid4, 
+                 gatherer_thread_id: uuid.uuid4, 
                  cumulative_rain: float,
                  max_temperature: float,
                  min_temperature: float,
@@ -34,7 +34,7 @@ class WeatherRecord:
         self.pressure = pressure
         self.flagged = flagged
         self.taken_timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
-        self.gatherer_run_id = gatherer_run_id
+        self.gatherer_thread_id = gatherer_thread_id
         self.max_temperature = max_temperature  # today
         self.min_temperature = min_temperature  # today
         self.wind_gust = wind_gust
