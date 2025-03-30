@@ -1,5 +1,5 @@
 import datetime
-
+from zoneinfo import ZoneInfo
 
 def assert_date_age(date: datetime.datetime) -> None:
     if date is None:
@@ -17,12 +17,4 @@ def assert_date_age(date: datetime.datetime) -> None:
     
 
 def get_tzinfo(tz_str: str) -> datetime.tzinfo:
-    match tz_str:
-        case "Etc/UTC":
-            return datetime.timezone.utc
-        case "Europe/Madrid":
-            return datetime.timezone(datetime.timedelta(hours=1))
-        case "Europe/Lisbon":
-            return datetime.timezone(datetime.timedelta(hours=0))
-        case _:
-            raise ValueError(f"Invalid timezone: {tz_str}")
+    return ZoneInfo(tz_str)
