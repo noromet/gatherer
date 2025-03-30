@@ -14,31 +14,31 @@ class WeatherRecord:
                  humidity: float, 
                  pressure: float, 
                  flagged: bool, 
-                 gathererRunId: uuid.uuid4, 
-                 cumulativeRain: float,
-                 maxTemp: float,
-                 minTemp: float,
-                 maxWindGust: float,
-                 maxMaxWindGust: float):
+                 gatherer_run_id: uuid.uuid4, 
+                 cumulative_rain: float,
+                 max_temp: float,
+                 min_temp: float,
+                 wind_gust: float,
+                 max_wind_gust: float):
         
         self.id = id
         self.station_id = station_id
         self.source_timestamp = source_timestamp
         self.temperature = temperature
         self.wind_speed = wind_speed
-        self.max_wind_speed = max_wind_speed # today
+        self.max_wind_speed = max_wind_speed  # today
         self.wind_direction = wind_direction
         self.rain = rain
-        self.cumulativeRain = cumulativeRain
+        self.cumulative_rain = cumulative_rain
         self.humidity = humidity
         self.pressure = pressure
         self.flagged = flagged
         self.taken_timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
-        self.gathererRunId = gathererRunId
-        self.maxTemp = maxTemp # today
-        self.minTemp = minTemp # today
-        self.maxWindGust = maxWindGust
-        self.maxMaxWindGust = maxMaxWindGust
+        self.gatherer_run_id = gatherer_run_id
+        self.max_temp = max_temp  # today
+        self.min_temp = min_temp  # today
+        self.wind_gust = wind_gust
+        self.max_wind_gust = max_wind_gust
 
     def sanity_check(self):
         temp_safe_range = (-39, 50)
@@ -50,14 +50,14 @@ class WeatherRecord:
             if not temp_safe_range[0] < self.temperature < temp_safe_range[1]:
                 self.flagged = True
                 self.temperature = None
-        if self.maxTemp:
-            if not temp_safe_range[0] < self.maxTemp < temp_safe_range[1]:
+        if self.max_temp:
+            if not temp_safe_range[0] < self.max_temp < temp_safe_range[1]:
                 self.flagged = True
-                self.maxTemp = None
-        if self.minTemp:
-            if not temp_safe_range[0] < self.minTemp < temp_safe_range[1]:
+                self.max_temp = None
+        if self.min_temp:
+            if not temp_safe_range[0] < self.min_temp < temp_safe_range[1]:
                 self.flagged = True
-                self.minTemp = None
+                self.min_temp = None
 
         if self.wind_speed:
             if not wind_safe_range[0] < self.wind_speed < wind_safe_range[1]:
@@ -67,14 +67,14 @@ class WeatherRecord:
             if not wind_safe_range[0] < self.max_wind_speed < wind_safe_range[1]:
                 self.flagged = True
                 self.max_wind_speed = None
-        if self.maxWindGust:
-            if not wind_safe_range[0] < self.maxWindGust < wind_safe_range[1]:
+        if self.wind_gust:
+            if not wind_safe_range[0] < self.wind_gust < wind_safe_range[1]:
                 self.flagged = True
-                self.maxWindGust = None
-        if self.maxMaxWindGust:
-            if not wind_safe_range[0] < self.maxMaxWindGust < wind_safe_range[1]:
+                self.wind_gust = None
+        if self.max_wind_gust:
+            if not wind_safe_range[0] < self.max_wind_gust < wind_safe_range[1]:
                 self.flagged = True
-                self.maxMaxWindGust = None
+                self.max_wind_gust = None
         if self.wind_direction:
             if not 0 <= self.wind_direction <= 360:
                 self.flagged = True
@@ -90,7 +90,7 @@ class WeatherRecord:
                 self.flagged = True
                 self.pressure = None
 
-        #implement further limits here
+        # Implement further limits here
 
     def apply_pressure_offset(self, offset: float):
         if offset:
@@ -109,16 +109,16 @@ class WeatherRecord:
             self.pressure = round(self.pressure, decimals)
         if self.rain is not None:
             self.rain = round(self.rain, decimals)
-        if self.cumulativeRain is not None:
-            self.cumulativeRain = round(self.cumulativeRain, decimals)
-        if self.maxTemp is not None:
-            self.maxTemp = round(self.maxTemp, decimals)
-        if self.minTemp is not None:
-            self.minTemp = round(self.minTemp, decimals)
-        if self.maxWindGust is not None:
-            self.maxWindGust = round(self.maxWindGust, decimals)
-        if self.maxMaxWindGust is not None:
-            self.maxMaxWindGust = round(self.maxMaxWindGust, decimals)
+        if self.cumulative_rain is not None:
+            self.cumulative_rain = round(self.cumulative_rain, decimals)
+        if self.max_temp is not None:
+            self.max_temp = round(self.max_temp, decimals)
+        if self.min_temp is not None:
+            self.min_temp = round(self.min_temp, decimals)
+        if self.wind_gust is not None:
+            self.wind_gust = round(self.wind_gust, decimals)
+        if self.max_wind_gust is not None:
+            self.max_wind_gust = round(self.max_wind_gust, decimals)
 
 
 class GathererThread:
