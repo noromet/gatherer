@@ -73,16 +73,16 @@ class MeteoclimaticReader:
                 wind_speed=wind_speed,
                 max_wind_speed=max_wind_speed,
                 wind_direction=wind_direction,
-                rain=None, # meteoclimatic no da lluvia puntual
-                cumulativeRain=cumulativeRain,
+                rain=None,
                 humidity=humidity,
                 pressure=pressure,
                 flagged=False,
-                gathererRunId=None,
-                maxTemp=maxTemp,
-                minTemp=minTemp,
-                maxWindGust=max_wind_speed,
-                maxMaxWindGust=max_wind_speed,
+                gatherer_thread_id=None,
+                cumulative_rain=cumulativeRain,
+                max_temperature=None,
+                min_temperature=None,
+                wind_gust=None,
+                max_wind_gust=None
             )
 
             return wr

@@ -22,6 +22,10 @@ def handle_current_data(current: list) -> dict:
             "wind_speed": [],
             "wind_speed_last": []
         },
+        "wind_gust": {
+            "wind_speed_hi_last_10_min": [],
+            "wind_gust": []
+        },
         "wind_direction": {
             "wind_dir": [],
             "wind_dir_last": []
@@ -56,12 +60,13 @@ def handle_current_data(current: list) -> dict:
     temperature = coalesce([coalesce(live_response_keys["temperature"]["temp"]), coalesce(live_response_keys["temperature"]["temp_out"])])
     wind_speed = coalesce([coalesce(live_response_keys["wind_speed"]["wind_speed"]), max_or_none(live_response_keys["wind_speed"]["wind_speed_last"])])
     wind_direction = coalesce([coalesce(live_response_keys["wind_direction"]["wind_dir"]), max_or_none(live_response_keys["wind_direction"]["wind_dir_last"])])
+    wind_gust = coalesce([max_or_none(live_response_keys["wind_gust"]["wind_speed_hi_last_10_min"]), coalesce(live_response_keys["wind_gust"]["wind_gust"])])
     rain = coalesce([coalesce(live_response_keys["rain"]["rain_rate_mm"]), coalesce(live_response_keys["rain"]["rain_rate_last_mm"])])
     cumulative_rain = coalesce([max_or_none(live_response_keys["cumulative_rain"]["rain_day_mm"]), max_or_none(live_response_keys["cumulative_rain"]["rainfall_daily_mm"])])
     humidity = coalesce([coalesce(live_response_keys["humidity"]["hum"]), coalesce(live_response_keys["humidity"]["hum_out"])])
-    pressure = coalesce([coalesce(live_response_keys["pressure"]["bar"]), coalesce(live_response_keys["pressure"]["bar_sea_level"])])
-    
-    return timestamp, temperature, wind_speed, wind_direction, rain, cumulative_rain, humidity, pressure
+    pressure = coalesce([coalesce(live_response_keys["pressure"]["bar"]), coalesce(live_response_keys["pressure"]["bar_sea_level"])])  
+
+    return timestamp, temperature, wind_speed, wind_direction, rain, cumulative_rain, humidity, pressure, wind_gust
 
 def handle_historic_data(historic: list) -> dict:
     historical_response_keys = {
@@ -76,9 +81,6 @@ def handle_historic_data(historic: list) -> dict:
         },
         "min_temp": {
             "temp_lo": []
-        },
-        "max_wind_gust": {
-            "wind_speed_hi": []
         }
     }
 
@@ -93,9 +95,8 @@ def handle_historic_data(historic: list) -> dict:
     cumulative_rain = max_or_none(historical_response_keys["cumulative_rain"]["rainfall_mm"])
     max_temp = max_or_none(historical_response_keys["max_temp"]["temp_hi"])
     min_temp = min_or_none(historical_response_keys["min_temp"]["temp_lo"])
-    max_wind_gust = max_or_none(historical_response_keys["max_wind_gust"]["wind_speed_hi"])
 
-    return max_wind_speed, cumulative_rain, max_temp, min_temp, max_wind_gust
+    return max_wind_speed, cumulative_rain, max_temp, min_temp
 
 class WeatherlinkV2Reader:
     @staticmethod
@@ -112,12 +113,12 @@ class WeatherlinkV2Reader:
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
-        timestamp, temperature, wind_speed, wind_direction, rain, cumulative_rain, humidity, pressure = handle_current_data(current_data)
+        timestamp, temperature, wind_speed, wind_direction, rain, cumulative_rain, humidity, pressure, wind_gust = handle_current_data(current_data)
         
         if historic_data is not None:
-            max_wind_speed, cumulative_rain_historic, max_temp, min_temp, max_wind_gust = handle_historic_data(historic_data)
+            max_wind_speed, cumulative_rain_historic, max_temp, min_temp = handle_historic_data(historic_data)
         else:
-            max_wind_speed, cumulative_rain_historic, max_temp, min_temp, max_wind_gust = None, None, None, None, None
+            max_wind_speed, cumulative_rain_historic, max_temp, min_temp = None, None, None, None
 
         final_cumulative_rain = coalesce([cumulative_rain, cumulative_rain_historic])
 
@@ -132,18 +133,18 @@ class WeatherlinkV2Reader:
             source_timestamp=local_observation_time,
             temperature=UnitConverter.fahrenheit_to_celsius(temperature),
             wind_speed=UnitConverter.mph_to_kph(wind_speed),
-            wind_direction=wind_direction,
             max_wind_speed=UnitConverter.mph_to_kph(max_wind_speed),
+            wind_direction=wind_direction,
             rain=rain,
-            cumulativeRain=final_cumulative_rain,
             humidity=humidity,
             pressure=UnitConverter.psi_to_hpa(pressure),
             flagged=False,
-            gathererRunId=None,
-            maxTemp=UnitConverter.fahrenheit_to_celsius(max_temp),
-            minTemp=UnitConverter.fahrenheit_to_celsius(min_temp),
-            maxWindGust=max_wind_gust,
-            maxMaxWindGust=None,
+            gatherer_thread_id=None,
+            cumulative_rain=final_cumulative_rain,
+            max_temperature=UnitConverter.fahrenheit_to_celsius(max_temp),
+            min_temperature=UnitConverter.fahrenheit_to_celsius(min_temp),
+            wind_gust=UnitConverter.mph_to_kph(wind_gust),
+            max_wind_gust=None
         )
 
         return wr

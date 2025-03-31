@@ -28,48 +28,55 @@ class WeatherLinkV1Reader:
             use_daily = False
         else:
             use_daily = True
-        
-        temperature = data.get("temp_c", None)
-        
+
+        temperature = safe_float(data.get("temp_c"))
+        wind_speed = UnitConverter.mph_to_kph(safe_float(data.get("wind_mph")))
+        wind_direction = safe_float(data.get("wind_degrees"))
+        rain = UnitConverter.inches_to_mm(safe_float(data.get("davis_current_observation").get("rain_rate_in_per_hr")))
+        humidity = safe_float(data.get("relative_humidity"))
+        pressure = safe_float(data.get("pressure_mb"))
+        wind_gust = UnitConverter.mph_to_kph(
+            safe_float(data["davis_current_observation"].get("wind_ten_min_gust_mph"))
+        )
+
+        max_wind_speed = UnitConverter.mph_to_kph(
+            safe_float(data["davis_current_observation"].get("wind_day_high_mph"))
+        )
+        max_temperature = UnitConverter.fahrenheit_to_celsius(
+            safe_float(data["davis_current_observation"].get("temp_day_high_f"))
+        )
+        min_temperature = UnitConverter.fahrenheit_to_celsius(
+            safe_float(data["davis_current_observation"].get("temp_day_low_f"))
+        )
+        cumulative_rain = UnitConverter.inches_to_mm(
+            safe_float(data["davis_current_observation"].get("rain_day_in"))
+        )
+
         wr = WeatherRecord(
             id=None,
             station_id=None,
             source_timestamp=local_observation_time,
-            temperature=safe_float(temperature),
-            wind_speed=UnitConverter.mph_to_kph(safe_float(data.get("wind_mph"))),
-            wind_direction=safe_float(data.get("wind_degrees")),
+            temperature=temperature,
+            wind_speed=wind_speed,
             max_wind_speed=None,
-            rain=UnitConverter.inches_to_mm(safe_float(data["davis_current_observation"].get("rain_rate_in_per_hr"))),
-            cumulativeRain=None,
-            humidity=safe_float(data.get("relative_humidity")),
-            pressure=safe_float(data.get("pressure_mb")), #mb = hpa
+            wind_direction=wind_direction,
+            rain=rain,
+            humidity=humidity,
+            pressure=pressure,
             flagged=False,
-            gathererRunId=None,
-            maxTemp=None,
-            minTemp=None,
-            maxWindGust=None,
-            maxMaxWindGust=None
+            gatherer_thread_id=None,
+            cumulative_rain=None,
+            max_temperature=None,
+            min_temperature=None,
+            wind_gust=wind_gust,
+            max_wind_gust=None
         )
-
+        
         if use_daily:
-            wr.max_wind_speed = UnitConverter.mph_to_kph(
-                safe_float(data["davis_current_observation"].get("wind_day_high_mph"))
-            )
-            wr.maxWindGust = UnitConverter.mph_to_kph(
-                safe_float(data["davis_current_observation"].get("wind_ten_min_gust_mph"))
-            )
-
-            wr.maxTemp = UnitConverter.fahrenheit_to_celsius(
-                safe_float(data["davis_current_observation"].get("temp_day_high_f"))
-            )
-
-            wr.minTemp = UnitConverter.fahrenheit_to_celsius(
-                safe_float(data["davis_current_observation"].get("temp_day_low_f"))
-            )
-
-            wr.cumulativeRain = UnitConverter.inches_to_mm(
-                safe_float(data["davis_current_observation"].get("rain_day_in"))
-            )
+            wr.max_temperature = max_temperature
+            wr.min_temperature = min_temperature
+            wr.max_wind_speed = max_wind_speed
+            wr.cumulative_rain = cumulative_rain
         else:
             logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
 

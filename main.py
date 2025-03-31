@@ -87,8 +87,8 @@ def validate_args(args):
         raise ValueError("Must specify --all, --type or --id")
     
     if args.type:
-        if args.type not in ["meteoclimatic", "weatherlink_v1", "wunderground", "weatherlink_v2", "holfuy", "thingspeak", "ecowitt"]:
-            raise ValueError("Invalid type")
+        if args.type not in CONNECTION_HANDLERS:
+            raise ValueError("Invalid connection type")
 #endregion
 
 # region processing

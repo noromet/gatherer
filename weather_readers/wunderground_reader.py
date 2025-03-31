@@ -31,42 +31,50 @@ class WundergroundReader:
             use_daily = False
         else:
             use_daily = True
-        ##
 
         live_metric_data = live_data.get("metric") #esquizo
         if live_metric_data is None:
             raise ValueError("No metric data found in live data.")
         
+        temperature = live_metric_data.get("temp", None)
+        wind_speed = live_metric_data.get("windSpeed", None)
+        wind_direction = live_data.get("winddir", None)
+        rain = live_metric_data.get("precipRate", None)
+        cumulative_rain = live_metric_data.get("precipTotal", None)
+        humidity = live_data.get("humidity", None)
+        pressure = live_metric_data.get("pressure", None)
+        wind_gust = live_metric_data.get("windGust", None)
+
+        daily_metric_data = last_daily_data.get("metric")
+        if use_daily:
+            max_wind_speed = daily_metric_data.get("windspeedHigh", None)
+            max_temperature = daily_metric_data.get("tempHigh", None)
+            min_temperature = daily_metric_data.get("tempLow", None)
+            max_wind_gust = daily_metric_data.get("windgustHigh", None)
+
+        else:
+            logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
+            max_wind_speed, max_temperature, min_temperature, max_wind_gust = None, None, None, None
+
         wr = WeatherRecord(
             id=None,
             station_id=None,
             source_timestamp=local_observation_time,
-            temperature=live_metric_data.get("temp", None),
-            wind_speed=live_metric_data.get("windSpeed", None),
-            max_wind_speed=None,
-            wind_direction=live_data.get("winddir", None),
-            rain=live_metric_data.get("precipRate", None),
-            cumulativeRain=live_metric_data.get("precipTotal", None),
-            humidity=live_data.get("humidity", None),
-            pressure=live_metric_data.get("pressure", None),
+            temperature=temperature,
+            wind_speed=wind_speed,
+            max_wind_speed=max_wind_speed,
+            wind_direction=wind_direction,
+            rain=rain,
+            humidity=humidity,
+            pressure=pressure,
             flagged=False,
-            gathererRunId=None,
-            maxTemp=None,
-            minTemp=None,
-            maxWindGust=live_metric_data.get("windGust", None),
-            maxMaxWindGust=None
+            gatherer_thread_id=None,
+            cumulative_rain=cumulative_rain,
+            max_temperature=max_temperature,
+            min_temperature=min_temperature,
+            wind_gust=wind_gust,
+            max_wind_gust=max_wind_gust
         )
-
-        daily_metric_data = last_daily_data.get("metric")
-        if use_daily:
-            # wr.maxWindGust = daily_metric_data.get("windgustHigh", None)
-            wr.max_wind_speed = daily_metric_data.get("windspeedHigh", None)
-            wr.maxTemp = daily_metric_data.get("tempHigh", None)
-            wr.minTemp = daily_metric_data.get("tempLow", None)
-            wr.maxMaxWindGust = daily_metric_data.get("windgustHigh", None)
-
-        else:
-            logging.warning(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
 
         return wr
     

@@ -26,25 +26,31 @@ class ThingspeakReader:
         local_observation_time = observation_time.astimezone(local_timezone)
         assert_date_age(observation_time_utc)
 
-        return WeatherRecord(
+        temperature = safe_float(data.get("feeds")[0].get(field_map.get("temperature"), None))
+        humidity = safe_float(data.get("feeds")[0].get(field_map.get("humidity"), None))
+        pressure = safe_float(data.get("feeds")[0].get(field_map.get("pressure"), None))
+
+        wr = WeatherRecord(
             id=None,
             station_id=None,
             source_timestamp=local_observation_time,
-            temperature=safe_float(data["feeds"][0].get("field1", None)),
+            temperature=temperature,
             wind_speed=None,
-            wind_direction=None,
             max_wind_speed=None,
+            wind_direction=None,
             rain=None,
-            cumulativeRain=None,
-            humidity=safe_float(data["feeds"][0].get("field2", None)),
-            pressure=safe_float(data["feeds"][0].get("field4", None)),
+            humidity=humidity,
+            pressure=pressure,
             flagged=False,
-            gathererRunId=None,
-            minTemp=None,
-            maxTemp=None,
-            maxWindGust=None,
-            maxMaxWindGust=None
+            gatherer_thread_id=None,
+            cumulative_rain=None,
+            max_temperature=None,
+            min_temperature=None,
+            wind_gust=None,
+            max_wind_gust=None
         )
+
+        return wr
     
     @staticmethod
     def curl_endpoint(endpoint: str, station_id: str, password: str) -> str:

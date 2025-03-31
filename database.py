@@ -17,6 +17,13 @@ class Database:
     @classmethod
     def initialize(cls, connection_string: str) -> None:
         """Initialize the connection pool."""
+        #if not local, ask for confirmation
+        if ("localhost" not in connection_string) and ("127.0.0.1" not in connection_string):
+            print("WARNING: CONNECTING TO A REMOTE DATABASE")
+            if input("CONTINUE?: ").lower() != "y":
+                print("Exiting...")
+                exit()
+
         cls.__connection_pool = pool.SimpleConnectionPool(1, 10, dsn=connection_string)
 
     @classmethod
