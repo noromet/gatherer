@@ -122,9 +122,9 @@ class WeatherRecord:
 
 
 class GathererThread:
-    def __init__(self, id: uuid.uuid4, timestamp: datetime.datetime, total_stations: int, error_stations: int, errors: dict, command: str):
+    def __init__(self, id: uuid.uuid4, thread_timestamp: datetime.datetime, total_stations: int, error_stations: int, errors: dict, command: str):
         self.id = id
-        self.timestamp = timestamp
+        self.thread_timestamp = thread_timestamp
         self.total_stations = total_stations
         self.error_stations = error_stations
         self.errors = errors

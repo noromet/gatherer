@@ -95,14 +95,14 @@ class Database:
             )
 
     @classmethod
-    def init_thread_record(cls, id: uuid, timestamp: datetime.datetime, command: str):
+    def init_thread_record(cls, id: uuid, thread_timestamp: datetime.datetime, command: str):
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
                 """
-                INSERT INTO gatherer_thread (id, timestamp, command) 
+                INSERT INTO gatherer_thread (id, thread_timestamp, command) 
                 VALUES (%s, %s, %s)
                 """,
-                (id, timestamp, command)
+                (id, thread_timestamp, command)
             )
 
 class CursorFromConnectionFromPool:
