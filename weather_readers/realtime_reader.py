@@ -42,11 +42,11 @@ class RealtimeReader:
         temperature = float(data.get("current_temperature_celsius", None))
         wind_speed = float(data.get("current_wind_speed_kph", None))
         max_wind_speed = float(data.get("daily_max_wind_speed", None))
-        cumulativeRain = float(data.get("total_daily_precipitation_at_record_timestamp", None))
+        cumulative_rain = float(data.get("total_daily_precipitation_at_record_timestamp", None))
         humidity = float(data.get("relative_humidity", None))
         pressure = float(data.get("pressure_hpa", None))
-        maxTemp = float(data.get("daily_max_temperature", None))
-        minTemp = float(data.get("daily_min_temperature", None))
+        max_temperature = float(data.get("daily_max_temperature", None))
+        min_temperature = float(data.get("daily_min_temperature", None))
         rain = float(data.get("rain_rate_mm", None))
 
         wr = WeatherRecord(
@@ -58,15 +58,15 @@ class RealtimeReader:
             max_wind_speed=max_wind_speed,
             wind_direction=wind_direction,
             rain=rain,
-            cumulativeRain=cumulativeRain,
             humidity=humidity,
             pressure=pressure,
             flagged=False,
-            gathererRunId=None,
-            maxTemp=maxTemp,
-            minTemp=minTemp,
-            maxWindGust=max_wind_speed,
-            maxMaxWindGust=max_wind_speed
+            gatherer_thread_id=None,
+            cumulative_rain=cumulative_rain,
+            max_temperature=max_temperature,
+            min_temperature=min_temperature,
+            wind_gust=None,
+            max_wind_gust=None
         )
 
         return wr

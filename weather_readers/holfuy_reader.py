@@ -32,34 +32,28 @@ class HolfuyReader:
             id=None,
             station_id=None,
             source_timestamp=local_observation_time,
-            temperature=live_data["temperature"],  # Already in Celsius
-            wind_speed=live_data["wind"]["speed"],
-            wind_direction=live_data["wind"]["direction"],
+            temperature=live_data.get("temperature"),
+            wind_speed=live_data.get("wind", {}).get("speed"),
             max_wind_speed=None,
-            rain=live_data["rain"],  # Assuming rain is in mm
-            cumulativeRain=None,  # Assuming rain is in mm
-            humidity=live_data["humidity"],
-            pressure=live_data["pressure"],  # Assuming pressure is in hPa
+            wind_direction=live_data.get("wind", {}).get("direction"),
+            rain=live_data.get("rain"),
+            humidity=live_data.get("humidity"),
+            pressure=live_data.get("pressure"),
             flagged=False,
-            gathererRunId=None,
-            minTemp=None,
-            maxTemp=None,
-            maxWindGust=live_data["wind"]["gust"],
-            maxMaxWindGust=None,
+            gatherer_thread_id=None,
+            cumulative_rain=None,
+            max_temperature=None,
+            min_temperature=None,
+            wind_gust=live_data.get("wind", {}).get("gust"),
+            max_wind_gust=None
         )
 
         if use_daily:
-            wr.minTemp = live_data["daily"]["min_temp"]
-            wr.maxTemp = live_data["daily"]["max_temp"]
-            wr.cumulativeRain = round(live_data["daily"]["sum_rain"], 2)
-            wr.maxMaxWindGust = None
+            wr.min_temperature = live_data.get("daily", {}).get("min_temp")
+            wr.max_temperature = live_data.get("daily", {}).get("max_temp")
+            wr.cumulative_rain = round(live_data.get("daily", {}).get("sum_rain"), 2)
         else:
             logging.info(f"Discarding daily data. Observation time: {observation_time}, Local time: {datetime.datetime.now(tz=local_timezone)}")
-            wr.minTemp = None
-            wr.maxTemp = None
-            wr.cumulativeRain = None
-            wr.maxWindGust = None
-            wr.maxMaxWindGust = None
 
         return wr
     

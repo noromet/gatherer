@@ -35,26 +35,31 @@ DRY_RUN = False
 
 RUN_ID = uuid4().hex
 
-
-
 CONNECTION_HANDLERS = {
     'connection_disabled': lambda station_id, *args, **kwargs: {
         'status': 'success'
     },
     'meteoclimatic': lambda station_id, field1, data_timezone, local_timezone, **kwargs: 
         api.MeteoclimaticReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+
     'weatherlink_v1': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
         api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+
     'wunderground': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
         api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+
     'weatherlink_v2': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
         api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+
     'holfuy': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
         api.HolfuyReader.get_data(HOLFUY_LIVE_ENDPOINT, HOLFUY_HISTORIC_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+
     'thingspeak': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
         api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+
     'ecowitt': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
         api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
+
     'realtime': lambda station_id, field1, data_timezone, local_timezone, **kwargs: 
         api.RealtimeReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
 }
@@ -82,8 +87,8 @@ def validate_args(args):
         raise ValueError("Must specify --all, --type or --id")
     
     if args.type:
-        if args.type not in ["meteoclimatic", "weatherlink_v1", "wunderground", "weatherlink_v2", "holfuy", "thingspeak", "ecowitt"]:
-            raise ValueError("Invalid type")
+        if args.type not in CONNECTION_HANDLERS:
+            raise ValueError("Invalid connection type")
 #endregion
 
 # region processing
@@ -131,7 +136,7 @@ def process_station(station: tuple): # station is a tuple like id, connection_ty
             return {"status": "error", "error": message}
 
         record.station_id = station_id
-        record.gatherer_run_id = RUN_ID
+        record.gatherer_thread_id = RUN_ID
 
         record.sanity_check()
         record.apply_pressure_offset(station[5])
@@ -238,12 +243,9 @@ def main():
 
     if args.id:
         station_set.add(get_single_station(args.id))
-        # results = process_single(args.id)
     elif args.type:
-        # results = process_type(args.type, single_thread)
         station_set.update(get_stations_by_connection_type(args.type))
     else:
-        # results = process_all(single_thread)
         station_set.update(get_all_stations())
 
     if len(station_set) == 0:

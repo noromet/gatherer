@@ -17,6 +17,13 @@ class Database:
     @classmethod
     def initialize(cls, connection_string: str) -> None:
         """Initialize the connection pool."""
+        #if not local, ask for confirmation
+        if ("localhost" not in connection_string) and ("127.0.0.1" not in connection_string):
+            print("WARNING: CONNECTING TO A REMOTE DATABASE")
+            if input("CONTINUE?: ").lower() != "y":
+                print("Exiting...")
+                exit()
+
         cls.__connection_pool = pool.SimpleConnectionPool(1, 10, dsn=connection_string)
 
     @classmethod
@@ -45,8 +52,26 @@ class Database:
         
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
-                "INSERT INTO weather_record (id, station_id, source_timestamp, taken_timestamp, temperature, wind_speed, max_wind_speed, wind_direction, rain, humidity, pressure, flagged, gatherer_thread_id, cumulative_rain, max_temp, min_temp, max_wind_gust, max_max_wind_gust) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (record.id, record.station_id, record.source_timestamp, record.taken_timestamp, record.temperature, record.wind_speed, record.max_wind_speed, record.wind_direction, record.rain, record.humidity, record.pressure, record.flagged, record.gatherer_run_id, record.cumulativeRain, record.maxTemp, record.minTemp, record.maxWindGust, record.maxMaxWindGust)
+                """
+                INSERT INTO weather_record (
+                    id, station_id, source_timestamp, taken_timestamp, temperature, 
+                    wind_speed, max_wind_speed, wind_direction, rain, humidity, 
+                    pressure, flagged, gatherer_thread_id, cumulative_rain, max_temperature, 
+                    min_temperature, wind_gust, max_wind_gust
+                ) 
+                VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                    %s, %s, %s, %s, %s, %s, %s, %s
+                )
+                """,
+                (
+                    record.id, record.station_id, record.source_timestamp, 
+                    record.taken_timestamp, record.temperature, record.wind_speed, 
+                    record.max_wind_speed, record.wind_direction, record.rain, 
+                    record.humidity, record.pressure, record.flagged, 
+                    record.gatherer_thread_id, record.cumulative_rain, record.max_temperature, 
+                    record.min_temperature, record.wind_gust, record.max_wind_gust
+                )
             )
 
     @classmethod
@@ -61,16 +86,23 @@ class Database:
 
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
-                "UPDATE gatherer_thread SET total_stations = %s, error_stations = %s, errors = %s WHERE id = %s",
+                """
+                UPDATE gatherer_thread 
+                SET total_stations = %s, error_stations = %s, errors = %s 
+                WHERE id = %s
+                """,
                 (total_stations, error_stations, json.dumps(errors), id)
             )
 
     @classmethod
-    def init_thread_record(cls, id: uuid, timestamp: datetime.datetime, command: str):
+    def init_thread_record(cls, id: uuid, thread_timestamp: datetime.datetime, command: str):
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
-                "INSERT INTO gatherer_thread (id, timestamp, command) VALUES (%s, %s, %s)",
-                (id, timestamp, command)
+                """
+                INSERT INTO gatherer_thread (id, thread_timestamp, command) 
+                VALUES (%s, %s, %s)
+                """,
+                (id, thread_timestamp, command)
             )
 
 class CursorFromConnectionFromPool:
@@ -103,7 +135,11 @@ STATION_FIELDS = [
 
 def get_all_stations() -> List[Tuple]:
     """Get all active weather stations."""
-    query = f"SELECT {', '.join(STATION_FIELDS)} FROM weather_station WHERE status = 'active'"
+    query = f"""
+    SELECT {', '.join(STATION_FIELDS)} 
+    FROM weather_station 
+    WHERE status = 'active'
+    """
     with CursorFromConnectionFromPool() as cursor:
         cursor.execute(query)
         stations = cursor.fetchall()
@@ -111,7 +147,11 @@ def get_all_stations() -> List[Tuple]:
     
 def get_single_station(station_id: str) -> Tuple:
     """Get a single weather station by ID."""
-    query = f"SELECT {', '.join(STATION_FIELDS)} FROM weather_station WHERE id = %s"
+    query = f"""
+    SELECT {', '.join(STATION_FIELDS)} 
+    FROM weather_station 
+    WHERE id = %s
+    """
     with CursorFromConnectionFromPool() as cursor:
         cursor.execute(query, (station_id,))
         station = cursor.fetchone()
@@ -119,7 +159,11 @@ def get_single_station(station_id: str) -> Tuple:
     
 def get_stations_by_connection_type(station_type: str) -> List[Tuple]:
     """Get all weather stations by type."""
-    query = f"SELECT {', '.join(STATION_FIELDS)} FROM weather_station WHERE connection_type = %s AND status = 'active'"
+    query = f"""
+    SELECT {', '.join(STATION_FIELDS)} 
+    FROM weather_station 
+    WHERE connection_type = %s AND status = 'active'
+    """
     with CursorFromConnectionFromPool() as cursor:
         cursor.execute(query, (station_type,))
         stations = cursor.fetchall()
@@ -129,6 +173,10 @@ def increment_incident_count(station_id: str) -> None:
     """Increment the incident count for a weather station."""
     with CursorFromConnectionFromPool() as cursor:
         cursor.execute(
-            "UPDATE weather_station SET incident_count = COALESCE(incident_count, 0) + 1 WHERE id = %s", 
+            """
+            UPDATE weather_station 
+            SET incident_count = COALESCE(incident_count, 0) + 1 
+            WHERE id = %s
+            """, 
             (station_id,)
         )
