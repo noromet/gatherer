@@ -53,48 +53,26 @@ def validate_args(args):
     
     if not args.all and not args.type and not args.id:
         raise ValueError("Must specify --all, --type or --id")
-    
-    if args.type:
-        if args.type not in Gatherer.CONNECTION_HANDLERS:
-            raise ValueError("Invalid connection type")
 #endregion
 
 # region processing
 
 class Gatherer:
-    CONNECTION_HANDLERS = {
-        'connection_disabled': lambda station_id, *args, **kwargs: {
-            'status': 'success'
-        },
-        'meteoclimatic': lambda station_id, field1, data_timezone, local_timezone, **kwargs: 
-            api.MeteoclimaticReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
-
-        'weatherlink_v1': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
-            api.WeatherLinkV1Reader.get_data(WEATHERLINK_V1_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
-
-        'wunderground': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
-            api.WundergroundReader.get_data(WUNDERGROUND_ENDPOINT, WUNDERGROUND_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
-
-        'weatherlink_v2': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
-            api.WeatherlinkV2Reader.get_data(WEATHERLINK_V2_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
-
-        'holfuy': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
-            api.HolfuyReader.get_data(HOLFUY_LIVE_ENDPOINT, HOLFUY_HISTORIC_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
-
-        'thingspeak': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
-            api.ThingspeakReader.get_data(THINGSPEAK_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
-
-        'ecowitt': lambda station_id, field1, field2, field3, data_timezone, local_timezone, **kwargs: 
-            api.EcowittReader.get_data(ECOWITT_ENDPOINT, ECOWITT_DAILY_ENDPOINT, (field1, field2, field3), station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
-
-        'realtime': lambda station_id, field1, data_timezone, local_timezone, **kwargs: 
-            api.RealtimeReader.get_data(field1, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone),
-    }
 
     def __init__(self, run_id: str, dry_run: bool):
         self.run_id = run_id
         self.dry_run = dry_run
         self.stations = set()
+        self.readers = {
+            'meteoclimatic':    api.MeteoclimaticReader(),
+            'weatherlink_v1':   api.WeatherLinkV1Reader(live_endpoint=WEATHERLINK_V1_ENDPOINT),
+            'wunderground':     api.WundergroundReader(live_endpoint=WUNDERGROUND_ENDPOINT, historical_endpoint=WUNDERGROUND_DAILY_ENDPOINT),
+            'weatherlink_v2':   api.WeatherlinkV2Reader(live_endpoint=WEATHERLINK_V2_ENDPOINT),
+            'holfuy':           api.HolfuyReader(live_endpoint=HOLFUY_LIVE_ENDPOINT, historical_endpoint=HOLFUY_HISTORIC_ENDPOINT),
+            'thingspeak':       api.ThingspeakReader(live_endpoint=THINGSPEAK_ENDPOINT),
+            'ecowitt':          api.EcowittReader(live_endpoint=ECOWITT_ENDPOINT, historical_endpoint=ECOWITT_DAILY_ENDPOINT),
+            'realtime':         api.RealtimeReader()
+        }
 
     def add_station(self, station):
         if station is None:
@@ -138,19 +116,18 @@ class Gatherer:
         
         try:
             # Get the handler function based on connection_type or use a default handler
-            handler = self.CONNECTION_HANDLERS.get(station.connection_type)
+            reader = self.readers.get(station.connection_type)
             
-            if handler is None:
+            if station.connection_type == "connection_disabled":
+                    return {"status": "success"}
+
+            if reader is None:
                 message = f"Invalid connection type for station {station.id}"
                 logging.error(f"{message}")
                 return {"status": "error", "error": message}
                 
-            if station.connection_type == 'connection_disabled':
-                return handler(station.id)
-            
             # Call the appropriate handler
-            record = handler(station_id=station.id, field1=station.field1, field2=station.field2, field3=station.field3, 
-                            data_timezone=data_timezone, local_timezone=local_timezone)
+            record = reader.get_data(station)
             
             if record is None:
                 message = f"No data retrieved for station {station.id}"

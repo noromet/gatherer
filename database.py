@@ -140,6 +140,7 @@ def get_all_stations() -> List[WeatherStation]:
     SELECT {', '.join(STATION_FIELDS)} 
     FROM weather_station 
     WHERE status = 'active'
+    AND connection_type != 'connection_disabled'
     """
     with CursorFromConnectionFromPool(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(query)

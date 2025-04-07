@@ -3,15 +3,21 @@ import datetime
 from schema import WeatherRecord, WeatherStation
 
 class WeatherReader(ABC):
-    def __init__():
+    def __init__(self, live_endpoint: str|None = None, historical_endpoint: str|None = None):
+        self.live_endpoint = live_endpoint
+        self.historical_endpoint = historical_endpoint
+
+    @abstractmethod
+    def parse(
+            self,
+            station: WeatherStation,
+            live_data_response: str | None, 
+            daily_data_response: str | None
+    ) -> WeatherRecord:
         ...
 
     @abstractmethod
-    def parse() -> WeatherRecord:
-        ...
-
-    @abstractmethod
-    def get_data() -> WeatherRecord:
+    def get_data(station: WeatherStation) -> WeatherRecord:
         ...
 
     @abstractmethod
@@ -22,7 +28,7 @@ class WeatherReader(ABC):
     def get_historical_endpoint() -> str:
         ...
     
-    
+
     def assert_date_age(date: datetime.datetime) -> None:
         if date is None:
             raise ValueError("Date is None")
