@@ -11,9 +11,9 @@ from datetime import datetime
 from uuid import uuid4
 from logger import setup_logger, set_debug_mode
 import logging
-from weather_readers import get_tzinfo
-from typing import Set
 from time import tzset
+from zoneinfo import ZoneInfo
+from schema import WeatherStation
 
 os.environ['TZ'] = 'UTC'
 tzset()
@@ -115,9 +115,8 @@ class Gatherer:
         for station in stations:
             self.add_station(station)
 
-    def process_station(self, station: tuple): # station is a tuple like id, connection_type, field1, field2, field3, pressure_offset, data_timezone, local_timezone
-        station_id, connection_type, field1, field2, field3, _, data_timezone, local_timezone = station
-        logging.info(f"Processing station {station_id}, type {connection_type}")
+    def process_station(self, station: WeatherStation):
+        logging.info(f"Processing station {station.id}, type {station.connection_type}")
 
         # Validate timezone
         valid_timezones = [
@@ -127,57 +126,57 @@ class Gatherer:
         ]
 
         if data_timezone not in valid_timezones:
-            logging.error(f"Invalid data timezone for station {station_id}. Defaulting to UTC.")
+            logging.error(f"Invalid data timezone for station {station.id}. Defaulting to UTC.")
             data_timezone = 'Etc/UTC'
 
         if local_timezone not in valid_timezones:
-            logging.error(f"Invalid local timezone for station {station_id}. Defaulting to UTC.")
+            logging.error(f"Invalid local timezone for station {station.id}. Defaulting to UTC.")
             local_timezone = 'Etc/UTC'
 
-        data_timezone = get_tzinfo(data_timezone)
-        local_timezone = get_tzinfo(local_timezone)
+        data_timezone = ZoneInfo(data_timezone)
+        local_timezone = ZoneInfo(local_timezone)
         
         try:
             # Get the handler function based on connection_type or use a default handler
-            handler = self.CONNECTION_HANDLERS.get(connection_type)
+            handler = self.CONNECTION_HANDLERS.get(station.connection_type)
             
             if handler is None:
-                message = f"Invalid connection type for station {station_id}"
+                message = f"Invalid connection type for station {station.id}"
                 logging.error(f"{message}")
                 return {"status": "error", "error": message}
                 
-            if connection_type == 'connection_disabled':
-                return handler(station_id)
+            if station.connection_type == 'connection_disabled':
+                return handler(station.id)
             
             # Call the appropriate handler
-            record = handler(station_id=station_id, field1=field1, field2=field2, field3=field3, 
+            record = handler(station_id=station.id, field1=station.field1, field2=station.field2, field3=station.field3, 
                             data_timezone=data_timezone, local_timezone=local_timezone)
             
             if record is None:
-                message = f"No data retrieved for station {station_id}"
+                message = f"No data retrieved for station {station.id}"
                 logging.error(f"{message}")
                 return {"status": "error", "error": message}
 
-            record.station_id = station_id
+            record.station_id = station.id
             record.gatherer_thread_id = self.run_id
 
             record.sanity_check()
-            record.apply_pressure_offset(station[5])
+            record.apply_pressure_offset(station.pressure_offset)
             record.apply_rounding(1)
 
             if not self.dry_run:
                 Database.save_record(record)
-                logging.info(f"Record saved for station {station_id}")
+                logging.info(f"Record saved for station {station.id}")
                 return {"status": "success"}
             else:
                 logging.debug(json.dumps(record.__dict__, indent=4, sort_keys=True, default=str))
-                logging.info(f"Dry run enabled, record not saved for station {station_id}")
+                logging.info(f"Dry run enabled, record not saved for station {station.id}")
                 return {"status": "success"}
 
         except Exception as e:
-            logging.error(f"Error processing station {station_id}: {e}")
+            logging.error(f"Error processing station {station.id}: {e}")
             if not self.dry_run:
-                increment_incident_count(station_id)
+                increment_incident_count(station.id)
             return {"status": "error", "error": str(e)}
     
     def process_chunk(self, chunk, chunk_number, result_queue):
@@ -185,7 +184,7 @@ class Gatherer:
 
         results = {}
         for station in chunk:
-            results[station[0]] = self.process_station(station)
+            results[station.id] = self.process_station(station)
         
         result_queue.put(results)
 
@@ -221,7 +220,7 @@ class Gatherer:
 
         if single_thread:
             for station in self.stations:
-                results[station[0]] = self.process_station(station)
+                results[station.id] = self.process_station(station)
 
         else:
             results = self.multithread_processing(list(self.stations))

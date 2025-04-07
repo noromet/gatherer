@@ -122,10 +122,38 @@ class WeatherRecord:
 
 
 class GathererThread:
-    def __init__(self, id: uuid.uuid4, thread_timestamp: datetime.datetime, total_stations: int, error_stations: int, errors: dict, command: str):
+    def __init__(self, 
+        id: uuid.uuid4, 
+        thread_timestamp: datetime.datetime, 
+        total_stations: int, 
+        error_stations: int, 
+        errors: dict, 
+        command: str
+    ):
         self.id = id
         self.thread_timestamp = thread_timestamp
         self.total_stations = total_stations
         self.error_stations = error_stations
         self.errors = errors
         self.command = command
+
+
+class WeatherStation:
+    def __init__(self,
+        id: uuid.uuid4,
+        connection_type: str,
+        field1: str,
+        field2: str,
+        field3: str,
+        pressure_offset: float,
+        data_timezone: datetime.tzinfo,
+        local_timezone: datetime.tzinfo
+    ):
+        self.id = id
+        self.connection_type = connection_type
+        self.field1 = field1
+        self.field2 = field2
+        self.field3 = field3
+        self.pressure_offset = pressure_offset
+        self.data_timezone = data_timezone
+        self.local_timezone = local_timezone

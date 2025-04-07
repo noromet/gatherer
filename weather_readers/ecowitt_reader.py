@@ -1,14 +1,16 @@
-from schema import WeatherRecord
+from schema import WeatherRecord, WeatherStation
 from .utils import safe_float, safe_int
-from .common import assert_date_age
 import json
 import requests
 import datetime
 from datetime import tzinfo, timezone
 import logging
+from weather_reader import WeatherReader
 
-class EcowittReader:
-    @staticmethod
+class EcowittReader(WeatherReader):
+
+    
+    
     def parse(live_str_data: str, daily_str_data: str, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         try:
             live_data = json.loads(live_str_data)["data"]
@@ -19,7 +21,7 @@ class EcowittReader:
         #parse timestamp in seconds
         observation_time = datetime.datetime.fromtimestamp(safe_int(live_data["outdoor"]["temperature"]["time"])).replace(tzinfo=data_timezone)
         observation_time_utc = observation_time.astimezone(timezone.utc)
-        assert_date_age(observation_time_utc)
+        self.assert_date_age(observation_time_utc)
 
         local_observation_time = observation_time.astimezone(local_timezone)
         current_date = datetime.datetime.now(tz=data_timezone).date()
@@ -113,7 +115,7 @@ class EcowittReader:
 
     
     @staticmethod
-    def get_data(live_endpoint: str, daily_endpoint: str, params: tuple = (), station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
+    def get_data(station: WeatherStation, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
         assert params[0] is not None, "station_id is null"  # station id
         assert params[1] is not None, "api_key is null"  # api key
         assert params[2] is not None, "application_key is null"  # application key

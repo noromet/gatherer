@@ -2,13 +2,14 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extensions import connection as _connection
 from psycopg2.extensions import cursor as _cursor
+from psycopg2.extras import RealDictCursor
 from typing import List, Tuple, Optional
 import datetime
 import uuid
 import json
 import logging
 
-from schema import WeatherRecord
+from schema import WeatherRecord, WeatherStation
 
 class Database:
     """Database class for managing PostgreSQL connections."""
@@ -133,41 +134,41 @@ STATION_FIELDS = [
     "pressure_offset", "data_timezone", "local_timezone"
 ]
 
-def get_all_stations() -> List[Tuple]:
+def get_all_stations() -> List[WeatherStation]:
     """Get all active weather stations."""
     query = f"""
     SELECT {', '.join(STATION_FIELDS)} 
     FROM weather_station 
     WHERE status = 'active'
     """
-    with CursorFromConnectionFromPool() as cursor:
+    with CursorFromConnectionFromPool(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(query)
         stations = cursor.fetchall()
-        return stations
+        return [WeatherStation(**station) for station in stations]
     
-def get_single_station(station_id: str) -> Tuple:
+def get_single_station(station_id: str) -> WeatherStation:
     """Get a single weather station by ID."""
     query = f"""
     SELECT {', '.join(STATION_FIELDS)} 
     FROM weather_station 
     WHERE id = %s
     """
-    with CursorFromConnectionFromPool() as cursor:
+    with CursorFromConnectionFromPool(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(query, (station_id,))
         station = cursor.fetchone()
-        return station
+        return WeatherStation(**station) if station else None
     
-def get_stations_by_connection_type(station_type: str) -> List[Tuple]:
+def get_stations_by_connection_type(station_type: str) -> List[WeatherStation]:
     """Get all weather stations by type."""
     query = f"""
     SELECT {', '.join(STATION_FIELDS)} 
     FROM weather_station 
     WHERE connection_type = %s AND status = 'active'
     """
-    with CursorFromConnectionFromPool() as cursor:
+    with CursorFromConnectionFromPool(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(query, (station_type,))
         stations = cursor.fetchall()
-        return stations
+        return [WeatherStation(**station) for station in stations]
     
 def increment_incident_count(station_id: str) -> None:
     """Increment the incident count for a weather station."""

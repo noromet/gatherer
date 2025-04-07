@@ -7,5 +7,4 @@ from .holfuy_reader import HolfuyReader
 from .ecowitt_reader import EcowittReader
 from .realtime_reader import RealtimeReader
 from .utils import smart_parse_date, smart_parse_float, smart_azimuth
-from .common import get_tzinfo
 from schema import WeatherRecord
