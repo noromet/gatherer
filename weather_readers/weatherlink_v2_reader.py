@@ -219,12 +219,12 @@ class WeatherlinkV2Reader(WeatherReader):
             if not value:
                 raise ValueError(f"Missing connection parameter.")
         
-        current_response = WeatherlinkV2Reader.call_current_endpoint(self.live_endpoint, station_id=station.field1, api_key=station.field2, api_secret=station.field3)
-        historic_response = WeatherlinkV2Reader.call_daily_endpoint(self.daily_endpoint, station_id=station.field1, api_key=station.field2, api_secret=station.field3)   
+        current_response = self.call_current_endpoint(station_id=station.field1, api_key=station.field2, api_secret=station.field3)
+        historic_response = self.call_daily_endpoint(station_id=station.field1, api_key=station.field2, api_secret=station.field3)   
 
         if current_response is None:
             return None
 
-        parsed = WeatherlinkV2Reader.parse(current_response, historic_response, data_timezone=station.data_timezone, local_timezone=station.local_timezone)
+        parsed = self.parse(station, current_response, historic_response)
 
         return parsed

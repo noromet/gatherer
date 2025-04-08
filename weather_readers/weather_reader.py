@@ -22,7 +22,7 @@ class WeatherReader(ABC):
     def get_data(station: WeatherStation) -> WeatherRecord:
         pass
     
-    def assert_date_age(date: datetime.datetime) -> None:
+    def assert_date_age(self, date: datetime.datetime) -> None:
         if date is None:
             raise ValueError("Date is None")
         

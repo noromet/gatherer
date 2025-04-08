@@ -88,8 +88,8 @@ class HolfuyReader(WeatherReader):
     
     def get_data(self, station: WeatherStation) -> WeatherRecord:
 
-        live_response = self.call_live_endpoint(self.live_endpoint, station.field1, station.field3)
-        historical_response = self.call_historic_endpoint(self.daily_endpoint, station.field1, station.field3)
+        live_response = self.call_live_endpoint(station.field1, station.field3)
+        historical_response = self.call_historic_endpoint(station.field1, station.field3)
 
-        parsed = self.parse(station=station, live_data_response=live_response, historic_data_response=historical_response)
+        parsed = self.parse(station=station, live_data_response=live_response, daily_data_response=historical_response)
         return parsed

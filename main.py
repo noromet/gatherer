@@ -103,17 +103,14 @@ class Gatherer:
             'Etc/UTC'
         ]
 
-        if data_timezone not in valid_timezones:
-            logging.error(f"Invalid data timezone for station {station.id}. Defaulting to UTC.")
-            data_timezone = 'Etc/UTC'
+        if station.data_timezone.key not in valid_timezones:
+            logging.error(f"Invalid data timezone for station {station.id}. Skipping.")
+            return {"status": "error", "error": f"Invalid data timezone for station {station.id}"}
 
-        if local_timezone not in valid_timezones:
-            logging.error(f"Invalid local timezone for station {station.id}. Defaulting to UTC.")
-            local_timezone = 'Etc/UTC'
+        if station.local_timezone.key not in valid_timezones:
+            logging.error(f"Invalid local timezone for station {station.id}. Skipping.")
+            return {"status": "error", "error": f"Invalid local timezone for station {station.id}"}
 
-        data_timezone = ZoneInfo(data_timezone)
-        local_timezone = ZoneInfo(local_timezone)
-        
         try:
             # Get the handler function based on connection_type or use a default handler
             reader = self.readers.get(station.connection_type)
@@ -240,6 +237,8 @@ def main():
     if args.id:
         gatherer.add_station(get_single_station(args.id))
     elif args.type:
+        if args.type not in gatherer.readers.keys():
+            raise ValueError(f"Invalid connection type: {args.type}. Available types are: {', '.join(gatherer.readers.keys())}")
         gatherer.add_many(get_stations_by_connection_type(args.type))
     else:
         gatherer.add_many(get_all_stations())

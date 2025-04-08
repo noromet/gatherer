@@ -1,5 +1,6 @@
 import datetime
 import uuid
+import zoneinfo
 
 class WeatherRecord:
     def __init__(self, 
@@ -155,5 +156,5 @@ class WeatherStation:
         self.field2 = field2
         self.field3 = field3
         self.pressure_offset = pressure_offset
-        self.data_timezone = data_timezone
-        self.local_timezone = local_timezone
+        self.data_timezone = zoneinfo.ZoneInfo(data_timezone)
+        self.local_timezone = zoneinfo.ZoneInfo(local_timezone)

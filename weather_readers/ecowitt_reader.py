@@ -91,7 +91,7 @@ class EcowittReader(WeatherReader):
 
 
     def call_live_endpoint(self, mac: str, api_key: str, application_key: str) -> str:
-        url = f"{self.endpoint}?mac={mac}&api_key={api_key}&application_key={application_key}"
+        url = f"{self.live_endpoint}?mac={mac}&api_key={api_key}&application_key={application_key}"
         url += "&temp_unitid=1&pressure_unitid=3&wind_speed_unitid=7&rainfall_unitid=12"
     
         response = requests.get(url)

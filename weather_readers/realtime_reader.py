@@ -33,7 +33,7 @@ class RealtimeReader(WeatherReader):
 
         data = {}
         valid_keys = self.INDEX_TO_DATA.keys()
-        for index, item in enumerate(self.live_endpoint.strip().split(" ")):
+        for index, item in enumerate(live_data_response.strip().split(" ")):
             item = item.strip()
             if not item:
                 continue
@@ -43,12 +43,6 @@ class RealtimeReader(WeatherReader):
 
         _time = datetime.strptime(data["time"], "%H:%M:%S")
         _date = self.smart_parse_date(data["date"], timezone=station.data_timezone)
-
-        print(
-            json.dumps(
-                data, indent=4
-            )
-        )
 
         if _time is None or _date is None:
             raise ValueError("Cannot accept a reading without a timestamp.")
