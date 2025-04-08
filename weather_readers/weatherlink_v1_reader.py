@@ -11,22 +11,18 @@ from datetime import timezone
 
 class WeatherLinkV1Reader(WeatherReader):
     def __init__(self, live_endpoint: str):
-        super().__init__(live_endpoint=live_endpoint)
+        self.live_endpoint=live_endpoint
+        self.required_fields = ["field1", "field2", "field3"]
         
-
-    def parse(
-            self,
-            station: WeatherStation,
-            live_data_response: str | None, 
-            daily_data_response: str | None, 
-        ) -> WeatherRecord:
-
+    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         try:
-            data = json.loads(live_data_response)
+            live_data = json.loads(data["live"])
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
+            raise ValueError(
+                f"Invalid JSON data: {e}. Check station connection parameters."
+            )
         
-        observation_time = datetime.datetime.strptime(data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z").replace(tzinfo=station.data_timezone)
+        observation_time = datetime.datetime.strptime(live_data["observation_time_rfc822"], "%a, %d %b %Y %H:%M:%S %z").replace(tzinfo=station.data_timezone)
         observation_time_utc = observation_time.astimezone(timezone.utc)
         self.assert_date_age(observation_time_utc)
         local_observation_time = observation_time.astimezone(station.local_timezone)
@@ -38,27 +34,27 @@ class WeatherLinkV1Reader(WeatherReader):
         else:
             use_daily = True
 
-        temperature = self.safe_float(data.get("temp_c"))
-        wind_speed = UnitConverter.mph_to_kph(self.safe_float(data.get("wind_mph")))
-        wind_direction = self.safe_float(data.get("wind_degrees"))
-        rain = UnitConverter.inches_to_mm(self.safe_float(data.get("davis_current_observation").get("rain_rate_in_per_hr")))
-        humidity = self.safe_float(data.get("relative_humidity"))
-        pressure = self.safe_float(data.get("pressure_mb"))
+        temperature = self.safe_float(live_data.get("temp_c"))
+        wind_speed = UnitConverter.mph_to_kph(self.safe_float(live_data.get("wind_mph")))
+        wind_direction = self.safe_float(live_data.get("wind_degrees"))
+        rain = UnitConverter.inches_to_mm(self.safe_float(live_data.get("davis_current_observation").get("rain_rate_in_per_hr")))
+        humidity = self.safe_float(live_data.get("relative_humidity"))
+        pressure = self.safe_float(live_data.get("pressure_mb"))
         wind_gust = UnitConverter.mph_to_kph(
-            self.safe_float(data["davis_current_observation"].get("wind_ten_min_gust_mph"))
+            self.safe_float(live_data["davis_current_observation"].get("wind_ten_min_gust_mph"))
         )
 
         max_wind_speed = UnitConverter.mph_to_kph(
-            self.safe_float(data["davis_current_observation"].get("wind_day_high_mph"))
+            self.safe_float(live_data["davis_current_observation"].get("wind_day_high_mph"))
         )
         max_temperature = UnitConverter.fahrenheit_to_celsius(
-            self.safe_float(data["davis_current_observation"].get("temp_day_high_f"))
+            self.safe_float(live_data["davis_current_observation"].get("temp_day_high_f"))
         )
         min_temperature = UnitConverter.fahrenheit_to_celsius(
-            self.safe_float(data["davis_current_observation"].get("temp_day_low_f"))
+            self.safe_float(live_data["davis_current_observation"].get("temp_day_low_f"))
         )
         cumulative_rain = UnitConverter.inches_to_mm(
-            self.safe_float(data["davis_current_observation"].get("rain_day_in"))
+            self.safe_float(live_data["davis_current_observation"].get("rain_day_in"))
         )
 
         wr = WeatherRecord(
@@ -92,22 +88,18 @@ class WeatherLinkV1Reader(WeatherReader):
         return wr
     
     
-    def call_endpoint(self, user: str, apiToken: str, password: str) -> str:
+    def fetch_data(self, station: WeatherStation) -> dict:
+        user, apiToken, password = station.field1, station.field2, station.field3
+
         response = requests.get(self.live_endpoint, {
             "user": user,
             "pass": password,
             "apiToken": apiToken
         })
-        
         logging.info(f"Requesting {response.url}")
+
+        if response.status_code != 200:
+            logging.error(f"Request failed with status code {response.status_code}. Check station connection parameters.")
+            return None
         
-        return response.text
-
-    
-    def get_data(self, station) -> WeatherRecord:
-        for value in [station.field1, station.field2, station.field3]:
-            if not value:
-                raise ValueError(f"Missing connection parameter.")
-
-        response = self.call_endpoint(user=station.field1, apiToken=station.field2, password=station.field3)
-        return self.parse(station, response, None)
+        return {"live": response.text}

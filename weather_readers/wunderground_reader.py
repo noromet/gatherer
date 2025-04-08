@@ -10,19 +10,14 @@ from .weather_reader import WeatherReader
 
 class WundergroundReader(WeatherReader):
     def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__(live_endpoint=live_endpoint, daily_endpoint=daily_endpoint)
+        self.live_endpoint=live_endpoint
+        self.daily_endpoint=daily_endpoint
+        self.required_fields = ["field1", "field2"]
 
-    def parse(
-            self,
-            station: WeatherStation,
-            live_data_response: str,
-            daily_data_response: str
-    ) -> WeatherRecord:
+    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         try:
-            live_data = json.loads(live_data_response)["observations"][0]
-            daily_data = json.loads(daily_data_response)["summaries"][-1]
-
-            assert live_data["stationID"] == daily_data["stationID"], "Something broke: live and daily data are not from the same station."
+            live_data = json.loads(data["live"])["observations"][0]
+            daily_data = json.loads(data["daily"])["summaries"][-1]
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
@@ -86,40 +81,34 @@ class WundergroundReader(WeatherReader):
         return wr
     
     
-    def call_live_endpoint(self, did: str, token: str) -> str:
-        response = requests.get(self.live_endpoint, {
-            "stationId": did,
-            "apiKey": token,
-            "format": "json",
-            "units": "m",
-            "numericPrecision": "decimal"
-        })
-        
-        logging.info(f"Requesting {response.url}")
-        
-        return response.text
-    
-    def call_daily_endpoint(self, did: str, token: str) -> str:
-        response = requests.get(self.daily_endpoint, {
-            "stationId": did,
-            "apiKey": token,
-            "format": "json",
-            "units": "m",
-            "numericPrecision": "decimal"
-        })
-        
-        logging.info(f"Requesting {response.url}")
-        
-        return response.text
-    
-    
-    def get_data(self, station: WeatherStation) -> dict:
-        for value in [station.field1, station.field2]:
-            if not value:
-                raise ValueError(f"Missing connection parameter.")
-            
-        live_response = self.call_live_endpoint(did=station.field1, token=station.field2)
-        daily_response = self.call_daily_endpoint(did=station.field1, token=station.field2)
+    def fetch_data(self, station: WeatherStation) -> dict:
+        did, token = station.field1, station.field2
 
-        parsed = self.parse(station=station, live_data_response=live_response, daily_data_response=daily_response)
-        return parsed
+        live_response = requests.get(self.live_endpoint, {
+            "stationId": did,
+            "apiKey": token,
+            "format": "json",
+            "units": "m",
+            "numericPrecision": "decimal"
+        })
+        logging.info(f"Requesting {live_response.url}")
+
+        if live_response.status_code != 200:
+            logging.error(f"Request failed with status code {live_response.status_code}. Check station connection parameters.")
+            return None
+        
+        daily_response = requests.get(self.daily_endpoint, {
+            "stationId": did,
+            "apiKey": token,
+            "format": "json",
+            "units": "m",
+            "numericPrecision": "decimal"
+        })
+        logging.info(f"Requesting {daily_response.url}")
+
+        if daily_response.status_code != 200:
+            logging.error(f"Request failed with status code {daily_response.status_code}. Check station connection parameters.")
+            return None
+        
+        return {"live": live_response.text, "daily": daily_response.text}
+    

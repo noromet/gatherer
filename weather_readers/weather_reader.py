@@ -5,23 +5,48 @@ from typing import Any
 from dateutil import parser
 
 class WeatherReader(ABC):
-    def __init__(self, live_endpoint: str|None = None, daily_endpoint: str|None = None):
-        self.live_endpoint = live_endpoint
-        self.daily_endpoint = daily_endpoint
+    def __init__(self):
+        self.required_fields = []
 
     @abstractmethod
-    def parse(
-            self,
-            station: WeatherStation,
-            live_data_response: str | None, 
-            daily_data_response: str | None
-    ) -> WeatherRecord:
+    def fetch_data(self, station: WeatherStation, *args, **kwargs) -> dict:
+        """
+        Fetch data from the source. Subclasses should implement this to handle their specific data-fetching logic.
+        """
         pass
 
     @abstractmethod
-    def get_data(station: WeatherStation) -> WeatherRecord:
+    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
+        """
+        Parse the fetched data into a WeatherRecord. Subclasses should implement this to handle their specific parsing logic.
+        """
         pass
+
+    @abstractmethod
+    def validate_fields(self, station: WeatherStation) -> None:
+        """
+        Validate the fields of the WeatherStation. Subclasses should implement this to handle their specific validation logic.
+        """
+        pass
+
+    def validate_fields(self, station: WeatherStation) -> None:
+        """
+        Validate the fields of the WeatherStation based on self.required_fields.
+        """
+        for field in self.required_fields:
+            if getattr(station, field) is None:
+                raise ValueError(f"Missing required field: {field}")
+
+    def get_data(self, station: WeatherStation, *args, **kwargs) -> WeatherRecord:
+        """
+        Template method to fetch and parse data. Subclasses can override the other methods as needed.
+        """
+        self.validate_fields(station)
+        raw_data = self.fetch_data(station, *args, **kwargs)
+        return self.parse(station, raw_data)
     
+# region helpers
+
     def assert_date_age(self, date: datetime.datetime) -> None:
         if date is None:
             raise ValueError("Date is None")
@@ -36,7 +61,6 @@ class WeatherReader(ABC):
         if (now_utc - date).total_seconds() > 1800:
             raise ValueError(f"Reading timestamp is too old to be stored as current. Observation time (UTC): {date}, current time (UTC): {now_utc}")
         
-
     def max_or_none(self, arglist) -> Any:
         return max(arglist) if arglist and len(arglist) > 0 else None
 
@@ -186,3 +210,5 @@ class WeatherReader(ABC):
 
     def is_na_value(self, value: str) -> bool:
         return value is None or value == "-" or value == "N/A" or value == "NA" or value == "NaN"
+    
+# endregion

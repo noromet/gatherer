@@ -5,39 +5,53 @@ import threading
 import json
 import argparse
 import queue
-from database import Database, get_all_stations, get_single_station, get_stations_by_connection_type, increment_incident_count
+from database import Database, database_connection
 import weather_readers as api
 from datetime import datetime
 from uuid import uuid4
 from logger import setup_logger, set_debug_mode
 import logging
 from time import tzset
-from zoneinfo import ZoneInfo
+from dataclasses import dataclass
 from schema import WeatherStation
+
+load_dotenv()
 
 os.environ['TZ'] = 'UTC'
 tzset()
 
 # region config
+@dataclass
 class Config:
-    def __init__(self):
-        load_dotenv(verbose=True)
-        self.DB_URL = os.getenv("DATABASE_CONNECTION_URL")
-        self.MAX_THREADS = int(os.getenv("MAX_THREADS"))
-        self.WEATHERLINK_V1_ENDPOINT = os.getenv("WEATHERLINK_V1_ENDPOINT")
-        self.WEATHERLINK_V2_ENDPOINT = os.getenv("WEATHERLINK_V2_ENDPOINT")
-        self.WUNDERGROUND_ENDPOINT = os.getenv("WUNDERGROUND_ENDPOINT")
-        self.WUNDERGROUND_DAILY_ENDPOINT = os.getenv("WUNDERGROUND_DAILY_ENDPOINT")
-        self.HOLFUY_LIVE_ENDPOINT = os.getenv("HOLFUY_LIVE_ENDPOINT")
-        self.HOLFUY_HISTORIC_ENDPOINT = os.getenv("HOLFUY_HISTORIC_ENDPOINT")
-        self.THINGSPEAK_ENDPOINT = os.getenv("THINGSPEAK_ENDPOINT")
-        self.ECOWITT_ENDPOINT = os.getenv("ECOWITT_ENDPOINT")
-        self.ECOWITT_DAILY_ENDPOINT = os.getenv("ECOWITT_DAILY_ENDPOINT")
+    DB_URL: str = os.getenv("DATABASE_CONNECTION_URL")
+    MAX_THREADS: int = int(os.getenv("MAX_THREADS"))
+    WEATHERLINK_V1_ENDPOINT: str = os.getenv("WEATHERLINK_V1_ENDPOINT")
+    WEATHERLINK_V2_ENDPOINT: str = os.getenv("WEATHERLINK_V2_ENDPOINT")
+    WUNDERGROUND_ENDPOINT: str = os.getenv("WUNDERGROUND_ENDPOINT")
+    WUNDERGROUND_DAILY_ENDPOINT: str = os.getenv("WUNDERGROUND_DAILY_ENDPOINT")
+    HOLFUY_LIVE_ENDPOINT: str = os.getenv("HOLFUY_LIVE_ENDPOINT")
+    HOLFUY_HISTORIC_ENDPOINT: str = os.getenv("HOLFUY_HISTORIC_ENDPOINT")
+    THINGSPEAK_ENDPOINT: str = os.getenv("THINGSPEAK_ENDPOINT")
+    ECOWITT_ENDPOINT: str = os.getenv("ECOWITT_ENDPOINT")
+    ECOWITT_DAILY_ENDPOINT: str = os.getenv("ECOWITT_DAILY_ENDPOINT")
 
 config = Config()
 # endregion
 
 #region argument processing
+def validate_args(args):
+    conditions = [
+        (args.all and args.type, "Cannot specify both --all and --type"),
+        (args.all and args.id, "Cannot specify both --all and --id"),
+        (args.type and args.id, "Cannot specify both --type and --id"),
+        (not args.all and not args.type and not args.id, "Must specify --all, --type or --id")
+    ]
+    for condition, message in conditions:
+        if condition:
+            raise ValueError(message)
+        
+    return args
+        
 def get_args():
     parser = argparse.ArgumentParser(description="Weather Station Data Processor")
     parser.add_argument("--all", action="store_true", help="Read all stations")
@@ -45,18 +59,7 @@ def get_args():
     parser.add_argument("--id", type=str, help="Read a single weather station by id")
     parser.add_argument("--dry-run", action="store_true", help="Perform a dry run")
     parser.add_argument("--single-thread", action="store_true", help="Run in single-thread mode", default=False)
-    return parser.parse_args()
-
-def validate_args(args):
-    if args.all and args.type:
-        raise ValueError("Cannot specify both --all and --type")
-    if args.all and args.id:
-        raise ValueError("Cannot specify both --all and --id")
-    if args.type and args.id:
-        raise ValueError("Cannot specify both --type and --id")
-    
-    if not args.all and not args.type and not args.id:
-        raise ValueError("Must specify --all, --type or --id")
+    return validate_args(parser.parse_args())
 #endregion
 
 # region processing
@@ -129,7 +132,7 @@ class Gatherer:
         except Exception as e:
             logging.error(f"Error processing station {station.id}: {e}")
             if not self.dry_run:
-                increment_incident_count(station.id)
+                Database.increment_incident_count(station.id)
             return {"status": "error", "error": str(e)}
 
     def _process_record(self, record, station: WeatherStation):
@@ -185,8 +188,6 @@ class Gatherer:
         if single_thread or len(self.stations) < 30:
             return {station.id: self.process_station(station) for station in self.stations}
         return self.multithread_processing(list(self.stations))
-
-
 # endregion
 
 # region main
@@ -195,18 +196,11 @@ def main():
 
     logging.info("Starting gatherer service.")
     
-    logging.info(f"Connecting to database...")
-    Database.initialize(config.DB_URL)
-    logging.info("Connected to database.")
-
     args = get_args()
-    validate_args(args)
 
     dry_run = args.dry_run
     single_thread = args.single_thread
-
     run_id = uuid4().hex
-    timestamp = datetime.now().replace(second=0, microsecond=0)
 
     readers = {
         'meteoclimatic':    api.MeteoclimaticReader(),
@@ -219,33 +213,33 @@ def main():
         'realtime':         api.RealtimeReader()
     }
 
-    gatherer = Gatherer(run_id=run_id, dry_run=dry_run, max_threads=config.MAX_THREADS, readers=readers)
-    
-    if args.dry_run:
-        logging.warning("[Dry run enabled]")
-        set_debug_mode()
-    else:
-        logging.warning("[Dry run disabled]")
-        Database.init_thread_record(run_id, timestamp, command=" ".join(os.sys.argv))
+    with database_connection(config.DB_URL):
+        gatherer = Gatherer(run_id=run_id, dry_run=dry_run, max_threads=config.MAX_THREADS, readers=readers)
+        
+        if args.dry_run:
+            logging.warning("[Dry run enabled]")
+            set_debug_mode()
+        else:
+            logging.warning("[Dry run disabled]")
+            Database.init_thread_record(run_id, datetime.now().replace(second=0, microsecond=0), command=" ".join(os.sys.argv))
 
-    logging.info(f"Starting gatherer run {run_id}")
+        logging.info(f"Starting gatherer run {run_id}")
 
-    if args.id:
-        gatherer.add_station(get_single_station(args.id))
-    elif args.type:
-        if args.type not in gatherer.readers.keys():
-            raise ValueError(f"Invalid connection type: {args.type}. Available types are: {', '.join(gatherer.readers.keys())}")
-        gatherer.add_many(get_stations_by_connection_type(args.type))
-    else:
-        gatherer.add_many(get_all_stations())
-    
-    results = gatherer.process(single_thread)
-                
-    if not args.dry_run:
-        logging.info("Saving thread record")
-        Database.save_thread_record(run_id, results)
+        if args.id:
+            gatherer.add_station(Database.get_single_station(args.id))
+        elif args.type:
+            if args.type not in gatherer.readers.keys():
+                raise ValueError(f"Invalid connection type: {args.type}. Available types are: {', '.join(gatherer.readers.keys())}")
+            gatherer.add_many(Database.get_stations_by_connection_type(args.type))
+        else:
+            gatherer.add_many(Database.get_all_stations())
+        
+        results = gatherer.process(single_thread)
+                    
+        if not args.dry_run:
+            logging.info("Saving thread record")
+            Database.save_thread_record(run_id, results)
 
-    Database.close_all_connections()
 
 if __name__ == "__main__":
     main()

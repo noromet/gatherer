@@ -12,7 +12,9 @@ from .utils import UnitConverter
 
 class WeatherlinkV2Reader(WeatherReader):
     def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__(live_endpoint=live_endpoint, daily_endpoint=daily_endpoint)
+        self.live_endpoint=live_endpoint
+        self.daily_endpoint=daily_endpoint
+        self.required_fields = ["field1", "field2", "field3"]
 
     def handle_current_data(self, current: list) -> dict:
         live_response_keys = {
@@ -103,31 +105,26 @@ class WeatherlinkV2Reader(WeatherReader):
 
         return max_wind_speed, cumulative_rain, max_temp, min_temp
 
-    def parse(
-            self,
-            station: WeatherStation,
-            live_data_response: str | None, 
-            daily_data_response: str | None, 
-        ) -> WeatherRecord:        
-        
+    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         current_data = {}
-        historic_data = {}
+        daily_data = {}
+
         try:
-            current_data = json.loads(live_data_response)
+            current_data = json.loads(data["live"])
             current_data = current_data.get("sensors", None)
 
-            historic_data = None
-            if daily_data_response is not None:
-                historic_data = json.loads(daily_data_response)
-                historic_data = historic_data.get("sensors", None)
+            daily_data = None
+            if data["live"]:
+                daily_data = json.loads(data["live"])
+                daily_data = daily_data.get("sensors", None)
 
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
         timestamp, temperature, wind_speed, wind_direction, rain, cumulative_rain, humidity, pressure, wind_gust = self.handle_current_data(current_data)
         
-        if historic_data is not None:
-            max_wind_speed, cumulative_rain_historic, max_temp, min_temp = self.handle_historic_data(historic_data)
+        if daily_data is not None:
+            max_wind_speed, cumulative_rain_historic, max_temp, min_temp = self.handle_historic_data(daily_data)
         else:
             max_wind_speed, cumulative_rain_historic, max_temp, min_temp = None, None, None, None
 
@@ -161,70 +158,39 @@ class WeatherlinkV2Reader(WeatherReader):
         return wr
 
     
-    def call_current_endpoint(self, station_id: str, api_key: str, api_secret: str) -> str:
-        endpoint = self.live_endpoint.format(mode="current", station_id=station_id)
+    def fetch_data(self, station: WeatherStation) -> dict:
+        station_id, api_key, api_secret = station.field1, station.field2, station.field3
+
+        live_url = self.live_endpoint.format(mode="current", station_id=station_id)
 
         params = {
             "api-key": api_key,
             "t": int(datetime.datetime.now().timestamp())
         }
-        headers = {
-            'X-Api-Secret': api_secret
-        }
-        response = requests.get(endpoint, params=params, headers=headers)
-        
-        logging.info(f"Requesting {response.url}")
+        headers = {'X-Api-Secret': api_secret}
+        logging.info(f"Requesting {live_response.url}")
+        live_response = requests.get(live_url, params=params, headers=headers)
 
-        if response.status_code != 200:
-            logging.error(f"Request failed with status code {response.status_code}. Check station connection parameters.")
+        if live_response.status_code != 200:
+            logging.error(f"Request failed with status code {live_response.status_code}. Check station connection parameters.")
             return None
         
-        # with open(f"./debug/{station_id}_current.json", "w") as f:
-        #     f.write(response.text)
-        
-        return response.text
+        daily_url = self.daily_endpoint.format(mode="historic", station_id=station_id)
 
-    
-    def call_daily_endpoint(self, station_id: str, api_key: str, api_secret: str) -> str:
-        endpoint = self.daily_endpoint.format(mode="historic", station_id=station_id)
-
-        #start timestamp is today 5 minutes ago, end timestamp is today at 23:59:59
         _15_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes=15)
-
         params = {
             "api-key": api_key,
             "t": int(datetime.datetime.now().timestamp()),
             "start-timestamp": int(_15_minutes_ago.timestamp()),
             "end-timestamp": int(datetime.datetime.now().replace(hour=23, minute=59, second=59, microsecond=0).timestamp())
         }
-        headers = {
-            'X-Api-Secret': api_secret
-        }
-        response = requests.get(endpoint, params=params, headers=headers)
-        
-        logging.info(f"Requesting {response.url}")
+        headers = {'X-Api-Secret': api_secret}
+        logging.info(f"Requesting {daily_response.url}")
+        daily_response = requests.get(daily_url, params=params, headers=headers)
 
-        if response.status_code != 200:
-            logging.warning(f"Request failed with status code {response.status_code}. Is the subscription active?")
+        if daily_response.status_code != 200:
+            logging.warning(f"Request failed with status code {daily_response.status_code}. Is the subscription active?")
             return None
 
-        # with open(f"./debug/{station_id}_historic.json", "w") as f:
-        #     f.write(response.text)
-
-        return response.text
+        return {"live": live_response.text, "daily": daily_response.text}
     
-    
-    def get_data(self, station) -> dict:
-        for value in [station.field1, station.field2, station.field3]:
-            if not value:
-                raise ValueError(f"Missing connection parameter.")
-        
-        current_response = self.call_current_endpoint(station_id=station.field1, api_key=station.field2, api_secret=station.field3)
-        historic_response = self.call_daily_endpoint(station_id=station.field1, api_key=station.field2, api_secret=station.field3)   
-
-        if current_response is None:
-            return None
-
-        parsed = self.parse(station, current_response, historic_response)
-
-        return parsed

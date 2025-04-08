@@ -10,10 +10,40 @@ import json
 import logging
 
 from schema import WeatherRecord, WeatherStation
+from contextlib import contextmanager
+
+
+class CursorFromConnectionFromPool:
+    """Context manager for PostgreSQL cursor."""
+
+    def __init__(self):
+        self.connection: Optional[_connection] = None
+        self.cursor: Optional[_cursor] = None
+
+    def __enter__(self) -> _cursor:
+        """Enter the context manager."""
+        self.connection = Database.get_connection()
+        self.cursor = self.connection.cursor(cursor_factory=RealDictCursor)
+        return self.cursor
+
+    def __exit__(self, exception_type, exception_value, exception_traceback) -> None:
+        """Exit the context manager."""
+        if exception_value:
+            self.connection.rollback()
+        else:
+            self.cursor.close()
+            self.connection.commit()
+        Database.return_connection(self.connection)
+
 
 class Database:
     """Database class for managing PostgreSQL connections."""
     __connection_pool: Optional[pool.SimpleConnectionPool] = None
+
+    STATION_FIELDS = [
+        "id", "connection_type", "field1", "field2", "field3", 
+        "pressure_offset", "data_timezone", "local_timezone"
+    ]
 
     @classmethod
     def initialize(cls, connection_string: str) -> None:
@@ -106,79 +136,63 @@ class Database:
                 (id, thread_timestamp, command)
             )
 
-class CursorFromConnectionFromPool:
-    """Context manager for PostgreSQL cursor."""
+    @staticmethod
+    def get_all_stations() -> List[WeatherStation]:
+        """Get all active weather stations."""
+        query = f"""
+        SELECT {', '.join(Database.STATION_FIELDS)} 
+        FROM weather_station 
+        WHERE status = 'active'
+        AND connection_type != 'connection_disabled'
+        """
+        with CursorFromConnectionFromPool() as cursor:
+            cursor.execute(query)
+            stations = cursor.fetchall()
+            return [WeatherStation(**station) for station in stations]
+        
+    def get_single_station(station_id: str) -> WeatherStation:
+        """Get a single weather station by ID."""
+        query = f"""
+        SELECT {', '.join(Database.STATION_FIELDS)} 
+        FROM weather_station 
+        WHERE id = %s
+        """
+        with CursorFromConnectionFromPool() as cursor:
+            cursor.execute(query, (station_id,))
+            station = cursor.fetchone()
+            return WeatherStation(**station) if station else None
+        
+    def get_stations_by_connection_type(station_type: str) -> List[WeatherStation]:
+        """Get all weather stations by type."""
+        query = f"""
+        SELECT {', '.join(Database.STATION_FIELDS)} 
+        FROM weather_station 
+        WHERE connection_type = %s AND status = 'active'
+        """
+        with CursorFromConnectionFromPool() as cursor:
+            cursor.execute(query, (station_type,))
+            stations = cursor.fetchall()
+            return [WeatherStation(**station) for station in stations]
+        
+    def increment_incident_count(station_id: str) -> None:
+        """Increment the incident count for a weather station."""
+        with CursorFromConnectionFromPool() as cursor:
+            cursor.execute(
+                """
+                UPDATE weather_station 
+                SET incident_count = COALESCE(incident_count, 0) + 1 
+                WHERE id = %s
+                """, 
+                (station_id,)
+            )
 
-    def __init__(self):
-        self.connection: Optional[_connection] = None
-        self.cursor: Optional[_cursor] = None
-
-    def __enter__(self) -> _cursor:
-        """Enter the context manager."""
-        self.connection = Database.get_connection()
-        self.cursor = self.connection.cursor(cursor_factory=RealDictCursor)
-        return self.cursor
-
-    def __exit__(self, exception_type, exception_value, exception_traceback) -> None:
-        """Exit the context manager."""
-        if exception_value:
-            self.connection.rollback()
-        else:
-            self.cursor.close()
-            self.connection.commit()
-        Database.return_connection(self.connection)
-
-
-STATION_FIELDS = [
-    "id", "connection_type", "field1", "field2", "field3", 
-    "pressure_offset", "data_timezone", "local_timezone"
-]
-
-def get_all_stations() -> List[WeatherStation]:
-    """Get all active weather stations."""
-    query = f"""
-    SELECT {', '.join(STATION_FIELDS)} 
-    FROM weather_station 
-    WHERE status = 'active'
-    AND connection_type != 'connection_disabled'
-    """
-    with CursorFromConnectionFromPool() as cursor:
-        cursor.execute(query)
-        stations = cursor.fetchall()
-        return [WeatherStation(**station) for station in stations]
-    
-def get_single_station(station_id: str) -> WeatherStation:
-    """Get a single weather station by ID."""
-    query = f"""
-    SELECT {', '.join(STATION_FIELDS)} 
-    FROM weather_station 
-    WHERE id = %s
-    """
-    with CursorFromConnectionFromPool() as cursor:
-        cursor.execute(query, (station_id,))
-        station = cursor.fetchone()
-        return WeatherStation(**station) if station else None
-    
-def get_stations_by_connection_type(station_type: str) -> List[WeatherStation]:
-    """Get all weather stations by type."""
-    query = f"""
-    SELECT {', '.join(STATION_FIELDS)} 
-    FROM weather_station 
-    WHERE connection_type = %s AND status = 'active'
-    """
-    with CursorFromConnectionFromPool() as cursor:
-        cursor.execute(query, (station_type,))
-        stations = cursor.fetchall()
-        return [WeatherStation(**station) for station in stations]
-    
-def increment_incident_count(station_id: str) -> None:
-    """Increment the incident count for a weather station."""
-    with CursorFromConnectionFromPool() as cursor:
-        cursor.execute(
-            """
-            UPDATE weather_station 
-            SET incident_count = COALESCE(incident_count, 0) + 1 
-            WHERE id = %s
-            """, 
-            (station_id,)
-        )
+@contextmanager
+def database_connection(db_url: str):
+    """Context manager for database connection."""
+    logging.info("Connecting to database...")
+    Database.initialize(db_url)
+    try:
+        yield
+    finally:
+        Database.close_all_connections()
+        logging.info("Database connections closed.")

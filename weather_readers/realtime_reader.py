@@ -22,18 +22,12 @@ class RealtimeReader(WeatherReader):
         32: "daily_max_wind_speed"
     }
 
-    def __init__(self, live_endpoint: str = None, daily_endpoint: str = None):
-        super().__init__(live_endpoint=live_endpoint, daily_endpoint=daily_endpoint)
+    def __init__(self):
+        self.required_fields = ["field1"]
 
-    def parse(
-        self, 
-        station, 
-        live_data_response: str, 
-        daily_data_response: None) -> WeatherRecord:
-
-        data = {}
+    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         valid_keys = self.INDEX_TO_DATA.keys()
-        for index, item in enumerate(live_data_response.strip().split(" ")):
+        for index, item in enumerate(data["live"].strip().split(" ")):
             item = item.strip()
             if not item:
                 continue
@@ -88,7 +82,7 @@ class RealtimeReader(WeatherReader):
         return wr
     
     
-    def call_endpoint(self, endpoint: str) -> str:
+    def fetch_data(self, station: WeatherStation, *args, **kwargs) -> dict:
         if not endpoint.endswith("/realtime.txt"):
             endpoint = f"{endpoint}/realtime.txt"
 
@@ -102,8 +96,3 @@ class RealtimeReader(WeatherReader):
             raise Exception(f"Error: Received status code {response.status_code}")
         return response.text
     
-    
-    def get_data(self, station: WeatherStation) -> dict:
-        raw_data = self.call_endpoint(endpoint=station.field1)
-        return self.parse(station=station, live_data_response=raw_data, daily_data_response=None)
-

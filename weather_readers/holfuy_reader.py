@@ -8,17 +8,14 @@ from .weather_reader import WeatherReader
 
 class HolfuyReader(WeatherReader):
     def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__(live_endpoint=live_endpoint, daily_endpoint=daily_endpoint)
+        self.live_endpoint = live_endpoint
+        self.daily_endpoint = daily_endpoint
+        self.required_fields = ["field1", "field3"]  # station_id and password
     
-    def parse(
-            self,
-            station: WeatherStation,
-            live_data_response: str,
-            daily_data_response: str) -> WeatherRecord:
-        
+    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         try:
-            live_data = json.loads(live_data_response)
-            historic_data = json.loads(daily_data_response)
+            live_data = json.loads(data["live"])["data"]
+            daily_data = json.loads(data["daily"])["data"]
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
         
@@ -65,31 +62,21 @@ class HolfuyReader(WeatherReader):
         return wr
     
     
-    def call_live_endpoint(self, station_id: str, password: str) -> str:
-        endpoint = f"{self.live_endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=km/h&daily=True"
+    def fetch_data(self, station: WeatherStation) -> dict:
+        station_id, password = station.field1, station.field3
 
-        response = requests.get(endpoint)
+        live_url = f"{self.live_endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=km/h&daily=True"
+        logging.info(f"Requesting {live_url}")
+        live_response = requests.get(live_url)
+        if live_response.status_code != 200:
+            logging.error(f"Request failed with status code {live_response.status_code}. Check station connection parameters.")
+            return None
         
-        logging.info(f"Requesting {response.url}")
+        daily_url = f"{self.daily_endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=km/h&type=2&mback=60"
+        logging.info(f"Requesting {daily_url}")
+        daily_response = requests.get(daily_url)
+        if daily_response.status_code != 200:
+            logging.error(f"Request failed with status code {daily_response.status_code}. Check station connection parameters.")
+            return None
         
-        return response.text
-    
-    
-    def call_historic_endpoint(self, station_id: str, password: str) -> str:
-        endpoint = f"{self.daily_endpoint}?s={station_id}&pw={password}&m=JSON&tu=C&su=km/h&type=2&mback=60"
-
-        response = requests.get(endpoint)
-    
-        logging.info(f"Requesting {response.url}")
-        
-        return response.text
-
-    
-    
-    def get_data(self, station: WeatherStation) -> WeatherRecord:
-
-        live_response = self.call_live_endpoint(station.field1, station.field3)
-        historical_response = self.call_historic_endpoint(station.field1, station.field3)
-
-        parsed = self.parse(station=station, live_data_response=live_response, daily_data_response=historical_response)
-        return parsed
+        return {"live": live_response.text, "daily": daily_response.text}
