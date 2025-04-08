@@ -1,6 +1,7 @@
 import datetime
 import uuid
 import zoneinfo
+from dataclasses import dataclass
 
 class WeatherRecord:
     def __init__(self, 

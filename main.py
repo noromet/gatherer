@@ -18,19 +18,23 @@ from schema import WeatherStation
 os.environ['TZ'] = 'UTC'
 tzset()
 
-# region definitions
-load_dotenv(verbose=True)
-DB_URL = os.getenv("DATABASE_CONNECTION_URL")
-MAX_THREADS = int(os.getenv("MAX_THREADS"))
-WEATHERLINK_V1_ENDPOINT = os.getenv("WEATHERLINK_V1_ENDPOINT")
-WEATHERLINK_V2_ENDPOINT = os.getenv("WEATHERLINK_V2_ENDPOINT")
-WUNDERGROUND_ENDPOINT = os.getenv("WUNDERGROUND_ENDPOINT")
-WUNDERGROUND_DAILY_ENDPOINT = os.getenv("WUNDERGROUND_DAILY_ENDPOINT")
-HOLFUY_LIVE_ENDPOINT = os.getenv("HOLFUY_LIVE_ENDPOINT")
-HOLFUY_HISTORIC_ENDPOINT = os.getenv("HOLFUY_HISTORIC_ENDPOINT")
-THINGSPEAK_ENDPOINT = os.getenv("THINGSPEAK_ENDPOINT")
-ECOWITT_ENDPOINT = os.getenv("ECOWITT_ENDPOINT")
-ECOWITT_DAILY_ENDPOINT = os.getenv("ECOWITT_DAILY_ENDPOINT")
+# region config
+class Config:
+    def __init__(self):
+        load_dotenv(verbose=True)
+        self.DB_URL = os.getenv("DATABASE_CONNECTION_URL")
+        self.MAX_THREADS = int(os.getenv("MAX_THREADS"))
+        self.WEATHERLINK_V1_ENDPOINT = os.getenv("WEATHERLINK_V1_ENDPOINT")
+        self.WEATHERLINK_V2_ENDPOINT = os.getenv("WEATHERLINK_V2_ENDPOINT")
+        self.WUNDERGROUND_ENDPOINT = os.getenv("WUNDERGROUND_ENDPOINT")
+        self.WUNDERGROUND_DAILY_ENDPOINT = os.getenv("WUNDERGROUND_DAILY_ENDPOINT")
+        self.HOLFUY_LIVE_ENDPOINT = os.getenv("HOLFUY_LIVE_ENDPOINT")
+        self.HOLFUY_HISTORIC_ENDPOINT = os.getenv("HOLFUY_HISTORIC_ENDPOINT")
+        self.THINGSPEAK_ENDPOINT = os.getenv("THINGSPEAK_ENDPOINT")
+        self.ECOWITT_ENDPOINT = os.getenv("ECOWITT_ENDPOINT")
+        self.ECOWITT_DAILY_ENDPOINT = os.getenv("ECOWITT_DAILY_ENDPOINT")
+
+config = Config()
 # endregion
 
 #region argument processing
@@ -59,18 +63,18 @@ def validate_args(args):
 
 class Gatherer:
 
-    def __init__(self, run_id: str, dry_run: bool):
+    def __init__(self, run_id: str, dry_run: bool, config: Config):
         self.run_id = run_id
         self.dry_run = dry_run
         self.stations = set()
         self.readers = {
             'meteoclimatic':    api.MeteoclimaticReader(),
-            'weatherlink_v1':   api.WeatherLinkV1Reader(live_endpoint=WEATHERLINK_V1_ENDPOINT),
-            'wunderground':     api.WundergroundReader(live_endpoint=WUNDERGROUND_ENDPOINT, daily_endpoint=WUNDERGROUND_DAILY_ENDPOINT),
-            'weatherlink_v2':   api.WeatherlinkV2Reader(live_endpoint=WEATHERLINK_V2_ENDPOINT, daily_endpoint=WEATHERLINK_V2_ENDPOINT),
-            'holfuy':           api.HolfuyReader(live_endpoint=HOLFUY_LIVE_ENDPOINT, daily_endpoint=HOLFUY_HISTORIC_ENDPOINT),
-            'thingspeak':       api.ThingspeakReader(live_endpoint=THINGSPEAK_ENDPOINT),
-            'ecowitt':          api.EcowittReader(live_endpoint=ECOWITT_ENDPOINT, daily_endpoint=ECOWITT_DAILY_ENDPOINT),
+            'weatherlink_v1':   api.WeatherLinkV1Reader(live_endpoint=config.WEATHERLINK_V1_ENDPOINT),
+            'wunderground':     api.WundergroundReader(live_endpoint=config.WUNDERGROUND_ENDPOINT, daily_endpoint=config.WUNDERGROUND_DAILY_ENDPOINT),
+            'weatherlink_v2':   api.WeatherlinkV2Reader(live_endpoint=config.WEATHERLINK_V2_ENDPOINT, daily_endpoint=config.WEATHERLINK_V2_ENDPOINT),
+            'holfuy':           api.HolfuyReader(live_endpoint=config.HOLFUY_LIVE_ENDPOINT, daily_endpoint=config.HOLFUY_HISTORIC_ENDPOINT),
+            'thingspeak':       api.ThingspeakReader(live_endpoint=config.THINGSPEAK_ENDPOINT),
+            'ecowitt':          api.EcowittReader(live_endpoint=config.ECOWITT_ENDPOINT, daily_endpoint=config.ECOWITT_DAILY_ENDPOINT),
             'realtime':         api.RealtimeReader()
         }
 
@@ -163,10 +167,10 @@ class Gatherer:
         result_queue.put(results)
 
     def multithread_processing(self, stations):
-        chunk_size = len(stations) // MAX_THREADS
-        remainder_size = len(stations) % MAX_THREADS
+        chunk_size = len(stations) // config.MAX_THREADS
+        remainder_size = len(stations) % config.MAX_THREADS
         chunks = []
-        for i in range(MAX_THREADS):
+        for i in range(config.MAX_THREADS):
             start = i * chunk_size
             end = start + chunk_size
             chunks.append(stations[start:end])
@@ -174,7 +178,7 @@ class Gatherer:
             chunks[i].append(stations[-(i+1)])
             
         result_queue = queue.Queue()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=config.MAX_THREADS) as executor:
             futures = [executor.submit(self.process_chunk, chunk, i, result_queue) for i, chunk in enumerate(chunks)]
             concurrent.futures.wait(futures)
         
@@ -211,7 +215,7 @@ def main():
     logging.info("Starting gatherer service.")
     
     logging.info(f"Connecting to database...")
-    Database.initialize(DB_URL)
+    Database.initialize(config.DB_URL)
     logging.info("Connected to database.")
 
     args = get_args()
@@ -223,7 +227,7 @@ def main():
     run_id = uuid4().hex
     timestamp = datetime.now().replace(second=0, microsecond=0)
 
-    gatherer = Gatherer(run_id, dry_run)
+    gatherer = Gatherer(run_id, dry_run, config)
     
     if args.dry_run:
         logging.warning("[Dry run enabled]")
