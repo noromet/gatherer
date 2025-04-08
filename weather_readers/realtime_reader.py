@@ -1,26 +1,48 @@
-from schema import WeatherRecord
-from .utils import smart_parse_date
-from .common import assert_date_age
+from schema import WeatherRecord, WeatherStation
 import requests
 import logging
 import json
-from datetime import tzinfo, timezone, datetime
+from datetime import timezone, datetime
+from .weather_reader import WeatherReader
 
-class RealtimeReader:        
-    @staticmethod
-    def parse(str_data: str, station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> WeatherRecord:
+class RealtimeReader(WeatherReader):
+    INDEX_TO_DATA = {
+        0: "date",
+        1: "time",
+        2: "current_temperature_celsius",
+        3: "relative_humidity",
+        5: "current_wind_speed_kph",
+        6: "last_wind_speed_kph",
+        7: "current_wind_direction",
+        8: "rain_rate_mm",
+        9: "total_daily_precipitation_at_record_timestamp",
+        10: "pressure_hpa",
+        30: "daily_max_temperature",
+        28: "daily_min_temperature",
+        32: "daily_max_wind_speed"
+    }
+
+    def __init__(self, live_endpoint: str = None, daily_endpoint: str = None):
+        super().__init__(live_endpoint=live_endpoint, daily_endpoint=daily_endpoint)
+
+    def parse(
+        self, 
+        station, 
+        live_data_response: str, 
+        daily_data_response: None) -> WeatherRecord:
+
         data = {}
-        valid_keys = INDEX_TO_DATA.keys()
-        for index, item in enumerate(str_data.strip().split(" ")):
+        valid_keys = self.INDEX_TO_DATA.keys()
+        for index, item in enumerate(self.live_endpoint.strip().split(" ")):
             item = item.strip()
             if not item:
                 continue
             if index in valid_keys:
-                data[INDEX_TO_DATA[index]] = item
+                data[self.INDEX_TO_DATA[index]] = item
             index += 1    
 
         _time = datetime.strptime(data["time"], "%H:%M:%S")
-        _date = smart_parse_date(data["date"], timezone=data_timezone)
+        _date = self.smart_parse_date(data["date"], timezone=station.data_timezone)
 
         print(
             json.dumps(
@@ -31,12 +53,12 @@ class RealtimeReader:
         if _time is None or _date is None:
             raise ValueError("Cannot accept a reading without a timestamp.")
         
-        timestamp = datetime.combine(_date, _time.time(), tzinfo=data_timezone)
+        timestamp = datetime.combine(_date, _time.time(), tzinfo=station.data_timezone)
 
         observation_time_utc = timestamp.astimezone(timezone.utc)
-        assert_date_age(observation_time_utc)
+        self.assert_date_age(observation_time_utc)
 
-        local_observation_time = observation_time_utc.astimezone(local_timezone)
+        local_observation_time = observation_time_utc.astimezone(station.local_timezone)
             
         wind_direction = float(data.get("current_wind_direction", None))
         temperature = float(data.get("current_temperature_celsius", None))
@@ -51,7 +73,7 @@ class RealtimeReader:
 
         wr = WeatherRecord(
             id=None,
-            station_id=station_id,
+            station_id=station.id,
             source_timestamp=local_observation_time,
             temperature=temperature,
             wind_speed=wind_speed,
@@ -71,8 +93,8 @@ class RealtimeReader:
 
         return wr
     
-    @staticmethod
-    def curl_endpoint(endpoint: str) -> str:
+    
+    def call_endpoint(self, endpoint: str) -> str:
         if not endpoint.endswith("/realtime.txt"):
             endpoint = f"{endpoint}/realtime.txt"
 
@@ -86,23 +108,8 @@ class RealtimeReader:
             raise Exception(f"Error: Received status code {response.status_code}")
         return response.text
     
-    @staticmethod
-    def get_data(endpoint: str, station_id: str = None, data_timezone: tzinfo = timezone.utc, local_timezone: tzinfo = timezone.utc) -> dict:
-        raw_data = RealtimeReader.curl_endpoint(endpoint)
-        return RealtimeReader.parse(raw_data, station_id=station_id, data_timezone=data_timezone, local_timezone=local_timezone)
+    
+    def get_data(self, station: WeatherStation) -> dict:
+        raw_data = self.call_endpoint(endpoint=station.field1)
+        return self.parse(station=station, live_data_response=raw_data, daily_data_response=None)
 
-INDEX_TO_DATA = {
-    0: "date",
-    1: "time",
-    2: "current_temperature_celsius",
-    3: "relative_humidity",
-    5: "current_wind_speed_kph",
-    6: "last_wind_speed_kph",
-    7: "current_wind_direction",
-    8: "rain_rate_mm",
-    9: "total_daily_precipitation_at_record_timestamp",
-    10: "pressure_hpa",
-    30: "daily_max_temperature",
-    28: "daily_min_temperature",
-    32: "daily_max_wind_speed"
-}

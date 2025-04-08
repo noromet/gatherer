@@ -116,7 +116,7 @@ class CursorFromConnectionFromPool:
     def __enter__(self) -> _cursor:
         """Enter the context manager."""
         self.connection = Database.get_connection()
-        self.cursor = self.connection.cursor()
+        self.cursor = self.connection.cursor(cursor_factory=RealDictCursor)
         return self.cursor
 
     def __exit__(self, exception_type, exception_value, exception_traceback) -> None:
@@ -142,7 +142,7 @@ def get_all_stations() -> List[WeatherStation]:
     WHERE status = 'active'
     AND connection_type != 'connection_disabled'
     """
-    with CursorFromConnectionFromPool(cursor_factory=RealDictCursor) as cursor:
+    with CursorFromConnectionFromPool() as cursor:
         cursor.execute(query)
         stations = cursor.fetchall()
         return [WeatherStation(**station) for station in stations]
@@ -154,7 +154,7 @@ def get_single_station(station_id: str) -> WeatherStation:
     FROM weather_station 
     WHERE id = %s
     """
-    with CursorFromConnectionFromPool(cursor_factory=RealDictCursor) as cursor:
+    with CursorFromConnectionFromPool() as cursor:
         cursor.execute(query, (station_id,))
         station = cursor.fetchone()
         return WeatherStation(**station) if station else None
@@ -166,7 +166,7 @@ def get_stations_by_connection_type(station_type: str) -> List[WeatherStation]:
     FROM weather_station 
     WHERE connection_type = %s AND status = 'active'
     """
-    with CursorFromConnectionFromPool(cursor_factory=RealDictCursor) as cursor:
+    with CursorFromConnectionFromPool() as cursor:
         cursor.execute(query, (station_type,))
         stations = cursor.fetchall()
         return [WeatherStation(**station) for station in stations]

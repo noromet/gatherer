@@ -66,11 +66,11 @@ class Gatherer:
         self.readers = {
             'meteoclimatic':    api.MeteoclimaticReader(),
             'weatherlink_v1':   api.WeatherLinkV1Reader(live_endpoint=WEATHERLINK_V1_ENDPOINT),
-            'wunderground':     api.WundergroundReader(live_endpoint=WUNDERGROUND_ENDPOINT, historical_endpoint=WUNDERGROUND_DAILY_ENDPOINT),
-            'weatherlink_v2':   api.WeatherlinkV2Reader(live_endpoint=WEATHERLINK_V2_ENDPOINT),
-            'holfuy':           api.HolfuyReader(live_endpoint=HOLFUY_LIVE_ENDPOINT, historical_endpoint=HOLFUY_HISTORIC_ENDPOINT),
+            'wunderground':     api.WundergroundReader(live_endpoint=WUNDERGROUND_ENDPOINT, daily_endpoint=WUNDERGROUND_DAILY_ENDPOINT),
+            'weatherlink_v2':   api.WeatherlinkV2Reader(live_endpoint=WEATHERLINK_V2_ENDPOINT, daily_endpoint=WEATHERLINK_V2_ENDPOINT),
+            'holfuy':           api.HolfuyReader(live_endpoint=HOLFUY_LIVE_ENDPOINT, daily_endpoint=HOLFUY_HISTORIC_ENDPOINT),
             'thingspeak':       api.ThingspeakReader(live_endpoint=THINGSPEAK_ENDPOINT),
-            'ecowitt':          api.EcowittReader(live_endpoint=ECOWITT_ENDPOINT, historical_endpoint=ECOWITT_DAILY_ENDPOINT),
+            'ecowitt':          api.EcowittReader(live_endpoint=ECOWITT_ENDPOINT, daily_endpoint=ECOWITT_DAILY_ENDPOINT),
             'realtime':         api.RealtimeReader()
         }
 

@@ -1,12 +1,13 @@
 from schema import WeatherRecord, WeatherStation
-from .utils import smart_parse_datetime, smart_parse_float, smart_azimuth
 import requests
 import logging
 import json
-from datetime import tzinfo, timezone
-from weather_reader import WeatherReader
+from datetime import timezone
+from .weather_reader import WeatherReader
 
 class MeteoclimaticReader (WeatherReader):
+    def __init__(self, live_endpoint: str = None, daily_endpoint: str = None):
+        super().__init__(live_endpoint=live_endpoint, daily_endpoint=daily_endpoint)
 
     def parse(
             self,
@@ -27,7 +28,7 @@ class MeteoclimaticReader (WeatherReader):
             if key in CODE_TO_NAME.keys() and key in WHITELIST:
                 data[CODE_TO_NAME[key]] = value
 
-        data["record_timestamp"] = smart_parse_datetime(data["record_timestamp"], timezone=station.data_timezone)
+        data["record_timestamp"] = self.smart_parse_datetime(data["record_timestamp"], timezone=station.data_timezone)
         if data["record_timestamp"] is None:
             raise ValueError("Cannot accept a reading without a timestamp.")
         
@@ -37,36 +38,36 @@ class MeteoclimaticReader (WeatherReader):
         local_observation_time = observation_time_utc.astimezone(station.local_timezone)
             
         try:
-            wind_direction = smart_azimuth(data.get("current_wind_direction", None))
+            wind_direction = self.smart_azimuth(data.get("current_wind_direction", None))
             
-            temperature = smart_parse_float(data.get("current_temperature_celsius", None))
+            temperature = self.smart_parse_float(data.get("current_temperature_celsius", None))
             if temperature == 100:
                 logging.error(f"[{station.id}]: Temperature == 100: {temperature}. Dump: {json.dumps(data)}")
-            wind_speed = smart_parse_float(data.get("current_wind_speed_kph", None))
+            wind_speed = self.smart_parse_float(data.get("current_wind_speed_kph", None))
             if wind_speed == 100:
                 logging.error(f"[{station.id}]: Wind speed == 100: {wind_speed}. Dump: {json.dumps(data)}")
             
-            max_wind_speed = smart_parse_float(data.get("daily_max_wind_speed", None))
+            max_wind_speed = self.smart_parse_float(data.get("daily_max_wind_speed", None))
             if max_wind_speed == 100:
                 logging.error(f"[{station.id}]: Max wind speed == 100: {max_wind_speed}. Dump: {json.dumps(data)}")
             
-            cumulativeRain = smart_parse_float(data.get("total_daily_precipitation_at_record_timestamp", None))
+            cumulativeRain = self.smart_parse_float(data.get("total_daily_precipitation_at_record_timestamp", None))
             if cumulativeRain == 100:
                 logging.error(f"[{station.id}]: Cumulative rain == 100: {cumulativeRain}. Dump: {json.dumps(data)}")
             
-            humidity = smart_parse_float(data.get("relative_humidity", None))
+            humidity = self.smart_parse_float(data.get("relative_humidity", None))
             if humidity == 100:
                 logging.error(f"[{station.id}]: Humidity == 100: {humidity}. Dump: {json.dumps(data)}")
             
-            pressure = smart_parse_float(data.get("pressure_hpa", None))
+            pressure = self.smart_parse_float(data.get("pressure_hpa", None))
             if pressure == 100:
                 logging.error(f"[{station.id}]: Pressure == 100: {pressure}. Dump: {json.dumps(data)}")
             
-            maxTemp = smart_parse_float(data.get("daily_max_temperature", None))
+            maxTemp = self.smart_parse_float(data.get("daily_max_temperature", None))
             if maxTemp == 100:
                 logging.error(f"[{station.id}]: Max temperature == 100: {maxTemp}. Dump: {json.dumps(data)}")
             
-            minTemp = smart_parse_float(data.get("daily_min_temperature", None))
+            minTemp = self.smart_parse_float(data.get("daily_min_temperature", None))
 
             if minTemp == 100:
                 logging.error(f"[{station.id}]: Min temperature == 100: {minTemp}. Dump: {json.dumps(data)}")
@@ -95,12 +96,12 @@ class MeteoclimaticReader (WeatherReader):
         except KeyError as e:
             raise ValueError(f"Missing key {e} in data.")
     
-    def get_live_endpoint(self) -> str:
+    def call_endpoint(self, endpoint) -> str:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
         }
 
-        response = requests.get(self.live_endpoint, headers=headers, timeout=5)
+        response = requests.get(endpoint, headers=headers, timeout=5)
 
         logging.info(f"Requesting {response.url}")
         if response.status_code != 200:
@@ -108,9 +109,12 @@ class MeteoclimaticReader (WeatherReader):
         
         return response.text
     
-    def get_data(self, station) -> dict:
-        raw_data = self.get_live_endpoint()
-        return self.parse(live_data_response=raw_data, daily_data_response=None, station=station)
+    def get_data(self, station) -> WeatherRecord:
+        if not station.field1:
+            raise ValueError(f"Missing connection parameter.")
+        
+        raw_data = self.call_endpoint(station.field1)
+        return self.parse(station=station, live_data_response=raw_data, daily_data_response=None)
     
 
 CODE_TO_NAME = {

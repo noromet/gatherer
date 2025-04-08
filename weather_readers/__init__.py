@@ -6,5 +6,5 @@ from .thingspeak_reader import ThingspeakReader
 from .holfuy_reader import HolfuyReader
 from .ecowitt_reader import EcowittReader
 from .realtime_reader import RealtimeReader
-from .utils import smart_parse_date, smart_parse_float, smart_azimuth
+from .weather_reader import WeatherReader
 from schema import WeatherRecord
