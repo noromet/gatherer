@@ -168,7 +168,7 @@ class WeatherlinkV2Reader(WeatherReader):
             "t": int(datetime.datetime.now().timestamp())
         }
         headers = {'X-Api-Secret': api_secret}
-        logging.info(f"Requesting {live_response.url}")
+        logging.info(f"Requesting {live_url}")
         live_response = requests.get(live_url, params=params, headers=headers)
 
         if live_response.status_code != 200:
@@ -185,12 +185,17 @@ class WeatherlinkV2Reader(WeatherReader):
             "end-timestamp": int(datetime.datetime.now().replace(hour=23, minute=59, second=59, microsecond=0).timestamp())
         }
         headers = {'X-Api-Secret': api_secret}
-        logging.info(f"Requesting {daily_response.url}")
+        logging.info(f"Requesting {daily_url}")
         daily_response = requests.get(daily_url, params=params, headers=headers)
 
         if daily_response.status_code != 200:
             logging.warning(f"Request failed with status code {daily_response.status_code}. Is the subscription active?")
-            return None
+            daily_response = None
 
-        return {"live": live_response.text, "daily": daily_response.text}
+        ret_dict = {"live": live_response.text}
+
+        if daily_response is not None:
+            ret_dict["daily"] = daily_response.text
+
+        return ret_dict
     

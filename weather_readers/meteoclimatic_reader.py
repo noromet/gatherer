@@ -8,7 +8,7 @@ from .weather_reader import WeatherReader
 
 class MeteoclimaticReader(WeatherReader):
     def __init__(self):
-        self.required_fields = ["field1", "field2"]
+        self.required_fields = ["field1"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         live_data = data["live"]
@@ -130,7 +130,7 @@ class MeteoclimaticReader(WeatherReader):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
         }
 
-        logging.info(f"Requesting {response.url}")
+        logging.info(f"Requesting {station.field1}")
         response = requests.get(station.field1, headers=headers, timeout=5)
 
         if response.status_code != 200:

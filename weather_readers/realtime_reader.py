@@ -83,6 +83,8 @@ class RealtimeReader(WeatherReader):
     
     
     def fetch_data(self, station: WeatherStation, *args, **kwargs) -> dict:
+        endpoint = station.field1
+
         if not endpoint.endswith("/realtime.txt"):
             endpoint = f"{endpoint}/realtime.txt"
 
@@ -94,5 +96,6 @@ class RealtimeReader(WeatherReader):
         logging.info(f"Requesting {response.url}")
         if response.status_code != 200:
             raise Exception(f"Error: Received status code {response.status_code}")
-        return response.text
+        
+        return {"live": response.text}
     

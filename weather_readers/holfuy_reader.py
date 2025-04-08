@@ -14,10 +14,11 @@ class HolfuyReader(WeatherReader):
     
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         try:
-            live_data = json.loads(data["live"])["data"]
-            daily_data = json.loads(data["daily"])["data"]
+            live_data = json.loads(data["live"])
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON data: {e}. Check station connection parameters.")
+        except KeyError as e:
+            raise ValueError(f"Missing expected keys in JSON data: {e}.")
         
         observation_time = datetime.datetime.strptime(live_data["dateTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=station.data_timezone)
         observation_time_utc = observation_time.astimezone(timezone.utc)
@@ -77,6 +78,7 @@ class HolfuyReader(WeatherReader):
         daily_response = requests.get(daily_url)
         if daily_response.status_code != 200:
             logging.error(f"Request failed with status code {daily_response.status_code}. Check station connection parameters.")
-            return None
+            return None 
         
+        #daily is deprecated while holfuy fixes their API
         return {"live": live_response.text, "daily": daily_response.text}

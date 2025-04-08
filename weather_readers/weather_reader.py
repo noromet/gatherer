@@ -5,9 +5,6 @@ from typing import Any
 from dateutil import parser
 
 class WeatherReader(ABC):
-    def __init__(self):
-        self.required_fields = []
-
     @abstractmethod
     def fetch_data(self, station: WeatherStation, *args, **kwargs) -> dict:
         """
@@ -19,13 +16,6 @@ class WeatherReader(ABC):
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         """
         Parse the fetched data into a WeatherRecord. Subclasses should implement this to handle their specific parsing logic.
-        """
-        pass
-
-    @abstractmethod
-    def validate_fields(self, station: WeatherStation) -> None:
-        """
-        Validate the fields of the WeatherStation. Subclasses should implement this to handle their specific validation logic.
         """
         pass
 
@@ -43,6 +33,10 @@ class WeatherReader(ABC):
         """
         self.validate_fields(station)
         raw_data = self.fetch_data(station, *args, **kwargs)
+
+        if raw_data is None:
+            return None
+
         return self.parse(station, raw_data)
     
 # region helpers

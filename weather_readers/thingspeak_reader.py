@@ -16,6 +16,7 @@ class ThingspeakReader(WeatherReader):
 
     def __init__(self, live_endpoint: str):
         self.live_endpoint=live_endpoint
+        self.required_fields = []
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         try:
@@ -58,9 +59,9 @@ class ThingspeakReader(WeatherReader):
     
     
     def fetch_data(self, station: WeatherStation) -> dict:
-        endpoint = f"{self.live_endpoint}/{station.id}/feeds.json?results=1"
+        endpoint = f"{self.live_endpoint}/{station.field1}/feeds.json?results=1"
         
-        logging.info(f"Requesting {response.url}")
+        logging.info(f"Requesting {endpoint}")
         response = requests.get(endpoint)
 
         if response.status_code != 200:
