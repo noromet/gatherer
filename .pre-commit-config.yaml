@@ -3,6 +3,9 @@ repos:
     rev: 25.1.0  # Use the latest stable version
     hooks:
       - id: black
+        args:
+          - --line-length=88
+          - --quiet
 
   - repo: https://github.com/PyCQA/pylint
     rev: v3.3.6  # Use the latest stable version
@@ -15,3 +18,4 @@ repos:
           - --disable=too-few-public-methods
           - --disable=too-many-locals
           - --disable=too-many-positional-arguments
+          - --disable=broad-exception-caught
