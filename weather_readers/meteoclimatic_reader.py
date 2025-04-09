@@ -67,12 +67,12 @@ class MeteoclimaticReader(WeatherReader):
                     f"[{station.id}]: Max wind speed == 100: {max_wind_speed}. Dump: {json.dumps(data)}"
                 )
 
-            cumulativeRain = self.smart_parse_float(
+            cumulative_rain = self.smart_parse_float(
                 data.get("total_daily_precipitation_at_record_timestamp", None)
             )
-            if cumulativeRain == 100:
+            if cumulative_rain == 100:
                 logging.error(
-                    f"[{station.id}]: Cumulative rain == 100: {cumulativeRain}. Dump: {json.dumps(data)}"
+                    f"[{station.id}]: Cumulative rain == 100: {cumulative_rain}. Dump: {json.dumps(data)}"
                 )
 
             humidity = self.smart_parse_float(data.get("relative_humidity", None))
@@ -87,17 +87,17 @@ class MeteoclimaticReader(WeatherReader):
                     f"[{station.id}]: Pressure == 100: {pressure}. Dump: {json.dumps(data)}"
                 )
 
-            maxTemp = self.smart_parse_float(data.get("daily_max_temperature", None))
-            if maxTemp == 100:
+            max_temperature = self.smart_parse_float(data.get("daily_max_temperature", None))
+            if max_temperature == 100:
                 logging.error(
-                    f"[{station.id}]: Max temperature == 100: {maxTemp}. Dump: {json.dumps(data)}"
+                    f"[{station.id}]: Max temperature == 100: {max_temperature}. Dump: {json.dumps(data)}"
                 )
 
-            minTemp = self.smart_parse_float(data.get("daily_min_temperature", None))
+            min_temperature = self.smart_parse_float(data.get("daily_min_temperature", None))
 
-            if minTemp == 100:
+            if min_temperature == 100:
                 logging.error(
-                    f"[{station.id}]: Min temperature == 100: {minTemp}. Dump: {json.dumps(data)}"
+                    f"[{station.id}]: Min temperature == 100: {min_temperature}. Dump: {json.dumps(data)}"
                 )
 
             wr = WeatherRecord(
@@ -113,9 +113,9 @@ class MeteoclimaticReader(WeatherReader):
                 pressure=pressure,
                 flagged=False,
                 gatherer_thread_id=None,
-                cumulative_rain=cumulativeRain,
-                max_temperature=None,
-                min_temperature=None,
+                cumulative_rain=cumulative_rain,
+                max_temperature=max_temperature,
+                min_temperature=min_temperature,
                 wind_gust=None,
                 max_wind_gust=None,
             )
