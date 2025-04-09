@@ -1,16 +1,45 @@
+"""
+This module provides a PostgreSQL database management interface for a
+weather data gathering application.
+
+It includes:
+- A `Database` class for managing database connections, executing queries, and
+    interacting with weather-related tables.
+- A `CursorFromConnectionFromPool` context manager for safely handling database cursors.
+- Utility methods for saving weather records, managing gatherer thread records,
+    and retrieving weather station data.
+- A `database_connection` context manager for initializing and closing database connections.
+
+Key Features:
+- Connection pooling using `psycopg2.pool.SimpleConnectionPool` for efficient database access.
+- Support for saving and updating weather records and gatherer thread metadata.
+- Methods for querying weather stations based on status, connection type, or specific IDs.
+- Automatic handling of database transactions and error rollback.
+
+Dependencies:
+- `psycopg2` for PostgreSQL interaction.
+- `schema` module for `WeatherRecord` and `WeatherStation` data models.
+- Standard libraries: `datetime`, `uuid`, `json`, `logging`, and `contextlib`.
+
+This module is designed to ensure safe and efficient database operations for the
+weather data gathering system.
+"""
+
+from typing import List, Optional
+import datetime
+import uuid
+import json
+import logging
+import sys
+from contextlib import contextmanager
+
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extensions import connection as _connection
 from psycopg2.extensions import cursor as _cursor
 from psycopg2.extras import RealDictCursor
-from typing import List, Tuple, Optional
-import datetime
-import uuid
-import json
-import logging
 
 from schema import WeatherRecord, WeatherStation
-from contextlib import contextmanager
 
 
 class CursorFromConnectionFromPool:
@@ -38,22 +67,31 @@ class CursorFromConnectionFromPool:
 
 class Database:
     """Database class for managing PostgreSQL connections."""
+
     __connection_pool: Optional[pool.SimpleConnectionPool] = None
 
     STATION_FIELDS = [
-        "id", "connection_type", "field1", "field2", "field3", 
-        "pressure_offset", "data_timezone", "local_timezone"
+        "id",
+        "connection_type",
+        "field1",
+        "field2",
+        "field3",
+        "pressure_offset",
+        "data_timezone",
+        "local_timezone",
     ]
 
     @classmethod
     def initialize(cls, connection_string: str) -> None:
         """Initialize the connection pool."""
-        #if not local, ask for confirmation
-        if ("localhost" not in connection_string) and ("127.0.0.1" not in connection_string):
+        # if not local, ask for confirmation
+        if ("localhost" not in connection_string) and (
+            "127.0.0.1" not in connection_string
+        ):
             print("WARNING: CONNECTING TO A REMOTE DATABASE")
             if input("CONTINUE?: ").lower() != "y":
                 print("Exiting...")
-                exit()
+                sys.exit()
 
         cls.__connection_pool = pool.SimpleConnectionPool(1, 10, dsn=connection_string)
 
@@ -63,7 +101,7 @@ class Database:
         if cls.__connection_pool is None:
             raise psycopg2.OperationalError("Connection pool is not initialized.")
         conn = cls.__connection_pool.getconn()
-        conn.set_client_encoding('utf8')
+        conn.set_client_encoding("utf8")
         return conn
 
     @classmethod
@@ -75,12 +113,12 @@ class Database:
     def close_all_connections(cls) -> None:
         """Close all connections in the pool."""
         cls.__connection_pool.closeall()
-        
+
     @classmethod
     def save_record(cls, record: WeatherRecord) -> None:
         """Save a weather record to the database."""
         record.id = str(uuid.uuid4())
-        
+
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
                 """
@@ -96,24 +134,61 @@ class Database:
                 )
                 """,
                 (
-                    record.id, record.station_id, record.source_timestamp, 
-                    record.taken_timestamp, record.temperature, record.wind_speed, 
-                    record.max_wind_speed, record.wind_direction, record.rain, 
-                    record.humidity, record.pressure, record.flagged, 
-                    record.gatherer_thread_id, record.cumulative_rain, record.max_temperature, 
-                    record.min_temperature, record.wind_gust, record.max_wind_gust
-                )
+                    record.id,
+                    record.station_id,
+                    record.source_timestamp,
+                    record.taken_timestamp,
+                    record.temperature,
+                    record.wind_speed,
+                    record.max_wind_speed,
+                    record.wind_direction,
+                    record.rain,
+                    record.humidity,
+                    record.pressure,
+                    record.flagged,
+                    record.gatherer_thread_id,
+                    record.cumulative_rain,
+                    record.max_temperature,
+                    record.min_temperature,
+                    record.wind_gust,
+                    record.max_wind_gust,
+                ),
             )
 
     @classmethod
-    def save_thread_record(cls, id: uuid, results: dict):
+    def save_thread_record(cls, thread_record_id: uuid, results: dict):
+        """
+        Save the results of a gatherer thread to the database.
+
+        This method updates the `gatherer_thread` table with the total number of stations,
+        the number of stations with errors, and the error details for a specific thread.
+
+        Args:
+            thread_record_id (uuid): The unique identifier of the gatherer thread.
+            results (dict): A dictionary containing the results of the gatherer thread,
+                            where each key is a station ID and the value is a dictionary
+                            with the status and error details (if any).
+
+        Returns:
+            None
+        """
         if not results:
             logging.error("No results to save")
             return
-        
+
         total_stations = len(results)
-        error_stations = len([station for station in results.keys() if results[station]['status'] == 'error'])
-        errors = {station: results[station]['error'] for station in results.keys() if results[station]['status'] == 'error'}
+        error_stations = len(
+            [
+                station
+                for station in results.keys()
+                if results[station]["status"] == "error"
+            ]
+        )
+        errors = {
+            station: results[station]["error"]
+            for station in results.keys()
+            if results[station]["status"] == "error"
+        }
 
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
@@ -122,26 +197,43 @@ class Database:
                 SET total_stations = %s, error_stations = %s, errors = %s 
                 WHERE id = %s
                 """,
-                (total_stations, error_stations, json.dumps(errors), id)
+                (total_stations, error_stations, json.dumps(errors), thread_record_id),
             )
 
     @classmethod
-    def init_thread_record(cls, id: uuid, thread_timestamp: datetime.datetime, command: str):
+    def init_thread_record(
+        cls, thread_record_id: uuid, thread_timestamp: datetime.datetime, command: str
+    ):
+        """
+        Initialize a new gatherer thread record in the database.
+        This method inserts a new record into the `gatherer_thread` table with the
+        specified ID, timestamp, and command.
+        Args:
+            thread_record_id (uuid): The unique identifier of the gatherer thread.
+            thread_timestamp (datetime.datetime): The timestamp of the thread.
+            command (str): The command that initiated the thread.
+        Returns:
+            None
+        """
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
                 """
-                INSERT INTO gatherer_thread (id, thread_timestamp, command) 
+                INSERT INTO gatherer_thread (thread_record_id, thread_timestamp, command) 
                 VALUES (%s, %s, %s)
                 """,
-                (id, thread_timestamp, command)
+                (thread_record_id, thread_timestamp, command),
             )
 
-    @staticmethod
-    def get_all_stations() -> List[WeatherStation]:
-        """Get all active weather stations."""
+    @classmethod
+    def get_all_stations(cls) -> List[WeatherStation]:
+        """
+        Fetches all active weather stations from the database.
+        Returns:
+            List[WeatherStation]: A list of WeatherStation objects representing active stations.
+        """
         query = f"""
-        SELECT {', '.join(Database.STATION_FIELDS)} 
-        FROM weather_station 
+        SELECT {', '.join(Database.STATION_FIELDS)}
+        FROM weather_station
         WHERE status = 'active'
         AND connection_type != 'connection_disabled'
         """
@@ -149,11 +241,18 @@ class Database:
             cursor.execute(query)
             stations = cursor.fetchall()
             return [WeatherStation(**station) for station in stations]
-        
-    def get_single_station(station_id: str) -> WeatherStation:
-        """Get a single weather station by ID."""
+
+    @classmethod
+    def get_single_station(cls, station_id: str) -> WeatherStation:
+        """
+        Fetch a single weather station by ID.
+        Returns:
+            WeatherStation: A WeatherStation object representing the station.
+        Raises:
+            ValueError: If the station ID is not found.
+        """
         query = f"""
-        SELECT {', '.join(Database.STATION_FIELDS)} 
+        SELECT {', '.join(Database.STATION_FIELDS)}
         FROM weather_station 
         WHERE id = %s
         """
@@ -161,11 +260,18 @@ class Database:
             cursor.execute(query, (station_id,))
             station = cursor.fetchone()
             return WeatherStation(**station) if station else None
-        
-    def get_stations_by_connection_type(station_type: str) -> List[WeatherStation]:
-        """Get all weather stations by type."""
+
+    @classmethod
+    def get_stations_by_connection_type(cls, station_type: str) -> List[WeatherStation]:
+        """
+        Fetch weather stations by connection type.
+        Args:
+            station_type (str): The connection type of the stations to fetch.
+        Returns:
+            List[WeatherStation]: A list of WeatherStation objects representing the stations.
+        """
         query = f"""
-        SELECT {', '.join(Database.STATION_FIELDS)} 
+        SELECT {', '.join(Database.STATION_FIELDS)}
         FROM weather_station 
         WHERE connection_type = %s AND status = 'active'
         """
@@ -173,18 +279,26 @@ class Database:
             cursor.execute(query, (station_type,))
             stations = cursor.fetchall()
             return [WeatherStation(**station) for station in stations]
-        
-    def increment_incident_count(station_id: str) -> None:
-        """Increment the incident count for a weather station."""
+
+    @classmethod
+    def increment_incident_count(cls, station_id: str) -> None:
+        """
+        Increment the incident count for a weather station.
+        Args:
+            station_id (str): The ID of the weather station.
+        Returns:
+            None
+        """
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
                 """
                 UPDATE weather_station 
                 SET incident_count = COALESCE(incident_count, 0) + 1 
                 WHERE id = %s
-                """, 
-                (station_id,)
+                """,
+                (station_id,),
             )
+
 
 @contextmanager
 def database_connection(db_url: str):
