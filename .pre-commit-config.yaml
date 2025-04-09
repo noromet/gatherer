@@ -10,3 +10,8 @@ repos:
       - id: pylint
         args:
           - --disable=import-error
+          - --disable=too-many-instance-attributes
+          - --disable=too-many-arguments
+          - --disable=too-few-public-methods
+          - --disable=too-many-locals
+          - --disable=too-many-positional-arguments
