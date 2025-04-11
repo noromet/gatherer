@@ -71,7 +71,7 @@ class Database:
     __connection_pool: Optional[pool.SimpleConnectionPool] = None
 
     STATION_FIELDS = [
-        "id",
+        "id as ws_id",
         "connection_type",
         "field1",
         "field2",
