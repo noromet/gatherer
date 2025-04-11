@@ -28,6 +28,7 @@ class WeatherReader(ABC):
     def __init__(self):
         self.required_fields = []
 
+    # region template methods
     @abstractmethod
     def fetch_data(self, station: WeatherStation) -> dict:
         """
@@ -53,6 +54,9 @@ class WeatherReader(ABC):
             WeatherRecord: The parsed weather record.
         """
 
+    # endregion
+
+    # region common methods
     def validate_fields(self, station: WeatherStation) -> None:
         """
         Validate the fields of the WeatherStation based on self.required_fields.
@@ -85,6 +89,10 @@ class WeatherReader(ABC):
 
         return self.parse(station, raw_data)
 
+    # endregion
+
+    # region helper methods
+
     def make_request(
         self, url: str, params: dict = None, headers: dict = None, timeout: int = 5
     ) -> requests.Response:
@@ -108,8 +116,6 @@ class WeatherReader(ABC):
         logging.info("Requesting %s", url)
         response = requests.get(url, params=params, headers=headers, timeout=timeout)
         return response
-
-    # region helpers
 
     def assert_date_age(self, date: datetime.datetime) -> None:
         """
