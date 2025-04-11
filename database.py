@@ -218,7 +218,7 @@ class Database:
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
                 """
-                INSERT INTO gatherer_thread (thread_record_id, thread_timestamp, command) 
+                INSERT INTO gatherer_thread (id, thread_timestamp, command) 
                 VALUES (%s, %s, %s)
                 """,
                 (thread_record_id, thread_timestamp, command),

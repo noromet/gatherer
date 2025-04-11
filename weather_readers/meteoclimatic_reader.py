@@ -1,16 +1,51 @@
-from schema import WeatherRecord, WeatherStation
-import requests
-import logging
+"""
+This module defines the `MeteoclimaticReader` class for fetching and parsing weather data
+from the Meteoclimatic API.
+It processes live weather data into a standardized `WeatherRecord` format.
+"""
+
 import json
+import logging
 from datetime import timezone
+import requests
+from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
 
 class MeteoclimaticReader(WeatherReader):
+    """
+    Weather data reader for the Meteoclimatic API.
+    """
+
     def __init__(self):
+        super().__init__()
         self.required_fields = ["field1"]
 
+    def check_var_for_100(self, var, var_name, station_id, data):
+        """
+        Check if a variable is equal to 100 and log an error if it is.
+        This is an error specific to Meteoclimatic data.
+        """
+        if var == 100:
+            logging.error(
+                "[%s]: %s == 100: %s. Dump: %s",
+                station_id,
+                var_name,
+                var,
+                json.dumps(data),
+            )
+
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
+        """
+        Parse the fetched data into a WeatherRecord object.
+
+        Args:
+            station (WeatherStation): The weather station object.
+            data (dict): The raw data fetched from the API.
+
+        Returns:
+            WeatherRecord: The parsed weather record.
+        """
         live_data = data["live"]
 
         if not live_data:
@@ -25,7 +60,7 @@ class MeteoclimaticReader(WeatherReader):
             key = key.strip()
             value = value.strip()
 
-            if key in CODE_TO_NAME.keys() and key in WHITELIST:
+            if key in CODE_TO_NAME and key in WHITELIST:
                 data[CODE_TO_NAME[key]] = value
 
         data["record_timestamp"] = self.smart_parse_datetime(
@@ -47,66 +82,77 @@ class MeteoclimaticReader(WeatherReader):
             temperature = self.smart_parse_float(
                 data.get("current_temperature_celsius", None)
             )
-            if temperature == 100:
-                logging.error(
-                    f"[{station.id}]: Temperature == 100: {temperature}. Dump: {json.dumps(data)}"
-                )
+            self.check_var_for_100(
+                var=temperature,
+                var_name="Temperature",
+                station_id=station.id,
+                data=data,
+            )
+
             wind_speed = self.smart_parse_float(
                 data.get("current_wind_speed_kph", None)
             )
-            if wind_speed == 100:
-                logging.error(
-                    f"[{station.id}]: Wind speed == 100: {wind_speed}. Dump: {json.dumps(data)}"
-                )
-
-            max_wind_speed = self.smart_parse_float(
-                data.get("daily_max_wind_speed", None)
+            self.check_var_for_100(
+                var=wind_speed, var_name="Wind Speed", station_id=station.id, data=data
             )
-            if max_wind_speed == 100:
-                logging.error(
-                    f"[{station.id}]: Max wind speed == 100: {max_wind_speed}. Dump: {json.dumps(data)}"
-                )
+
+            max_wind_gust = self.smart_parse_float(
+                data.get("daily_max_wind_gust", None)
+            )
+            self.check_var_for_100(
+                var=max_wind_gust,
+                var_name="Max Wind Gust",
+                station_id=station.id,
+                data=data,
+            )
 
             cumulative_rain = self.smart_parse_float(
                 data.get("total_daily_precipitation_at_record_timestamp", None)
             )
-            if cumulative_rain == 100:
-                logging.error(
-                    f"[{station.id}]: Cumulative rain == 100: {cumulative_rain}. Dump: {json.dumps(data)}"
-                )
+            self.check_var_for_100(
+                var=cumulative_rain,
+                var_name="Cumulative Rain",
+                station_id=station.id,
+                data=data,
+            )
 
             humidity = self.smart_parse_float(data.get("relative_humidity", None))
-            if humidity == 100:
-                logging.error(
-                    f"[{station.id}]: Humidity == 100: {humidity}. Dump: {json.dumps(data)}"
-                )
+            self.check_var_for_100(
+                var=humidity, var_name="Humidity", station_id=station.id, data=data
+            )
 
             pressure = self.smart_parse_float(data.get("pressure_hpa", None))
-            if pressure == 100:
-                logging.error(
-                    f"[{station.id}]: Pressure == 100: {pressure}. Dump: {json.dumps(data)}"
-                )
+            self.check_var_for_100(
+                var=pressure, var_name="Pressure", station_id=station.id, data=data
+            )
 
-            max_temperature = self.smart_parse_float(data.get("daily_max_temperature", None))
-            if max_temperature == 100:
-                logging.error(
-                    f"[{station.id}]: Max temperature == 100: {max_temperature}. Dump: {json.dumps(data)}"
-                )
+            max_temperature = self.smart_parse_float(
+                data.get("daily_max_temperature", None)
+            )
+            self.check_var_for_100(
+                var=max_temperature,
+                var_name="Max Temperature",
+                station_id=station.id,
+                data=data,
+            )
 
-            min_temperature = self.smart_parse_float(data.get("daily_min_temperature", None))
-
-            if min_temperature == 100:
-                logging.error(
-                    f"[{station.id}]: Min temperature == 100: {min_temperature}. Dump: {json.dumps(data)}"
-                )
+            min_temperature = self.smart_parse_float(
+                data.get("daily_min_temperature", None)
+            )
+            self.check_var_for_100(
+                var=min_temperature,
+                var_name="Min Temperature",
+                station_id=station.id,
+                data=data,
+            )
 
             wr = WeatherRecord(
-                id=None,
+                wr_id=None,
                 station_id=station.id,
                 source_timestamp=local_observation_time,
                 temperature=temperature,
                 wind_speed=wind_speed,
-                max_wind_speed=max_wind_speed,
+                max_wind_speed=None,
                 wind_direction=wind_direction,
                 rain=None,
                 humidity=humidity,
@@ -117,24 +163,35 @@ class MeteoclimaticReader(WeatherReader):
                 max_temperature=max_temperature,
                 min_temperature=min_temperature,
                 wind_gust=None,
-                max_wind_gust=None,
+                max_wind_gust=max_wind_gust,
             )
 
             return wr
         except KeyError as e:
-            raise ValueError(f"Missing key {e} in data.")
+            raise ValueError(f"Missing key {e} in data.") from e
 
+    def fetch_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch live weather data from the Meteoclimatic API.
 
-    def fetch_data(self, station: WeatherStation, *args, **kwargs) -> dict:
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: A dictionary containing live weather data.
+        """
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/58.0.3029.110 Safari/537.3"
         }
 
-        logging.info(f"Requesting {station.field1}")
-        response = requests.get(station.field1, headers=headers, timeout=5)
+        response = self.make_request(station.field1, headers=headers)
 
         if response.status_code != 200:
-            raise Exception(f"Error: Received status code {response.status_code}")
+            raise requests.exceptions.HTTPError(
+                f"Error: Received status code {response.status_code} from {station.field1}"
+            )
 
         return {"live": response.text}
 
@@ -157,7 +214,7 @@ CODE_TO_NAME = {
     "DLHM": "daily_min_humidity",
     "DHBR": "daily_max_pressure",
     "DLBR": "daily_min_pressure",
-    "DGST": "daily_max_wind_speed",
+    "DGST": "daily_max_wind_gust",
     "DSUN": "daily_max_solar_radiation_index",
     "DHUV": "daily_max_uva_index",
     "DPCP": "total_daily_precipitation_at_record_timestamp",

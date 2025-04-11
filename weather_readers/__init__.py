@@ -1,3 +1,9 @@
+"""
+This module holds the WeatherReader classes for various weather data sources.
+"""
+
+from schema import WeatherRecord
+
 from .meteoclimatic_reader import MeteoclimaticReader
 from .weatherlink_v1_reader import WeatherLinkV1Reader
 from .wunderground_reader import WundergroundReader
@@ -7,4 +13,3 @@ from .holfuy_reader import HolfuyReader
 from .ecowitt_reader import EcowittReader
 from .realtime_reader import RealtimeReader
 from .weather_reader import WeatherReader
-from schema import WeatherRecord

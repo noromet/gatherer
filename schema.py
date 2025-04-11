@@ -175,14 +175,14 @@ class GathererThread:
 
     def __init__(
         self,
-        station_id: uuid.uuid4,
+        gt_id: uuid.uuid4,
         thread_timestamp: datetime.datetime,
         total_stations: int,
         error_stations: int,
         errors: dict,
         command: str,
     ):
-        self.id = station_id
+        self.id = gt_id
         self.thread_timestamp = thread_timestamp
         self.total_stations = total_stations
         self.error_stations = error_stations
@@ -206,7 +206,7 @@ class WeatherStation:
 
     def __init__(
         self,
-        station_id: uuid.uuid4,
+        ws_id: uuid.uuid4,
         connection_type: str,
         field1: str,
         field2: str,
@@ -215,7 +215,7 @@ class WeatherStation:
         data_timezone: datetime.tzinfo,
         local_timezone: datetime.tzinfo,
     ):
-        self.id = station_id
+        self.id = ws_id
         self.connection_type = connection_type
         self.field1 = field1
         self.field2 = field2

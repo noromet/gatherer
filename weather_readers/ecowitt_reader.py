@@ -1,26 +1,45 @@
-from schema import WeatherRecord, WeatherStation
-import json
-import requests
+"""
+This module defines the `EcowittReader` class for fetching and parsing weather data
+from the Ecowitt API. It processes live and
+daily weather data into a standardized `WeatherRecord` format.
+"""
+
 import datetime
 from datetime import timezone
-import logging
+import json
+from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
 
 class EcowittReader(WeatherReader):
+    """
+    Weather data reader for the Ecowitt API.
+    """
+
     def __init__(self, live_endpoint: str, daily_endpoint: str):
+        super().__init__()
         self.live_endpoint = live_endpoint
         self.daily_endpoint = daily_endpoint
         self.required_fields = ["field1", "field2", "field3"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
+        """
+        Parse the fetched data into a WeatherRecord object.
+
+        Args:
+            station (WeatherStation): The weather station object.
+            data (dict): The raw data fetched from the API.
+
+        Returns:
+            WeatherRecord: The parsed weather record.
+        """
         try:
             live_data = json.loads(data["live"])["data"]
             daily_data = json.loads(data["daily"])["data"]
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"Invalid JSON data: {e}. Check station connection parameters."
-            )
+            ) from e
 
         # parse timestamp in seconds
         observation_time = datetime.datetime.fromtimestamp(
@@ -55,7 +74,7 @@ class EcowittReader(WeatherReader):
         wind_gust = wind.get("wind_gust", {}).get("value")
 
         wr = WeatherRecord(
-            id=None,
+            wr_id=None,
             station_id=None,
             source_timestamp=local_observation_time,
             temperature=self.safe_float(temperature),
@@ -100,20 +119,45 @@ class EcowittReader(WeatherReader):
         return wr
 
     def fetch_data(self, station: WeatherStation) -> dict:
-        mac, api_key, application_key = station.field1, station.field2, station.field3
+        """
+        Fetch live and daily weather data from the Ecowitt API.
 
-        live_url = f"{self.live_endpoint}?mac={mac}&api_key={api_key}&application_key={application_key}"
-        live_url += "&temp_unitid=1&pressure_unitid=3&wind_speed_unitid=7&rainfall_unitid=12"
-        logging.info(f"Requesting {live_url}")
-        live_response = requests.get(live_url)
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: A dictionary containing live and daily weather data.
+        """
+        mac = station.field1
+        api_key = station.field2
+        application_key = station.field3
+
+        live_url = (
+            f"{self.live_endpoint}?mac={mac}&api_key={api_key}"
+            "&application_key={application_key}"
+            "&temp_unitid=1&pressure_unitid=3&"
+            "wind_speed_unitid=7&rainfall_unitid=12"
+        )
+        live_response = self.make_request(live_url)
 
         start_date = datetime.datetime.now().strftime("%Y-%m-%d 00:00:00")
         end_date = datetime.datetime.now().strftime("%Y-%m-%d 23:59:59")
-        daily_url = f"{self.daily_endpoint}?mac={mac}&api_key={api_key}&application_key={application_key}"
-        daily_url += "&temp_unitid=1&pressure_unitid=3&wind_speed_unitid=7&rainfall_unitid=12"
-        daily_url += f"&cycle_type=auto&start_date={start_date}&end_date={end_date}"
-        daily_url += "&call_back=outdoor.temperature,outdoor.humidity,wind.wind_speed,wind.wind_gust"
-        logging.info(f"Requesting {daily_url}")
-        daily_response = requests.get(daily_url)
+        daily_url = (
+            f"{self.daily_endpoint}"
+            f"?mac={mac}"
+            f"&api_key={api_key}"
+            f"&application_key={application_key}"
+            "&temp_unitid=1"
+            "&pressure_unitid=3"
+            "&wind_speed_unitid=7"
+            "&rainfall_unitid=12"
+            f"&cycle_type=auto"
+            ""
+            f"&start_date={start_date}"
+            f"&end_date={end_date}"
+            "&call_back=outdoor.temperature,outdoor.humidity,"
+            "wind.wind_speed,wind.wind_gust"
+        )
+        daily_response = self.make_request(daily_url)
 
         return {"live": live_response.text, "daily": daily_response.text}

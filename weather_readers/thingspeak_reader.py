@@ -1,13 +1,25 @@
+"""
+This module defines the `ThingspeakReader` class for fetching and parsing weather data
+from the ThingSpeak API. It processes live weather data into a standardized `WeatherRecord` format.
+"""
+
+import datetime
+import logging
+from datetime import timezone
+import json
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
-import json
-import requests
-import datetime
-from datetime import timezone
-import logging
 
 
 class ThingspeakReader(WeatherReader):
+    """
+    A weather data reader for the ThingSpeak API.
+
+    This class fetches live weather data from the ThingSpeak API
+    and parses it into a `WeatherRecord` object. It maps API fields
+    to standardized weather parameters and validates timestamps.
+    """
+
     FIELD_MAP = {
         "temperature": "field1",
         "humidity": "field2",
@@ -15,28 +27,47 @@ class ThingspeakReader(WeatherReader):
     }
 
     def __init__(self, live_endpoint: str):
-        self.live_endpoint=live_endpoint
+        super().__init__()
+        self.live_endpoint = live_endpoint
         self.required_fields = []
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
+        """
+        Parse the fetched data into a WeatherRecord object.
+
+        Args:
+            station (WeatherStation): The weather station object.
+            data (dict): The raw data fetched from the API.
+
+        Returns:
+            WeatherRecord: The parsed weather record.
+        """
         try:
             live_data = json.loads(data["live"])
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"Invalid JSON data: {e}. Check station connection parameters."
-            )
-        
-        observation_time = datetime.datetime.strptime(live_data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=station.data_timezone)
+            ) from e
+
+        observation_time = datetime.datetime.strptime(
+            live_data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+        ).replace(tzinfo=station.data_timezone)
         observation_time_utc = observation_time.astimezone(timezone.utc)
         local_observation_time = observation_time.astimezone(station.local_timezone)
         self.assert_date_age(observation_time_utc)
 
-        temperature = self.safe_float(live_data.get("feeds")[0].get(self.FIELD_MAP.get("temperature"), None))
-        humidity = self.safe_float(live_data.get("feeds")[0].get(self.FIELD_MAP.get("humidity"), None))
-        pressure = self.safe_float(live_data.get("feeds")[0].get(self.FIELD_MAP.get("pressure"), None))
+        temperature = self.safe_float(
+            live_data.get("feeds")[0].get(self.FIELD_MAP.get("temperature"), None)
+        )
+        humidity = self.safe_float(
+            live_data.get("feeds")[0].get(self.FIELD_MAP.get("humidity"), None)
+        )
+        pressure = self.safe_float(
+            live_data.get("feeds")[0].get(self.FIELD_MAP.get("pressure"), None)
+        )
 
         wr = WeatherRecord(
-            id=None,
+            wr_id=None,
             station_id=None,
             source_timestamp=local_observation_time,
             temperature=temperature,
@@ -52,21 +83,30 @@ class ThingspeakReader(WeatherReader):
             max_temperature=None,
             min_temperature=None,
             wind_gust=None,
-            max_wind_gust=None
+            max_wind_gust=None,
         )
 
         return wr
-    
-    
+
     def fetch_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch live weather data from the ThingSpeak API.
+
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: A dictionary containing live weather data.
+        """
         endpoint = f"{self.live_endpoint}/{station.field1}/feeds.json?results=1"
-        
-        logging.info(f"Requesting {endpoint}")
-        response = requests.get(endpoint)
+
+        response = self.make_request(endpoint)
 
         if response.status_code != 200:
-            logging.error(f"Request failed with status code {response.status_code}. Check station connection parameters.")
+            logging.error(
+                "Request failed with status code %s. Check station connection parameters.",
+                response.status_code,
+            )
             return None
-        
+
         return {"live": response.text}
-    
