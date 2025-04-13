@@ -75,9 +75,6 @@ class MeteoclimaticReader(WeatherReader):
         wind_speed = self.smart_parse_float(data.get("current_wind_speed_kph", None))
         fields["instant"]["wind_speed"] = None if wind_speed == 100 else wind_speed
 
-        max_wind_gust = self.smart_parse_float(data.get("daily_max_wind_gust", None))
-        fields["instant"]["wind_gust"] = None if max_wind_gust == 100 else max_wind_gust
-
         wind_direction = self.smart_parse_float(
             data.get("current_wind_direction", None)
         )
