@@ -5,8 +5,6 @@ from the ThingSpeak API. It processes live weather data into a standardized `Wea
 
 import datetime
 import logging
-from datetime import timezone
-import json
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
@@ -42,51 +40,31 @@ class ThingspeakReader(WeatherReader):
         Returns:
             WeatherRecord: The parsed weather record.
         """
-        try:
-            live_data = json.loads(data["live"])
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Invalid JSON data: {e}. Check station connection parameters."
-            ) from e
+        live_data = data["live"]
 
-        observation_time = datetime.datetime.strptime(
-            live_data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
-        ).replace(tzinfo=station.data_timezone)
-        observation_time_utc = observation_time.astimezone(timezone.utc)
-        local_observation_time = observation_time.astimezone(station.local_timezone)
-        self.assert_date_age(observation_time_utc)
+        local_observation_time = (
+            datetime.datetime.strptime(
+                live_data["feeds"][0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            .replace(tzinfo=station.data_timezone)
+            .astimezone(station.local_timezone)
+        )
 
-        temperature = self.safe_float(
+        fields = self.get_fields()
+
+        fields["source_timestamp"] = local_observation_time
+
+        fields["instant"]["temperature"] = self.safe_float(
             live_data.get("feeds")[0].get(self.FIELD_MAP.get("temperature"), None)
         )
-        humidity = self.safe_float(
+        fields["instant"]["humidity"] = self.safe_float(
             live_data.get("feeds")[0].get(self.FIELD_MAP.get("humidity"), None)
         )
-        pressure = self.safe_float(
+        fields["instant"]["pressure"] = self.safe_float(
             live_data.get("feeds")[0].get(self.FIELD_MAP.get("pressure"), None)
         )
 
-        wr = WeatherRecord(
-            wr_id=None,
-            station_id=None,
-            source_timestamp=local_observation_time,
-            temperature=temperature,
-            wind_speed=None,
-            max_wind_speed=None,
-            wind_direction=None,
-            rain=None,
-            humidity=humidity,
-            pressure=pressure,
-            flagged=False,
-            gatherer_thread_id=None,
-            cumulative_rain=None,
-            max_temperature=None,
-            min_temperature=None,
-            wind_gust=None,
-            max_wind_gust=None,
-        )
-
-        return wr
+        return fields
 
     def fetch_data(self, station: WeatherStation) -> dict:
         """
@@ -109,4 +87,4 @@ class ThingspeakReader(WeatherReader):
             )
             return None
 
-        return {"live": response.text}
+        return {"live": response.json()}

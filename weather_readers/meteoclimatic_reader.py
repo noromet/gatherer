@@ -4,7 +4,6 @@ from the Meteoclimatic API.
 It processes live weather data into a standardized `WeatherRecord` format.
 """
 
-from datetime import timezone
 import requests
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
@@ -55,7 +54,7 @@ class MeteoclimaticReader(WeatherReader):
 
         local_observation_time = (
             data["record_timestamp"]
-            .astimezone(timezone.utc)
+            .replace(tzinfo=station.data_timezone)
             .astimezone(station.local_timezone)
         )
 

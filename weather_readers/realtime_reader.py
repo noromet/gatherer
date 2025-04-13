@@ -4,7 +4,7 @@ This class is responsible for reading weather data from a real-time weather stat
 It fetches data from a specified endpoint and parses it into a WeatherRecord object.
 """
 
-from datetime import timezone, datetime
+from datetime import datetime
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
@@ -53,7 +53,7 @@ class RealtimeReader(WeatherReader):
 
         local_observation_time = (
             datetime.combine(_date, _time.time(), tzinfo=station.data_timezone)
-            .astimezone(timezone.utc)
+            .replace(tzinfo=station.data_timezone)
             .astimezone(station.local_timezone)
         )
 
