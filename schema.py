@@ -57,6 +57,7 @@ class WeatherRecord:
         wr_id: uuid.uuid4,
         station_id: uuid.uuid4,
         source_timestamp: datetime.datetime,
+        taken_timestamp: datetime.datetime,
         temperature: float,
         wind_speed: float,
         max_wind_speed: float,
@@ -85,7 +86,7 @@ class WeatherRecord:
         self.humidity = humidity
         self.pressure = pressure
         self.flagged = flagged
-        self.taken_timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.taken_timestamp = taken_timestamp
         self.gatherer_thread_id = gatherer_thread_id
         self.max_temperature = max_temperature  # today
         self.min_temperature = min_temperature  # today
@@ -99,28 +100,36 @@ class WeatherRecord:
         """
 
         def validate_range(attribute, value, safe_range):
-            if value is not None and not safe_range[0] < value < safe_range[1]:
+            if value is not None and not safe_range[0] <= value <= safe_range[1]:
                 setattr(self, attribute, None)
                 self.flagged = True
 
+        range_for_temperature = (-39, 50)
+        range_for_wind_speed = (0, 500)
+        range_for_humidity = (0, 100)
+        range_for_pressure = (800, 1100)
+        range_for_wind_direction = (0, 360)
+        range_for_rain = (0, 500)
+        range_for_cumulative_rain = (0, 15000)
+
         ranges = {
-            "temperature": (-39, 50),
-            "max_temperature": (-39, 50),
-            "min_temperature": (-39, 50),
-            "wind_speed": (0, 500),
-            "max_wind_speed": (0, 500),
-            "wind_gust": (0, 500),
-            "max_wind_gust": (0, 500),
-            "humidity": (0, 100),
-            "pressure": (800, 1100),
+            "temperature": range_for_temperature,
+            "wind_speed": range_for_wind_speed,
+            "humidity": range_for_humidity,
+            "pressure": range_for_pressure,
+            "wind_direction": range_for_wind_direction,
+            "rain": range_for_rain,
+            "cumulative_rain": range_for_cumulative_rain,
+            "max_temperature": range_for_temperature,
+            "min_temperature": range_for_temperature,
+            "max_wind_speed": range_for_wind_speed,
+            "wind_gust": range_for_wind_speed,
+            "max_wind_gust": range_for_wind_speed,
         }
 
+        # Validate each attribute against its safe range
         for attr, safe_range in ranges.items():
             validate_range(attr, getattr(self, attr, None), safe_range)
-
-        if self.wind_direction is not None and not 0 <= self.wind_direction <= 360:
-            self.wind_direction = None
-            self.flagged = True
 
     def apply_pressure_offset(self, offset: float):
         """

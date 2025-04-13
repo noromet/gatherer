@@ -6,9 +6,9 @@ from various sources into a standardized `WeatherRecord` format.
 
 import datetime
 import logging
-
 from abc import ABC, abstractmethod
 from typing import Any
+import uuid
 
 import requests
 from dateutil import parser
@@ -25,8 +25,10 @@ class WeatherReader(ABC):
     It also includes utility methods for data validation and transformation.
     """
 
-    def __init__(self):
+    def __init__(self, ignore_early_readings: bool = False):
         self.required_fields = []
+        self.ignore_early_readings = ignore_early_readings
+        self.max_reading_age_seconds = 1800  # 30 minutes
 
     # region template methods
     @abstractmethod
@@ -42,7 +44,7 @@ class WeatherReader(ABC):
         """
 
     @abstractmethod
-    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
+    def parse(self, station: WeatherStation, data: dict) -> dict:
         """
         Parse the fetched data into a WeatherRecord.
 
@@ -51,13 +53,13 @@ class WeatherReader(ABC):
             data (dict): The raw data fetched from the source.
 
         Returns:
-            WeatherRecord: The parsed weather record.
+            dict: The fields dict with all the data from the source.
         """
 
     # endregion
 
     # region common methods
-    def validate_fields(self, station: WeatherStation) -> None:
+    def validate_connection_fields(self, station: WeatherStation) -> None:
         """
         Validate the fields of the WeatherStation based on self.required_fields.
 
@@ -81,13 +83,106 @@ class WeatherReader(ABC):
         Returns:
             WeatherRecord: The parsed weather record.
         """
-        self.validate_fields(station)
+        self.validate_connection_fields(station)
         raw_data = self.fetch_data(station, *args, **kwargs)
 
         if raw_data is None:
             return None
 
-        return self.parse(station, raw_data)
+        fields = self.parse(station, raw_data)
+
+        if fields is None:
+            return None
+
+        self.assert_date_age(fields["source_timestamp"])
+
+        use_daily = True
+
+        if self.ignore_early_readings:
+            if (
+                fields["source_timestamp"].hour == 0
+                and fields["source_timestamp"].minute < 60
+            ):
+                # Check if the source timestamp is from 00:00 AM to 01:00 AM
+                if fields["source_timestamp"].minute < 60:
+                    use_daily = False
+                else:
+                    use_daily = True
+
+        return self.build_weather_record(fields, station, use_daily)
+
+    def get_fields(self) -> dict:
+        """
+        Return an empty fields dictionary to be populated by the subclass.
+        Two values have defaults:
+            - flagged: False
+            - taken_timestamp: datetime.datetime.now(tz=datetime.timezone.utc)
+        """
+        return {
+            "source_timestamp": None,
+            "taken_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
+            "instant": {
+                "temperature": None,
+                "wind_speed": None,
+                "wind_direction": None,
+                "rain": None,
+                "humidity": None,
+                "pressure": None,
+                "wind_gust": None,
+            },
+            "daily": {
+                "max_temperature": None,
+                "min_temperature": None,
+                "max_wind_speed": None,
+                "max_wind_gust": None,
+                "cumulative_rain": None,
+            },
+            "flagged": False,
+        }
+
+    def build_weather_record(
+        self, fields: dict, station: WeatherStation, use_daily=True
+    ) -> WeatherRecord:
+        """
+        Build a WeatherRecord object from the provided fields and station.
+
+        Args:
+            fields (dict): The fields to populate in the WeatherRecord.
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            WeatherRecord: The constructed WeatherRecord object.
+        """
+        return WeatherRecord(
+            wr_id=str(uuid.uuid4()),
+            station_id=station.id,
+            source_timestamp=fields.get("source_timestamp"),
+            taken_timestamp=fields.get("taken_timestamp"),
+            flagged=False,
+            gatherer_thread_id=None,
+            temperature=fields.get("instant").get("temperature"),
+            wind_speed=fields.get("instant").get("wind_speed"),
+            wind_direction=fields.get("instant").get("wind_direction"),
+            rain=fields.get("instant").get("rain"),
+            humidity=fields.get("instant").get("humidity"),
+            pressure=fields.get("instant").get("pressure"),
+            wind_gust=fields.get("instant").get("wind_gust"),
+            max_temperature=(
+                fields.get("daily").get("max_temperature") if use_daily else None
+            ),
+            min_temperature=(
+                fields.get("daily").get("min_temperature") if use_daily else None
+            ),
+            cumulative_rain=(
+                fields.get("daily").get("cumulative_rain") if use_daily else None
+            ),
+            max_wind_speed=(
+                fields.get("daily").get("max_wind_speed") if use_daily else None
+            ),
+            max_wind_gust=(
+                fields.get("daily").get("max_wind_gust") if use_daily else None
+            ),
+        )
 
     # endregion
 
@@ -119,13 +214,13 @@ class WeatherReader(ABC):
 
     def assert_date_age(self, date: datetime.datetime) -> None:
         """
-        Assert that the given date is recent and in UTC.
+        Assert that the given date is recent and has a timezone.
 
         Args:
             date (datetime.datetime): The date to validate.
 
         Raises:
-            ValueError: If the date is None, has no timezone, is not UTC, or is too old.
+            ValueError: If the date is None, has no timezone, or is too old.
         """
         if date is None:
             raise ValueError("Date is None")
@@ -133,14 +228,14 @@ class WeatherReader(ABC):
         if date.tzinfo is None:
             raise ValueError("Date has no timezone")
 
-        if date.tzinfo != datetime.timezone.utc:
-            raise ValueError("Date is not UTC")
+        # Normalize the date to UTC
+        date_utc = date.astimezone(datetime.timezone.utc)
 
         now_utc = datetime.datetime.now(datetime.timezone.utc)
-        if (now_utc - date).total_seconds() > 1800:
+        if (now_utc - date_utc).total_seconds() > self.max_reading_age_seconds:
             raise ValueError(
                 f"""Reading timestamp is too old to be stored as current.
-                Observation time (UTC): {date}, current time (UTC): {now_utc}"""
+                Observation time (UTC): {date_utc}, current time (UTC): {now_utc}"""
             )
 
     def max_or_none(self, arglist) -> Any:

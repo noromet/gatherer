@@ -117,7 +117,6 @@ class Database:
     @classmethod
     def save_record(cls, record: WeatherRecord) -> None:
         """Save a weather record to the database."""
-        record.id = str(uuid.uuid4())
 
         with CursorFromConnectionFromPool() as cursor:
             cursor.execute(
