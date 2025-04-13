@@ -70,13 +70,10 @@ class MeteoclimaticReader(WeatherReader):
             data.get("current_temperature_celsius", None)
         )
         fields["instant"]["temperature"] = None if temperature == 100 else temperature
-
         wind_speed = self.smart_parse_float(data.get("current_wind_speed_kph", None))
         fields["instant"]["wind_speed"] = None if wind_speed == 100 else wind_speed
 
-        wind_direction = self.smart_parse_float(
-            data.get("current_wind_direction", None)
-        )
+        wind_direction = self.smart_azimuth(data.get("current_wind_direction", None))
         fields["instant"]["wind_direction"] = (
             None if wind_direction == 100 else wind_direction
         )
