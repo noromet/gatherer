@@ -6,8 +6,6 @@ from the WeatherLink V2 API. It processes live and historic weather data into a 
 
 import datetime
 import logging
-from datetime import timezone
-import json
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 from .utils import UnitConverter
@@ -42,7 +40,11 @@ class WeatherlinkV2Reader(WeatherReader):
             "timestamp": {"ts": []},
             "temperature": {"temp": [], "temp_out": []},
             "wind_speed": {"wind_speed": [], "wind_speed_last": []},
-            "wind_gust": {"wind_speed_hi_last_10_min": [], "wind_gust": []},
+            "wind_gust": {
+                "wind_speed_hi_last_10_min": [],
+                "wind_gust": [],
+                "wind_gust_10_min": [],
+            },
             "wind_direction": {"wind_dir": [], "wind_dir_last": []},
             "rain": {
                 "rain_rate_mm": [],
@@ -180,22 +182,14 @@ class WeatherlinkV2Reader(WeatherReader):
         Returns:
             WeatherRecord: The parsed weather record.
         """
-        current_data = {}
-        daily_data = {}
 
-        try:
-            current_data = json.loads(data["live"])
-            current_data = current_data.get("sensors", None)
+        current_data = data["live"]
+        current_data = current_data.get("sensors", None)
 
-            daily_data = None
-            if data["live"]:
-                daily_data = json.loads(data["live"])
-                daily_data = daily_data.get("sensors", None)
-
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Invalid JSON data: {e}. Check station connection parameters."
-            ) from e
+        daily_data = None
+        if data["daily"]:
+            daily_data = data["daily"]
+            daily_data = daily_data.get("sensors", None)
 
         (
             timestamp,
@@ -225,34 +219,34 @@ class WeatherlinkV2Reader(WeatherReader):
             [cumulative_rain, cumulative_rain_historic]
         )
 
-        observation_time = datetime.datetime.fromtimestamp(
+        local_observation_time = datetime.datetime.fromtimestamp(
             timestamp, tz=station.data_timezone
-        )
-        observation_time_utc = observation_time.astimezone(timezone.utc)
-        self.assert_date_age(observation_time_utc)
-        local_observation_time = observation_time.astimezone(station.local_timezone)
+        ).astimezone(station.local_timezone)
 
-        wr = WeatherRecord(
-            wr_id=None,
-            station_id=None,
-            source_timestamp=local_observation_time,
-            temperature=UnitConverter.fahrenheit_to_celsius(temperature),
-            wind_speed=UnitConverter.mph_to_kph(wind_speed),
-            max_wind_speed=UnitConverter.mph_to_kph(max_wind_speed),
-            wind_direction=wind_direction,
-            rain=rain,
-            humidity=humidity,
-            pressure=UnitConverter.psi_to_hpa(pressure),
-            flagged=False,
-            gatherer_thread_id=None,
-            cumulative_rain=final_cumulative_rain,
-            max_temperature=UnitConverter.fahrenheit_to_celsius(max_temp),
-            min_temperature=UnitConverter.fahrenheit_to_celsius(min_temp),
-            wind_gust=UnitConverter.mph_to_kph(wind_gust),
-            max_wind_gust=None,
+        fields = self.get_fields()
+
+        fields["source_timestamp"] = local_observation_time
+
+        fields["instant"]["temperature"] = UnitConverter.fahrenheit_to_celsius(
+            temperature
+        )
+        fields["instant"]["wind_speed"] = UnitConverter.mph_to_kph(wind_speed)
+        fields["instant"]["wind_direction"] = wind_direction
+        fields["instant"]["rain"] = rain
+        fields["instant"]["humidity"] = humidity
+        fields["instant"]["pressure"] = UnitConverter.psi_to_hpa(pressure)
+        fields["instant"]["wind_gust"] = UnitConverter.mph_to_kph(wind_gust)
+
+        fields["daily"]["max_wind_speed"] = UnitConverter.mph_to_kph(max_wind_speed)
+        fields["daily"]["cumulative_rain"] = final_cumulative_rain
+        fields["daily"]["max_temperature"] = UnitConverter.fahrenheit_to_celsius(
+            max_temp
+        )
+        fields["daily"]["min_temperature"] = UnitConverter.fahrenheit_to_celsius(
+            min_temp
         )
 
-        return wr
+        return fields
 
     def fetch_data(self, station: WeatherStation) -> dict:
         """
@@ -299,9 +293,9 @@ class WeatherlinkV2Reader(WeatherReader):
             )
             daily_response = None
 
-        ret_dict = {"live": live_response.text}
+        ret_dict = {"live": live_response.json()}
 
         if daily_response is not None:
-            ret_dict["daily"] = daily_response.text
+            ret_dict["daily"] = daily_response.json()
 
         return ret_dict
