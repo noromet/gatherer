@@ -5,7 +5,6 @@ from the WeatherLink V2 API. It processes live and historic weather data into a 
 """
 
 import datetime
-import logging
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 from .utils import UnitConverter
@@ -264,12 +263,7 @@ class WeatherlinkV2Reader(WeatherReader):
         params = {"api-key": api_key, "t": int(datetime.datetime.now().timestamp())}
         headers = {"X-Api-Secret": api_secret}
         live_response = self.make_request(live_url, params=params, headers=headers)
-
-        if live_response.status_code != 200:
-            logging.error(
-                "Request failed with status code %d. Check station connection parameters.",
-                live_response.status_code,
-            )
+        if live_response is None:
             return None
 
         daily_url = self.daily_endpoint.format(mode="historic", station_id=station_id)
@@ -286,15 +280,7 @@ class WeatherlinkV2Reader(WeatherReader):
         }
         daily_response = self.make_request(daily_url, params=params, headers=headers)
 
-        if daily_response.status_code != 200:
-            logging.warning(
-                "Request failed with status code %d. Is the subscription active?",
-                daily_response.status_code,
-            )
-            daily_response = None
-
-        ret_dict = {"live": live_response.json()}
-
+        ret_dict = {"live": live_response.json(), "daily": None}
         if daily_response is not None:
             ret_dict["daily"] = daily_response.json()
 

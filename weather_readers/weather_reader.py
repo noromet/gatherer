@@ -218,9 +218,7 @@ class WeatherReader(ABC):
 
         if response.status_code not in [200, 201, 204]:
             logging.error("Failed to fetch data from %s: %s", url, response.status_code)
-            raise requests.RequestException(
-                f"Failed to fetch data from {url}: {response.status_code}"
-            )
+            return None
 
         logging.info("Requesting %s", response.url)
 
