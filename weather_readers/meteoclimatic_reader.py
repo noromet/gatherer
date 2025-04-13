@@ -4,8 +4,6 @@ from the Meteoclimatic API.
 It processes live weather data into a standardized `WeatherRecord` format.
 """
 
-import json
-import logging
 from datetime import timezone
 import requests
 from schema import WeatherRecord, WeatherStation
@@ -20,20 +18,6 @@ class MeteoclimaticReader(WeatherReader):
     def __init__(self):
         super().__init__()
         self.required_fields = ["field1"]
-
-    def check_var_for_100(self, var, var_name, station_id, data):
-        """
-        Check if a variable is equal to 100 and log an error if it is.
-        This is an error specific to Meteoclimatic data.
-        """
-        if var == 100:
-            logging.error(
-                "[%s]: %s == 100: %s. Dump: %s",
-                station_id,
-                var_name,
-                var,
-                json.dumps(data),
-            )
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         """
@@ -69,106 +53,69 @@ class MeteoclimaticReader(WeatherReader):
         if data["record_timestamp"] is None:
             raise ValueError("Cannot accept a reading without a timestamp.")
 
-        observation_time_utc = data["record_timestamp"].astimezone(timezone.utc)
-        self.assert_date_age(observation_time_utc)
+        local_observation_time = (
+            data["record_timestamp"]
+            .astimezone(timezone.utc)
+            .astimezone(station.local_timezone)
+        )
 
-        local_observation_time = observation_time_utc.astimezone(station.local_timezone)
+        fields = self.get_fields()
 
-        try:
-            wind_direction = self.smart_azimuth(
-                data.get("current_wind_direction", None)
-            )
+        fields["source_timestamp"] = local_observation_time
 
-            temperature = self.smart_parse_float(
-                data.get("current_temperature_celsius", None)
-            )
-            self.check_var_for_100(
-                var=temperature,
-                var_name="Temperature",
-                station_id=station.id,
-                data=data,
-            )
+        fields["instant"]["wind_direction"] = self.smart_azimuth(
+            data.get("current_wind_direction", None)
+        )
 
-            wind_speed = self.smart_parse_float(
-                data.get("current_wind_speed_kph", None)
-            )
-            self.check_var_for_100(
-                var=wind_speed, var_name="Wind Speed", station_id=station.id, data=data
-            )
+        temperature = self.smart_parse_float(
+            data.get("current_temperature_celsius", None)
+        )
+        fields["instant"]["temperature"] = None if temperature == 100 else temperature
 
-            max_wind_gust = self.smart_parse_float(
-                data.get("daily_max_wind_gust", None)
-            )
-            self.check_var_for_100(
-                var=max_wind_gust,
-                var_name="Max Wind Gust",
-                station_id=station.id,
-                data=data,
-            )
+        wind_speed = self.smart_parse_float(data.get("current_wind_speed_kph", None))
+        fields["instant"]["wind_speed"] = None if wind_speed == 100 else wind_speed
 
-            cumulative_rain = self.smart_parse_float(
-                data.get("total_daily_precipitation_at_record_timestamp", None)
-            )
-            self.check_var_for_100(
-                var=cumulative_rain,
-                var_name="Cumulative Rain",
-                station_id=station.id,
-                data=data,
-            )
+        max_wind_gust = self.smart_parse_float(data.get("daily_max_wind_gust", None))
+        fields["instant"]["wind_gust"] = None if max_wind_gust == 100 else max_wind_gust
 
-            humidity = self.smart_parse_float(data.get("relative_humidity", None))
-            self.check_var_for_100(
-                var=humidity, var_name="Humidity", station_id=station.id, data=data
-            )
+        wind_direction = self.smart_parse_float(
+            data.get("current_wind_direction", None)
+        )
+        fields["instant"]["wind_direction"] = (
+            None if wind_direction == 100 else wind_direction
+        )
 
-            pressure = self.smart_parse_float(data.get("pressure_hpa", None))
-            self.check_var_for_100(
-                var=pressure, var_name="Pressure", station_id=station.id, data=data
-            )
+        humidity = self.smart_parse_float(data.get("relative_humidity", None))
+        fields["instant"]["humidity"] = None if humidity == 100 else humidity
 
-            max_temperature = self.smart_parse_float(
-                data.get("daily_max_temperature", None)
-            )
-            self.check_var_for_100(
-                var=max_temperature,
-                var_name="Max Temperature",
-                station_id=station.id,
-                data=data,
-            )
+        pressure = self.smart_parse_float(data.get("pressure_hpa", None))
+        fields["instant"]["pressure"] = None if pressure == 100 else pressure
 
-            min_temperature = self.smart_parse_float(
-                data.get("daily_min_temperature", None)
-            )
-            self.check_var_for_100(
-                var=min_temperature,
-                var_name="Min Temperature",
-                station_id=station.id,
-                data=data,
-            )
+        cumulative_rain = self.smart_parse_float(
+            data.get("total_daily_precipitation_at_record_timestamp", None)
+        )
+        fields["daily"]["rain"] = None if cumulative_rain == 100 else cumulative_rain
 
-            wr = WeatherRecord(
-                wr_id=None,
-                station_id=station.id,
-                source_timestamp=local_observation_time,
-                temperature=temperature,
-                wind_speed=wind_speed,
-                max_wind_speed=None,
-                wind_direction=wind_direction,
-                rain=None,
-                humidity=humidity,
-                pressure=pressure,
-                flagged=False,
-                gatherer_thread_id=None,
-                cumulative_rain=cumulative_rain,
-                max_temperature=max_temperature,
-                min_temperature=min_temperature,
-                wind_gust=None,
-                max_wind_gust=max_wind_gust,
-            )
+        max_temperature = self.smart_parse_float(
+            data.get("daily_max_temperature", None)
+        )
+        fields["daily"]["max_temperature"] = (
+            None if max_temperature == 100 else max_temperature
+        )
 
-            return wr
-        except KeyError as e:
-            raise ValueError(f"Missing key {e} in data.") from e
+        min_temperature = self.smart_parse_float(
+            data.get("daily_min_temperature", None)
+        )
+        fields["daily"]["min_temperature"] = (
+            None if min_temperature == 100 else min_temperature
+        )
+
+        max_wind_gust = self.smart_parse_float(data.get("daily_max_wind_gust", None))
+        fields["daily"]["max_wind_gust"] = (
+            None if max_wind_gust == 100 else max_wind_gust
+        )
+
+        return fields
 
     def fetch_data(self, station: WeatherStation) -> dict:
         """
