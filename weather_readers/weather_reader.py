@@ -106,6 +106,11 @@ class WeatherReader(ABC):
                 # Check if the source timestamp is from 00:00 AM to 01:00 AM
                 if fields["source_timestamp"].minute < 60:
                     use_daily = False
+                    logging.warning(
+                        "Ignoring early reading from %s: %s",
+                        station.id,
+                        fields["source_timestamp"],
+                    )
                 else:
                     use_daily = True
 
@@ -208,8 +213,17 @@ class WeatherReader(ABC):
             headers = {}
         if params is None:
             params = {}
-        logging.info("Requesting %s", url)
+
         response = requests.get(url, params=params, headers=headers, timeout=timeout)
+
+        if response.status_code not in [200, 201, 204]:
+            logging.error("Failed to fetch data from %s: %s", url, response.status_code)
+            raise requests.RequestException(
+                f"Failed to fetch data from {url}: {response.status_code}"
+            )
+
+        logging.info("Requesting %s", response.url)
+
         return response
 
     def assert_date_age(self, date: datetime.datetime) -> None:
