@@ -36,61 +36,64 @@ class RealtimeReader(WeatherReader):
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         valid_keys = self.INDEX_TO_DATA.keys()
+        temp_dict = {}
         for index, item in enumerate(data["live"].strip().split(" ")):
             item = item.strip()
             if not item:
                 continue
             if index in valid_keys:
-                data[self.INDEX_TO_DATA[index]] = item
+                temp_dict[self.INDEX_TO_DATA[index]] = item
             index += 1
 
-        _time = datetime.strptime(data["time"], "%H:%M:%S")
-        _date = self.smart_parse_date(data["date"], timezone=station.data_timezone)
+        _time = datetime.strptime(temp_dict["time"], "%H:%M:%S")
+        _date = self.smart_parse_date(temp_dict["date"], timezone=station.data_timezone)
 
         if _time is None or _date is None:
             raise ValueError("Cannot accept a reading without a timestamp.")
 
-        timestamp = datetime.combine(_date, _time.time(), tzinfo=station.data_timezone)
-
-        observation_time_utc = timestamp.astimezone(timezone.utc)
-        self.assert_date_age(observation_time_utc)
-
-        local_observation_time = observation_time_utc.astimezone(station.local_timezone)
-
-        wind_direction = float(data.get("current_wind_direction", None))
-        temperature = float(data.get("current_temperature_celsius", None))
-        wind_speed = float(data.get("current_wind_speed_kph", None))
-        max_wind_speed = float(data.get("daily_max_wind_speed", None))
-        cumulative_rain = float(
-            data.get("total_daily_precipitation_at_record_timestamp", None)
-        )
-        humidity = float(data.get("relative_humidity", None))
-        pressure = float(data.get("pressure_hpa", None))
-        max_temperature = float(data.get("daily_max_temperature", None))
-        min_temperature = float(data.get("daily_min_temperature", None))
-        rain = float(data.get("rain_rate_mm", None))
-
-        wr = WeatherRecord(
-            wr_id=None,
-            station_id=station.id,
-            source_timestamp=local_observation_time,
-            temperature=temperature,
-            wind_speed=wind_speed,
-            max_wind_speed=max_wind_speed,
-            wind_direction=wind_direction,
-            rain=rain,
-            humidity=humidity,
-            pressure=pressure,
-            flagged=False,
-            gatherer_thread_id=None,
-            cumulative_rain=cumulative_rain,
-            max_temperature=max_temperature,
-            min_temperature=min_temperature,
-            wind_gust=None,
-            max_wind_gust=None,
+        local_observation_time = (
+            datetime.combine(_date, _time.time(), tzinfo=station.data_timezone)
+            .astimezone(timezone.utc)
+            .astimezone(station.local_timezone)
         )
 
-        return wr
+        fields = self.get_fields()
+
+        fields["source_timestamp"] = local_observation_time
+
+        fields["instant"]["wind_direction"] = self.safe_float(
+            temp_dict.get("current_wind_direction", None)
+        )
+
+        fields["instant"]["temperature"] = self.safe_float(
+            temp_dict.get("current_temperature_celsius", None)
+        )
+        fields["instant"]["wind_speed"] = self.safe_float(
+            temp_dict.get("current_wind_speed_kph", None)
+        )
+        fields["instant"]["humidity"] = self.safe_float(
+            temp_dict.get("relative_humidity", None)
+        )
+        fields["instant"]["pressure"] = self.safe_float(
+            temp_dict.get("pressure_hpa", None)
+        )
+        fields["instant"]["rain"] = self.safe_float(temp_dict.get("rain_rate_mm", None))
+
+        fields["daily"]["max_temperature"] = self.safe_float(
+            temp_dict.get("daily_max_temperature", None)
+        )
+        fields["daily"]["min_temperature"] = self.safe_float(
+            temp_dict.get("daily_min_temperature", None)
+        )
+        fields["daily"]["max_wind_speed"] = self.safe_float(
+            temp_dict.get("daily_max_wind_speed", None)
+        )
+
+        fields["daily"]["cumulative_rain"] = self.safe_float(
+            temp_dict.get("total_daily_precipitation_at_record_timestamp", None)
+        )
+
+        return fields
 
     def fetch_data(self, station: WeatherStation) -> dict:
         endpoint = station.field1
