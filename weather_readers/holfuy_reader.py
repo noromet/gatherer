@@ -6,8 +6,6 @@ into a standardized `WeatherRecord` format.
 
 import datetime
 import logging
-from datetime import timezone
-import json
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
@@ -22,7 +20,7 @@ class HolfuyReader(WeatherReader):
     """
 
     def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__()
+        super().__init__(ignore_early_readings=True)
         self.live_endpoint = live_endpoint
         self.daily_endpoint = daily_endpoint
         self.required_fields = ["field1", "field3"]  # station_id and password
@@ -38,66 +36,49 @@ class HolfuyReader(WeatherReader):
         Returns:
             WeatherRecord: The parsed weather record.
         """
-        try:
-            live_data = json.loads(data["live"])
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Invalid JSON data: {e}. Check station connection parameters."
-            ) from e
-        except KeyError as e:
-            raise ValueError(f"Missing expected keys in JSON data: {e}.") from e
+        live_data = data["live"]
 
-        observation_time = datetime.datetime.strptime(
-            live_data["dateTime"], "%Y-%m-%d %H:%M:%S"
-        ).replace(tzinfo=station.data_timezone)
-        observation_time_utc = observation_time.astimezone(timezone.utc)
-        self.assert_date_age(observation_time_utc)
-        local_observation_time = observation_time.astimezone(station.local_timezone)
+        fields = self.get_fields()
 
-        current_date = datetime.datetime.now(tz=station.data_timezone).date()
-        observation_date = observation_time.date()
-
-        if (
-            observation_time.time() >= datetime.time(0, 0)
-            and observation_time.time() <= datetime.time(0, 15)
-            and observation_date == current_date
-        ):
-            use_daily = False
-        else:
-            use_daily = True
-
-        wr = WeatherRecord(
-            wr_id=None,
-            station_id=None,
-            source_timestamp=local_observation_time,
-            temperature=live_data.get("temperature"),
-            wind_speed=live_data.get("wind", {}).get("speed"),
-            max_wind_speed=None,
-            wind_direction=live_data.get("wind", {}).get("direction"),
-            rain=live_data.get("rain"),
-            humidity=live_data.get("humidity"),
-            pressure=live_data.get("pressure"),
-            flagged=False,
-            gatherer_thread_id=None,
-            cumulative_rain=None,
-            max_temperature=None,
-            min_temperature=None,
-            wind_gust=live_data.get("wind", {}).get("gust"),
-            max_wind_gust=None,
+        local_observation_time = (
+            datetime.datetime.strptime(live_data["dateTime"], "%Y-%m-%d %H:%M:%S")
+            .replace(tzinfo=station.data_timezone)
+            .astimezone(station.local_timezone)
         )
 
-        if use_daily:
-            wr.min_temperature = live_data.get("daily", {}).get("min_temp")
-            wr.max_temperature = live_data.get("daily", {}).get("max_temp")
-            wr.cumulative_rain = round(live_data.get("daily", {}).get("sum_rain"), 2)
-        else:
-            logging.info(
-                "Discarding daily data. Observation time: %s, Local time: %s",
-                observation_time,
-                datetime.datetime.now(tz=station.local_timezone),
-            )
+        fields["source_timestamp"] = local_observation_time
 
-        return wr
+        fields["instant"]["temperature"] = self.safe_float(live_data.get("temperature"))
+        fields["instant"]["wind_speed"] = self.safe_float(
+            live_data.get("wind", {}).get("speed")
+        )
+        fields["instant"]["wind_direction"] = self.safe_float(
+            live_data.get("wind", {}).get("direction")
+        )
+        fields["instant"]["rain"] = self.safe_float(live_data.get("rain"))
+        fields["instant"]["humidity"] = self.safe_float(live_data.get("humidity"))
+        fields["instant"]["pressure"] = self.safe_float(live_data.get("pressure"))
+        fields["instant"]["wind_gust"] = self.safe_float(
+            live_data.get("wind", {}).get("gust")
+        )
+
+        fields["daily"]["max_temperature"] = self.safe_float(
+            live_data.get("daily", {}).get("max_temp")
+        )
+        fields["daily"]["min_temperature"] = self.safe_float(
+            live_data.get("daily", {}).get("min_temp")
+        )
+        fields["daily"]["max_wind_speed"] = self.safe_float(
+            live_data.get("daily", {}).get("max_wind_speed")
+        )
+        fields["daily"]["max_wind_gust"] = self.safe_float(
+            live_data.get("daily", {}).get("max_wind_gust")
+        )
+        fields["daily"]["cumulative_rain"] = self.safe_float(
+            live_data.get("daily", {}).get("sum_rain")
+        )
+
+        return fields
 
     def fetch_data(self, station: WeatherStation) -> dict:
         """
@@ -137,7 +118,9 @@ class HolfuyReader(WeatherReader):
             "&type=2"
             "&mback=60"
         )
-        daily_response = self.make_request(daily_url)
+        daily_response = self.make_request(
+            daily_url
+        )  # esto solamente devuelve el ultimo, no el historico
 
         if daily_response.status_code != 200:
             logging.error(
@@ -147,4 +130,4 @@ class HolfuyReader(WeatherReader):
             return None
 
         # daily is deprecated while holfuy fixes their API
-        return {"live": live_response.text, "daily": daily_response.text}
+        return {"live": live_response.json(), "daily": daily_response.json()}
