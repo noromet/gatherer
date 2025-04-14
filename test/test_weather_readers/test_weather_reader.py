@@ -322,7 +322,7 @@ class TestWeatherReaderUtils(unittest.TestCase):
         self.assertEqual(self.base_reader.smart_azimuth(0), 0)
         self.assertEqual(self.base_reader.smart_azimuth(360), 0)
         self.assertEqual(self.base_reader.smart_azimuth(180), 180)
-        self.assertEqual(self.base_reader.smart_azimuth(90.2), 90.2)
+        self.assertEqual(self.base_reader.smart_azimuth(90.2), 90)
 
         # test with invalid int and float
         self.assertIsNone(self.base_reader.smart_azimuth(361))

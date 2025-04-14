@@ -332,6 +332,8 @@ class WeatherReader(ABC):
             return None
 
         def _azimuth_as_float(azimuth: int | float):
+            azimuth = int(azimuth)
+
             if azimuth < 0 or azimuth > 360:
                 return None
             if azimuth == 360:
@@ -369,9 +371,11 @@ class WeatherReader(ABC):
                 return translations[clean_azimuth]
 
             try:
-                parsed_float = self.smart_parse_float(clean_azimuth)
+                parsed_float = int(self.smart_parse_float(clean_azimuth))
                 if parsed_float is None or parsed_float < 0 or parsed_float > 360:
                     return None
+                if parsed_float == 360:
+                    return 0
                 return parsed_float
             except ValueError:
                 return None
