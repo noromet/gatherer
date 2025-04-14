@@ -4,7 +4,7 @@ Collection of factory methods to create test data for WeatherRecord.
 
 import uuid
 import datetime
-from schema import WeatherRecord  # Adjust the import path as needed
+from schema import WeatherRecord, WeatherStation
 
 
 def create_weather_record(**overrides):
@@ -13,6 +13,7 @@ def create_weather_record(**overrides):
         "wr_id": uuid.uuid4(),
         "station_id": uuid.uuid4(),
         "source_timestamp": datetime.datetime.now(),
+        "taken_timestamp": datetime.datetime.now(),
         "temperature": 0.0,
         "wind_speed": 10.0,
         "max_wind_speed": 20.0,
@@ -30,3 +31,19 @@ def create_weather_record(**overrides):
     }
     defaults.update(overrides)
     return WeatherRecord(**defaults)
+
+
+def create_weather_station(**overrides):
+    """Factory method to create a WeatherStation with default values."""
+    defaults = {
+        "ws_id": uuid.uuid4(),
+        "connection_type": "mock",
+        "field1": "value1",
+        "field2": "value2",
+        "field3": "value3",
+        "pressure_offset": 0.0,
+        "data_timezone": "Etc/UTC",
+        "local_timezone": "Etc/UTC",
+    }
+    defaults.update(overrides)
+    return WeatherStation(**defaults)

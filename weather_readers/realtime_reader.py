@@ -4,7 +4,6 @@ This class is responsible for reading weather data from a real-time weather stat
 It fetches data from a specified endpoint and parses it into a WeatherRecord object.
 """
 
-from datetime import datetime
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
@@ -45,16 +44,12 @@ class RealtimeReader(WeatherReader):
                 temp_dict[self.INDEX_TO_DATA[index]] = item
             index += 1
 
-        _time = datetime.strptime(temp_dict["time"], "%H:%M:%S")
-        _date = self.smart_parse_date(temp_dict["date"], timezone=station.data_timezone)
+        _date = self.smart_parse_datetime(
+            f"{temp_dict["date"]} {temp_dict["time"]}", timezone=station.data_timezone
+        )
 
-        if _time is None or _date is None:
-            raise ValueError("Cannot accept a reading without a timestamp.")
-
-        local_observation_time = (
-            datetime.combine(_date, _time.time(), tzinfo=station.data_timezone)
-            .replace(tzinfo=station.data_timezone)
-            .astimezone(station.local_timezone)
+        local_observation_time = _date.replace(tzinfo=station.data_timezone).astimezone(
+            station.local_timezone
         )
 
         fields = self.get_fields()

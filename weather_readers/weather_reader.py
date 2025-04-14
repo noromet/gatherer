@@ -59,7 +59,7 @@ class WeatherReader(ABC):
     # endregion
 
     # region common methods
-    def validate_connection_fields(self, station: WeatherStation) -> None:
+    def validate_connection_fields(self, station: WeatherStation) -> bool:
         """
         Validate the fields of the WeatherStation based on self.required_fields.
 
@@ -71,7 +71,9 @@ class WeatherReader(ABC):
         """
         for field in self.required_fields:
             if getattr(station, field) is None:
-                raise ValueError(f"Missing required field: {field}")
+                return False
+
+        return True
 
     def get_data(self, station: WeatherStation, *args, **kwargs) -> WeatherRecord:
         """
@@ -83,7 +85,11 @@ class WeatherReader(ABC):
         Returns:
             WeatherRecord: The parsed weather record.
         """
-        self.validate_connection_fields(station)
+        if not self.validate_connection_fields(station):
+            raise ValueError(
+                f"Station {station.id} is missing a required connection field."
+            )
+
         raw_data = self.fetch_data(station, *args, **kwargs)
 
         if raw_data is None:
@@ -94,7 +100,13 @@ class WeatherReader(ABC):
         if fields is None:
             return None
 
-        self.assert_date_age(fields["source_timestamp"])
+        is_valid, error_message = self.validate_date_age(fields["source_timestamp"])
+        if not is_valid:
+            logging.error(
+                "Invalid date for station %s: %s",
+                station.id,
+                error_message,
+            )
 
         use_daily = True
 
@@ -163,7 +175,7 @@ class WeatherReader(ABC):
             station_id=station.id,
             source_timestamp=fields.get("source_timestamp"),
             taken_timestamp=fields.get("taken_timestamp"),
-            flagged=False,
+            flagged=fields.get("flagged"),
             gatherer_thread_id=None,
             temperature=fields.get("instant").get("temperature"),
             wind_speed=fields.get("instant").get("wind_speed"),
@@ -224,31 +236,42 @@ class WeatherReader(ABC):
 
         return response
 
-    def assert_date_age(self, date: datetime.datetime) -> None:
+    def validate_date_age(self, date: datetime.datetime) -> tuple[bool, str]:
         """
-        Assert that the given date is recent and has a timezone.
+        Assert that the given date is recent, has a timezone, and is not in the future.
 
         Args:
             date (datetime.datetime): The date to validate.
 
         Raises:
-            ValueError: If the date is None, has no timezone, or is too old.
+            ValueError: If the date is None, has no timezone, is too old, or is in the future.
         """
         if date is None:
-            raise ValueError("Date is None")
+            return False, "Date is None"
 
         if date.tzinfo is None:
-            raise ValueError("Date has no timezone")
+            return False, "Date has no timezone"
 
         # Normalize the date to UTC
         date_utc = date.astimezone(datetime.timezone.utc)
 
         now_utc = datetime.datetime.now(datetime.timezone.utc)
-        if (now_utc - date_utc).total_seconds() > self.max_reading_age_seconds:
-            raise ValueError(
-                f"""Reading timestamp is too old to be stored as current.
-                Observation time (UTC): {date_utc}, current time (UTC): {now_utc}"""
+
+        if date_utc > now_utc:
+            return (
+                False,
+                f"Date is in the future. Observation time (UTC): {date_utc}, "
+                f"current time (UTC): {now_utc}",
             )
+
+        if (now_utc - date_utc).total_seconds() > self.max_reading_age_seconds:
+            return (
+                False,
+                f"Reading timestamp is too old. Observation time (UTC): {date_utc}, "
+                f"current time (UTC): {now_utc}",
+            )
+
+        return True, None
 
     def max_or_none(self, arglist) -> Any:
         """
@@ -284,6 +307,9 @@ class WeatherReader(ABC):
         Returns:
             Any: The first non-None value or None.
         """
+        if not arglist:
+            return None
+
         for arg in arglist:
             if arg is not None:
                 return arg
@@ -305,42 +331,56 @@ class WeatherReader(ABC):
         if azimuth is None or azimuth == "-" or azimuth == "N/A":
             return None
 
-        if not isinstance(azimuth, str):
-            if isinstance(azimuth, (int, float)):
-                if azimuth < 0 or azimuth > 360:
-                    raise ValueError(f"Invalid azimuth value: {azimuth}")
-                return azimuth
-            raise ValueError(f"Invalid azimuth value: {azimuth}")
+        def _azimuth_as_float(azimuth: int | float):
+            if azimuth < 0 or azimuth > 360:
+                return None
+            if azimuth == 360:
+                return 0
+            return azimuth
 
-        azimuth = (
-            azimuth.strip().lower().replace(" ", "").replace("º", "").replace("o", "w")
-        )
+        def _azimuth_as_string(azimuth: str):
+            azimuth = azimuth.strip().lower().replace("o", "w")
 
-        translations = {
-            "n": 0,
-            "nne": 22.5,
-            "ne": 45,
-            "ene": 67.5,
-            "e": 90,
-            "ese": 112.5,
-            "se": 135,
-            "sse": 157.5,
-            "s": 180,
-            "ssw": 202.5,
-            "sw": 225,
-            "wsw": 247.5,
-            "w": 270,
-            "wnw": 292.5,
-            "nw": 315,
-            "nnw": 337.5,
-        }
+            clean_azimuth = ""
+            for character in azimuth:
+                if character in "0123456789nesw":
+                    clean_azimuth += character
 
-        if azimuth in translations:
-            return translations[azimuth]
-        try:
-            return self.smart_parse_float(azimuth)
-        except ValueError as e:
-            raise ValueError(f"Invalid azimuth value: {azimuth}") from e
+            translations = {
+                "n": 0,
+                "nne": 22.5,
+                "ne": 45,
+                "ene": 67.5,
+                "e": 90,
+                "ese": 112.5,
+                "se": 135,
+                "sse": 157.5,
+                "s": 180,
+                "ssw": 202.5,
+                "sw": 225,
+                "wsw": 247.5,
+                "w": 270,
+                "wnw": 292.5,
+                "nw": 315,
+                "nnw": 337.5,
+            }
+
+            if clean_azimuth in translations:
+                return translations[clean_azimuth]
+
+            try:
+                parsed_float = self.smart_parse_float(clean_azimuth)
+                if parsed_float is None or parsed_float < 0 or parsed_float > 360:
+                    return None
+                return parsed_float
+            except ValueError:
+                return None
+
+        if isinstance(azimuth, (int, float)):
+            return _azimuth_as_float(azimuth)
+        if isinstance(azimuth, (str)):
+            return _azimuth_as_string(azimuth)
+        return None
 
     def safe_float(self, value):
         """
@@ -352,7 +392,10 @@ class WeatherReader(ABC):
         Returns:
             float: The converted float value or None.
         """
-        return float(value) if value is not None else None
+        try:
+            return float(value) if value is not None else None
+        except (ValueError, TypeError):
+            return None
 
     def safe_int(self, value):
         """
@@ -364,7 +407,10 @@ class WeatherReader(ABC):
         Returns:
             int: The converted int value or None.
         """
-        return int(value) if value is not None else None
+        try:
+            return int(value) if value is not None else None
+        except (ValueError, TypeError):
+            return None
 
     def smart_parse_datetime(
         self, date_str: str, timezone: datetime.tzinfo = None
@@ -382,6 +428,8 @@ class WeatherReader(ABC):
         Raises:
             ValueError: If the date string is invalid.
         """
+        if date_str.count(":") < 1:
+            raise ValueError(f"Parsed date lacks hour and minute: {date_str}")
 
         def try_parse_datetime(date_str, date_format):
             try:
@@ -391,7 +439,8 @@ class WeatherReader(ABC):
             except ValueError:
                 return None
 
-        def get_closest_datetime(dates, now):
+        def get_closest_datetime(dates):
+            now = datetime.datetime.now(tz=timezone)
             valid_dates = [date for date in dates if date is not None and date <= now]
             if not valid_dates:
                 return None
@@ -402,69 +451,30 @@ class WeatherReader(ABC):
         spanish_dates = [try_parse_datetime(date_str, fmt) for fmt in spanish_formats]
         spanish = next((date for date in spanish_dates if date is not None), None)
 
-        # Try American formatting
+        # Try auto formatting
         try:
-            american = parser.parse(date_str).replace(tzinfo=timezone)
+            auto = parser.parse(date_str).replace(tzinfo=timezone)
         except ValueError:
-            american = None
+            auto = None
 
-        if spanish is None and american is None:
+        if spanish is None and auto is None:
             raise ValueError(f"Invalid date format: {date_str}")
 
-        now = datetime.datetime.now(tz=timezone)
-        if spanish is not None and american is not None:
-            return get_closest_datetime([spanish, american], now)
+        if spanish is not None:
+            if auto is not None:
+                date = get_closest_datetime([spanish, auto])
+            else:
+                date = spanish
+        else:
+            date = auto
 
-        return spanish if spanish is not None else american
+        if date is None:
+            return None
 
-    def smart_parse_date(
-        self, date_str: str, timezone: datetime.tzinfo = None
-    ) -> datetime.date:
-        """
-        Parse a date string into a date object, trying multiple formats.
+        if date > datetime.datetime.now(tz=timezone):
+            return None
 
-        Args:
-            date_str (str): The date string to parse.
-            timezone (datetime.tzinfo, optional): The timezone to apply.
-
-        Returns:
-            datetime.date: The parsed date object.
-
-        Raises:
-            ValueError: If the date string is invalid.
-        """
-
-        def try_parse_date(date_str, date_format):
-            try:
-                return datetime.datetime.strptime(date_str, date_format).date()
-            except ValueError:
-                return None
-
-        def get_closest_date(dates, now):
-            valid_dates = [date for date in dates if date is not None and date <= now]
-            if not valid_dates:
-                return None
-            return min(valid_dates, key=lambda date: abs((date - now).days))
-
-        # Try Spanish formatting
-        spanish_formats = ["%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%d-%m-%y"]
-        spanish_dates = [try_parse_date(date_str, fmt) for fmt in spanish_formats]
-        spanish = next((date for date in spanish_dates if date is not None), None)
-
-        # Try American formatting
-        try:
-            american = parser.parse(date_str).date()
-        except ValueError:
-            american = None
-
-        if spanish is None and american is None:
-            raise ValueError(f"Invalid date format: {date_str}")
-
-        now = datetime.datetime.now(tz=timezone).date()
-        if spanish is not None and american is not None:
-            return get_closest_date([spanish, american], now)
-
-        return spanish if spanish is not None else american
+        return date
 
     def smart_parse_float(self, float_str: str) -> float:
         """

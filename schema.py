@@ -215,14 +215,14 @@ class WeatherStation:
 
     def __init__(
         self,
-        ws_id: uuid.uuid4,
+        ws_id: uuid.UUID,
         connection_type: str,
         field1: str,
         field2: str,
         field3: str,
         pressure_offset: float,
-        data_timezone: datetime.tzinfo,
-        local_timezone: datetime.tzinfo,
+        data_timezone: str | datetime.tzinfo,
+        local_timezone: str | datetime.tzinfo,
     ):
         self.id = ws_id
         self.connection_type = connection_type
@@ -230,5 +230,19 @@ class WeatherStation:
         self.field2 = field2
         self.field3 = field3
         self.pressure_offset = pressure_offset
-        self.data_timezone = zoneinfo.ZoneInfo(data_timezone)
-        self.local_timezone = zoneinfo.ZoneInfo(local_timezone)
+
+        # Handle data_timezone
+        if isinstance(data_timezone, str):
+            self.data_timezone = zoneinfo.ZoneInfo(data_timezone)
+        elif isinstance(data_timezone, datetime.tzinfo):
+            self.data_timezone = data_timezone
+        else:
+            raise ValueError("data_timezone must be a string or a tzinfo object")
+
+        # Handle local_timezone
+        if isinstance(local_timezone, str):
+            self.local_timezone = zoneinfo.ZoneInfo(local_timezone)
+        elif isinstance(local_timezone, datetime.tzinfo):
+            self.local_timezone = local_timezone
+        else:
+            raise ValueError("local_timezone must be a string or a tzinfo object")
