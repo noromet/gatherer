@@ -5,6 +5,7 @@ Collection of factory methods to create test data for WeatherRecord.
 import uuid
 import datetime
 from schema import WeatherRecord, WeatherStation
+from gatherer import weather_readers
 
 
 def create_weather_record(**overrides):
@@ -47,3 +48,53 @@ def create_weather_station(**overrides):
     }
     defaults.update(overrides)
     return WeatherStation(**defaults)
+
+
+def create_weather_reader(reader_cls, **overrides):
+    """
+    Factory method to create a weather reader instance with default values.
+    Usage: reader = create_weather_reader(EcowittReader)
+    """
+
+    defaults = {}
+
+    if reader_cls is weather_readers.WundergroundReader:
+        defaults = {
+            "live_endpoint": "example.com",
+            "daily_endpoint": "example.com",
+        }
+    elif reader_cls is weather_readers.EcowittReader:
+        defaults = {
+            "live_endpoint": "example.com",
+            "daily_endpoint": "example.com",
+        }
+    elif reader_cls is weather_readers.WeatherLinkV1Reader:
+        defaults = {
+            "live_endpoint": "example.com",
+        }
+    elif reader_cls is weather_readers.WeatherlinkV2Reader:
+        defaults = {
+            "live_endpoint": "example.com",
+            "daily_endpoint": "example.com",
+        }
+    elif reader_cls is weather_readers.ThingspeakReader:
+        defaults = {
+            "live_endpoint": "example.com",
+        }
+    elif reader_cls is weather_readers.HolfuyReader:
+        defaults = {
+            "live_endpoint": "example.com",
+            "daily_endpoint": "example.com",
+        }
+    elif reader_cls is weather_readers.MeteoclimaticReader:
+        # MeteoclimaticReader takes no arguments
+        return reader_cls(**overrides)
+    elif reader_cls is weather_readers.RealtimeReader:
+        # RealtimeReader takes no arguments
+        return reader_cls(**overrides)
+    else:
+        # fallback for unknown readers
+        return reader_cls(**overrides)
+
+    defaults.update(overrides)
+    return reader_cls(**defaults)
