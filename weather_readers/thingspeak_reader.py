@@ -78,13 +78,12 @@ class ThingspeakReader(WeatherReader):
         """
         endpoint = f"{self.live_endpoint}/{station.field1}/feeds.json?results=1"
 
-        response = self.make_request(endpoint)
-
-        if response.status_code != 200:
+        live_response = self.make_request(endpoint)
+        if live_response.status_code != 200:
             logging.error(
                 "Request failed with status code %s. Check station connection parameters.",
-                response.status_code,
+                live_response.status_code,
             )
             return None
 
-        return {"live": response.json()}
+        return {"live": live_response.json()}

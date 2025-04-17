@@ -106,14 +106,14 @@ class WeatherLinkV1Reader(WeatherReader):
         user, api_token, password = station.field1, station.field2, station.field3
 
         params = {"user": user, "pass": password, "apiToken": api_token}
-        response = self.make_request(self.live_endpoint, params=params)
+        live_response = self.make_request(self.live_endpoint, params=params)
 
-        if response.status_code != 200:
+        if live_response.status_code != 200:
             logging.error(
                 "Request failed with status code %d."
                 "Check station connection parameters.",
-                response.status_code,
+                live_response.status_code,
             )
             return None
 
-        return {"live": response.json()}
+        return {"live": live_response.json()}

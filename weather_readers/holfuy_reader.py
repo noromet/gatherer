@@ -5,7 +5,6 @@ into a standardized `WeatherRecord` format.
 """
 
 import datetime
-import logging
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
@@ -102,13 +101,6 @@ class HolfuyReader(WeatherReader):
         )
         live_response = self.make_request(live_url)
 
-        if live_response.status_code != 200:
-            logging.error(
-                "Request failed with status code %d. Check station connection parameters.",
-                live_response.status_code,
-            )
-            return None
-
         daily_url = (
             f"{self.daily_endpoint}?s={station_id}"
             f"&pw={password}"
@@ -118,16 +110,7 @@ class HolfuyReader(WeatherReader):
             "&type=2"
             "&mback=60"
         )
-        daily_response = self.make_request(
-            daily_url
-        )  # esto solamente devuelve el ultimo, no el historico
-
-        if daily_response.status_code != 200:
-            logging.error(
-                "Request failed with status code %d. Check station connection parameters.",
-                daily_response.status_code,
-            )
-            return None
+        daily_response = self.make_request(daily_url)
 
         # daily is deprecated while holfuy fixes their API
         return {"live": live_response.json(), "daily": daily_response.json()}
