@@ -37,14 +37,14 @@ def create_weather_record(**overrides):
 def create_weather_station(**overrides):
     """Factory method to create a WeatherStation with default values."""
     defaults = {
-        "ws_id": uuid.uuid4(),
+        "id": uuid.uuid4(),
         "connection_type": "mock",
         "field1": "value1",
         "field2": "value2",
         "field3": "value3",
         "pressure_offset": 0.0,
-        "data_timezone": "Etc/UTC",
-        "local_timezone": "Etc/UTC",
+        "_data_timezone": "Etc/UTC",
+        "_local_timezone": "Etc/UTC",
     }
     defaults.update(overrides)
     return WeatherStation(**defaults)
