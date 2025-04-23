@@ -218,7 +218,7 @@ class WeatherReader(ABC):
             WeatherRecord: The constructed WeatherRecord object.
         """
         return WeatherRecord(
-            wr_id=str(uuid.uuid4()),
+            id=str(uuid.uuid4()),
             station_id=station.id,
             source_timestamp=fields.get("source_timestamp"),
             taken_timestamp=fields.get("taken_timestamp"),

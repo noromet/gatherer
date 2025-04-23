@@ -11,7 +11,7 @@ import weather_readers
 def create_weather_record(**overrides):
     """Factory method to create a WeatherRecord with default values."""
     defaults = {
-        "wr_id": uuid.uuid4(),
+        "id": uuid.uuid4(),
         "station_id": uuid.uuid4(),
         "source_timestamp": datetime.datetime.now(),
         "taken_timestamp": datetime.datetime.now(),
