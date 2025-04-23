@@ -134,3 +134,17 @@ class WeatherStation:
             self.local_timezone = self._local_timezone
         else:
             raise ValueError("local_timezone must be a string or a tzinfo object")
+
+    def __eq__(self, other):
+        """
+        Define equality for WeatherStation objects based on their ID.
+        """
+        if not isinstance(other, WeatherStation):
+            return False
+        return self.id == other.id
+
+    def __hash__(self):
+        """
+        Make WeatherStation hashable based on its ID.
+        """
+        return hash(self.id)
