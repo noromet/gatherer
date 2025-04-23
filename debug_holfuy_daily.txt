@@ -1,1 +1,0 @@
- {"stationId":692,"speedUnit":"km/h","tempUnit":"C","measurements":[{"dateTime":"2025-04-16 20:00:00","dataCount":0,"secondsBack":202,"wind":{"speed":5,"gust":19,"min":0,"direction":198},"temperature":5.7,"humidity":"91.1","pressure":"870.7","light":483,"rain":0,"2nd_temp":"6.6","soil_moisture":"19.3"}]}

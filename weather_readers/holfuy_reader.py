@@ -18,10 +18,8 @@ class HolfuyReader(WeatherReader):
     and handles data transformation for various weather parameters.
     """
 
-    def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__(ignore_early_readings=True)
-        self.live_endpoint = live_endpoint
-        self.daily_endpoint = daily_endpoint
+    def __init__(self, live_endpoint: str, daily_endpoint: str = None):
+        super().__init__(live_endpoint, daily_endpoint, ignore_early_readings=True)
         self.required_fields = ["field1", "field3"]  # station_id and password
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
@@ -47,17 +45,17 @@ class HolfuyReader(WeatherReader):
 
         fields["source_timestamp"] = local_observation_time
 
-        fields["instant"]["temperature"] = self.safe_float(live_data.get("temperature"))
-        fields["instant"]["wind_speed"] = self.safe_float(
+        fields["live"]["temperature"] = self.safe_float(live_data.get("temperature"))
+        fields["live"]["wind_speed"] = self.safe_float(
             live_data.get("wind", {}).get("speed")
         )
-        fields["instant"]["wind_direction"] = self.safe_float(
+        fields["live"]["wind_direction"] = self.safe_float(
             live_data.get("wind", {}).get("direction")
         )
-        fields["instant"]["rain"] = self.safe_float(live_data.get("rain"))
-        fields["instant"]["humidity"] = self.safe_float(live_data.get("humidity"))
-        fields["instant"]["pressure"] = self.safe_float(live_data.get("pressure"))
-        fields["instant"]["wind_gust"] = self.safe_float(
+        fields["live"]["rain"] = self.safe_float(live_data.get("rain"))
+        fields["live"]["humidity"] = self.safe_float(live_data.get("humidity"))
+        fields["live"]["pressure"] = self.safe_float(live_data.get("pressure"))
+        fields["live"]["wind_gust"] = self.safe_float(
             live_data.get("wind", {}).get("gust")
         )
 
@@ -79,15 +77,15 @@ class HolfuyReader(WeatherReader):
 
         return fields
 
-    def fetch_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, station: WeatherStation) -> dict:
         """
-        Fetch live and daily weather data from the Holfuy API.
+        Fetch live weather data from the Holfuy API.
 
         Args:
             station (WeatherStation): The weather station object.
 
         Returns:
-            dict: A dictionary containing live and daily weather data.
+            dict: The raw live data fetched from the API.
         """
         station_id, password = station.field1, station.field3
 
@@ -100,6 +98,24 @@ class HolfuyReader(WeatherReader):
             "&daily=True"
         )
         live_response = self.make_request(live_url)
+        if live_response:
+            return live_response.json()
+        return None
+
+    def fetch_daily_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch daily weather data from the Holfuy API.
+
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: The raw daily data fetched from the API.
+        """
+        if not self.daily_endpoint:
+            return None
+
+        station_id, password = station.field1, station.field3
 
         daily_url = (
             f"{self.daily_endpoint}?s={station_id}"
@@ -111,6 +127,6 @@ class HolfuyReader(WeatherReader):
             "&mback=60"
         )
         daily_response = self.make_request(daily_url)
-
-        # daily is deprecated while holfuy fixes their API
-        return {"live": live_response.json(), "daily": daily_response.json()}
+        if daily_response:
+            return daily_response.json()
+        return None

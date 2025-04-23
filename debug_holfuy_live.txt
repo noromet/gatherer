@@ -1,1 +1,0 @@
- {"stationId":692,"stationName":"Cascajera/UGR-ACAMET","dateTime":"2025-04-16 20:02:47","wind":{"speed":5,"gust":13,"min":2,"unit":"km/h","direction":203},"humidity":93.7,"pressure":1014,"light":284,"rain":0,"2nd_temp":6.6,"soil_moisture":19.4,"daily":{"max_temp":8.4,"min_temp":0.1,"sum_rain":0},"temperature":5.4}

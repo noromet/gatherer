@@ -4,38 +4,48 @@ Unit tests for ThingspeakReader.
 
 import unittest
 from unittest.mock import patch
-import uuid
+
+from test.factories import create_weather_reader, create_weather_station
+from test.test_weather_readers.base import WeatherReaderTestBase
 from weather_readers.thingspeak_reader import ThingspeakReader
-from schema import WeatherStation
 
 
-class TestThingspeakReader(unittest.TestCase):
+class TestThingspeakReader(WeatherReaderTestBase):
     """
-    Test cases for ThingspeakReader.get_data method.
+    Test cases for ThingspeakReader.read method.
     """
 
-    @patch(
-        "weather_readers.thingspeak_reader.ThingspeakReader.fetch_data",
-        return_value={"live": {}},
-    )
-    def test_get_data_good(self, _):
+    live_fixture_filename = "thingspeak_response.json"
+
+    @patch("weather_readers.thingspeak_reader.ThingspeakReader.fetch_data")
+    def test_read_good(self, mock_fetch_data):
         """
-        Test the get_data method of ThingspeakReader with valid data.
+        Test the read method of ThingspeakReader with valid data.
         """
-        station = WeatherStation(
-            ws_id=uuid.uuid4(),
-            connection_type="thingspeak",
-            field1="channelid",
-            field2=None,
-            field3=None,
-            pressure_offset=0.0,
-            data_timezone="Etc/UTC",
-            local_timezone="Etc/UTC",
-        )
-        reader = ThingspeakReader("placeholder")
-        record = reader.get_data(station)
+        mock_fetch_data.return_value = self.test_data
+
+        station = create_weather_station(connection_type="thingspeak")
+        reader = create_weather_reader(ThingspeakReader)
+
+        record = reader.read(station)
+
         self.assertIsNotNone(record)
-        # self.assertAlmostEqual(record.temperature, 21.5)  # Uncomment and adjust as needed
+
+        # live
+        self.assertEqual(record.temperature, 10.49)
+        self.assertEqual(record.humidity, 54.43)
+        self.assertEqual(record.rain, None)  # Not present in JSON
+        self.assertEqual(record.pressure, 921.6)
+        self.assertEqual(record.wind_speed, None)  # Not present in JSON
+        self.assertEqual(record.wind_gust, None)  # Not present in JSON
+        self.assertEqual(record.wind_direction, None)  # Not present in JSON
+
+        # daily
+        self.assertEqual(record.cumulative_rain, None)  # Not present in JSON
+        self.assertEqual(record.max_wind_speed, None)  # Not present in JSON
+        self.assertEqual(record.max_wind_gust, None)  # Not present in JSON
+        self.assertEqual(record.max_temperature, None)  # Not present in JSON
+        self.assertEqual(record.min_temperature, None)  # Not present in JSON
 
 
 if __name__ == "__main__":

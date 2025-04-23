@@ -22,7 +22,7 @@ class UnitConverter:
         Returns:
             float: Temperature in Celsius.
         """
-        return round((fahrenheit - 32) * 5 / 9, 4) if fahrenheit is not None else None
+        return round((fahrenheit - 32) * 5 / 9, 1) if fahrenheit is not None else None
 
     @classmethod
     def psi_to_hpa(cls, pressure: float) -> float:
@@ -35,7 +35,7 @@ class UnitConverter:
         Returns:
             float: Pressure in hPa.
         """
-        return round(pressure * 33.8639, 4) if pressure is not None else None
+        return round(pressure * 33.8639, 1) if pressure is not None else None
 
     @classmethod
     def mph_to_kph(cls, speed: float) -> float:
@@ -48,7 +48,7 @@ class UnitConverter:
         Returns:
             float: Speed in KPH.
         """
-        return round(speed * 1.60934, 4) if speed is not None else None
+        return round(speed * 1.60934, 1) if speed is not None else None
 
     @classmethod
     def inches_to_mm(cls, inches: float) -> float:
@@ -61,4 +61,4 @@ class UnitConverter:
         Returns:
             float: Precipitation in millimeters.
         """
-        return round(inches * 25.4, 4) if inches is not None else None
+        return round(inches * 25.4, 1) if inches is not None else None

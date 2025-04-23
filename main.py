@@ -218,7 +218,7 @@ class Gatherer:
             return {"status": "error", "error": message}
 
         try:
-            record = reader.get_data(station)
+            record = reader.read(station)
             if not record:
                 message = f"No data retrieved for station {station.id}"
                 logging.error(message)
@@ -331,7 +331,7 @@ def main():
 
     readers = {
         "meteoclimatic": api.MeteoclimaticReader(),
-        "weatherlink_v1": api.WeatherLinkV1Reader(
+        "weatherlink_v1": api.WeatherlinkV1Reader(
             live_endpoint=config.weatherlink_v1_endpoint
         ),
         "wunderground": api.WundergroundReader(

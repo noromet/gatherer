@@ -15,9 +15,7 @@ class EcowittReader(WeatherReader):
     """
 
     def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__(ignore_early_readings=True)
-        self.live_endpoint = live_endpoint
-        self.daily_endpoint = daily_endpoint
+        super().__init__(live_endpoint, daily_endpoint, ignore_early_readings=True)
         self.required_fields = ["field1", "field2", "field3"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
@@ -51,25 +49,25 @@ class EcowittReader(WeatherReader):
 
         fields["source_timestamp"] = local_observation_time
 
-        fields["instant"]["temperature"] = self.safe_float(
+        fields["live"]["temperature"] = self.safe_float(
             outdoor.get("temperature", {}).get("value")
         )
-        fields["instant"]["wind_speed"] = self.safe_float(
+        fields["live"]["wind_speed"] = self.safe_float(
             wind.get("wind_speed", {}).get("value")
         )
-        fields["instant"]["wind_direction"] = self.safe_float(
+        fields["live"]["wind_direction"] = self.safe_float(
             wind.get("wind_direction", {}).get("value")
         )
-        fields["instant"]["rain"] = self.safe_float(
+        fields["live"]["rain"] = self.safe_float(
             rainfall.get("rain_rate", {}).get("value")
         )
-        fields["instant"]["humidity"] = self.safe_float(
+        fields["live"]["humidity"] = self.safe_float(
             outdoor.get("humidity", {}).get("value")
         )
-        fields["instant"]["pressure"] = self.safe_float(
+        fields["live"]["pressure"] = self.safe_float(
             live_data.get("pressure", {}).get("relative", {}).get("value")
         )
-        fields["instant"]["wind_gust"] = self.safe_float(
+        fields["live"]["wind_gust"] = self.safe_float(
             wind.get("wind_gust", {}).get("value")
         )
 
@@ -95,15 +93,15 @@ class EcowittReader(WeatherReader):
 
         return fields
 
-    def fetch_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, station: WeatherStation) -> dict:
         """
-        Fetch live and daily weather data from the Ecowitt API.
+        Fetch live weather data from the Ecowitt API.
 
         Args:
             station (WeatherStation): The weather station object.
 
         Returns:
-            dict: A dictionary containing live and daily weather data.
+            dict: The raw live data fetched from the API.
         """
         mac = station.field1
         api_key = station.field2
@@ -116,6 +114,23 @@ class EcowittReader(WeatherReader):
             "wind_speed_unitid=7&rainfall_unitid=12"
         )
         live_response = self.make_request(live_url)
+        if live_response:
+            return live_response.json()
+        return None
+
+    def fetch_daily_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch daily weather data from the Ecowitt API.
+
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: The raw daily data fetched from the API.
+        """
+        mac = station.field1
+        api_key = station.field2
+        application_key = station.field3
 
         start_date = datetime.datetime.now().strftime("%Y-%m-%d 00:00:00")
         end_date = datetime.datetime.now().strftime("%Y-%m-%d 23:59:59")
@@ -129,12 +144,12 @@ class EcowittReader(WeatherReader):
             "&wind_speed_unitid=7"
             "&rainfall_unitid=12"
             f"&cycle_type=auto"
-            ""
             f"&start_date={start_date}"
             f"&end_date={end_date}"
             "&call_back=outdoor.temperature,outdoor.humidity,"
             "wind.wind_speed,wind.wind_gust"
         )
         daily_response = self.make_request(daily_url)
-
-        return {"live": live_response.json(), "daily": daily_response.json()}
+        if daily_response:
+            return daily_response.json()
+        return None

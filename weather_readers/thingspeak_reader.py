@@ -54,13 +54,13 @@ class ThingspeakReader(WeatherReader):
 
         fields["source_timestamp"] = local_observation_time
 
-        fields["instant"]["temperature"] = self.safe_float(
+        fields["live"]["temperature"] = self.safe_float(
             live_data.get("feeds")[0].get(self.FIELD_MAP.get("temperature"), None)
         )
-        fields["instant"]["humidity"] = self.safe_float(
+        fields["live"]["humidity"] = self.safe_float(
             live_data.get("feeds")[0].get(self.FIELD_MAP.get("humidity"), None)
         )
-        fields["instant"]["pressure"] = self.safe_float(
+        fields["live"]["pressure"] = self.safe_float(
             live_data.get("feeds")[0].get(self.FIELD_MAP.get("pressure"), None)
         )
 

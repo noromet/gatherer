@@ -68,7 +68,7 @@ def create_weather_reader(reader_cls, **overrides):
             "live_endpoint": "example.com",
             "daily_endpoint": "example.com",
         }
-    elif reader_cls is weather_readers.WeatherLinkV1Reader:
+    elif reader_cls is weather_readers.WeatherlinkV1Reader:
         defaults = {
             "live_endpoint": "example.com",
         }

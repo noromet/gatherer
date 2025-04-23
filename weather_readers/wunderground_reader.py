@@ -56,13 +56,13 @@ class WundergroundReader(WeatherReader):
         if live_metric_data is None:
             raise ValueError("No metric data found in live data.")
 
-        fields["instant"]["temperature"] = live_metric_data.get("temp", None)
-        fields["instant"]["wind_speed"] = live_metric_data.get("windSpeed", None)
-        fields["instant"]["wind_direction"] = live_data.get("winddir", None)
-        fields["instant"]["rain"] = live_metric_data.get("precipRate", None)
-        fields["instant"]["humidity"] = live_data.get("humidity", None)
-        fields["instant"]["pressure"] = live_metric_data.get("pressure", None)
-        fields["instant"]["wind_gust"] = live_metric_data.get("windGust", None)
+        fields["live"]["temperature"] = live_metric_data.get("temp", None)
+        fields["live"]["wind_speed"] = live_metric_data.get("windSpeed", None)
+        fields["live"]["wind_direction"] = live_data.get("winddir", None)
+        fields["live"]["rain"] = live_metric_data.get("precipRate", None)
+        fields["live"]["humidity"] = live_data.get("humidity", None)
+        fields["live"]["pressure"] = live_metric_data.get("pressure", None)
+        fields["live"]["wind_gust"] = live_metric_data.get("windGust", None)
 
         fields["daily"]["cumulative_rain"] = live_metric_data.get("precipTotal", None)
         daily_metric_data = daily_data.get("metric")

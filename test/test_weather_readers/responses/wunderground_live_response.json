@@ -1,0 +1,33 @@
+{
+    "observations": [
+        {
+            "stationID": "ICANGA15",
+            "obsTimeUtc": "2025-04-16T18:03:14Z",
+            "obsTimeLocal": "2025-04-16 20:03:14",
+            "neighborhood": "Cangas del Narcea",
+            "softwareType": "WH2650A_V1.7.7",
+            "country": "ES",
+            "solarRadiation": 49.8,
+            "lon": -6.551844,
+            "realtimeFrequency": null,
+            "epoch": 1744826594,
+            "lat": 43.024211,
+            "uv": 0.0,
+            "winddir": 15,
+            "humidity": 79.0,
+            "qcStatus": -1,
+            "metric": {
+                "temp": 5.0,
+                "heatIndex": 5.0,
+                "dewpt": 1.7,
+                "windChill": 3.9,
+                "windSpeed": 5.4,
+                "windGust": 9.4,
+                "pressure": 1014.60,
+                "precipRate": 0.00,
+                "precipTotal": 3.30,
+                "elev": 320.0
+            }
+        }
+    ]
+}

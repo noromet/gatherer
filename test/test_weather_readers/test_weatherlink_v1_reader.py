@@ -1,41 +1,51 @@
 """
-Unit tests for WeatherLinkV1Reader.
+Unit tests for WeatherlinkV1Reader.
 """
 
 import unittest
 from unittest.mock import patch
-import uuid
-from weather_readers.weatherlink_v1_reader import WeatherLinkV1Reader
-from schema import WeatherStation
+
+from test.factories import create_weather_reader, create_weather_station
+from test.test_weather_readers.base import WeatherReaderTestBase
+from weather_readers.weatherlink_v1_reader import WeatherlinkV1Reader
 
 
-class TestWeatherLinkV1Reader(unittest.TestCase):
+class TestWeatherlinkV1Reader(WeatherReaderTestBase):
     """
-    Test cases for WeatherLinkV1Reader.get_data method.
+    Test cases for WeatherlinkV1Reader.read method.
     """
 
-    @patch(
-        "weather_readers.weatherlink_v1_reader.WeatherLinkV1Reader.fetch_data",
-        return_value={"live": {}, "daily": {}},
-    )
-    def test_get_data_good(self, _):
+    live_fixture_filename = "weatherlink_v1_response.json"
+
+    @patch("weather_readers.weatherlink_v1_reader.WeatherlinkV1Reader.fetch_data")
+    def test_read_good(self, mock_fetch_data):
         """
-        Test the get_data method of WeatherLinkV1Reader with valid data.
+        Test the read method of WeatherlinkV1Reader with valid data.
         """
-        station = WeatherStation(
-            ws_id=uuid.uuid4(),
-            connection_type="weatherlink_v1",
-            field1="user",
-            field2="token",
-            field3="pass",
-            pressure_offset=0.0,
-            data_timezone="Etc/UTC",
-            local_timezone="Etc/UTC",
-        )
-        reader = WeatherLinkV1Reader("placeholder")
-        record = reader.get_data(station)
+        mock_fetch_data.return_value = self.test_data
+
+        station = create_weather_station(connection_type="weatherlink_v1")
+        reader = create_weather_reader(WeatherlinkV1Reader)
+
+        record = reader.read(station)
+
         self.assertIsNotNone(record)
-        # self.assertAlmostEqual(record.temperature, 18.5)  # Uncomment and adjust as needed
+
+        # live
+        self.assertEqual(record.temperature, 6.0)
+        self.assertEqual(record.humidity, 81)
+        self.assertEqual(record.rain, 25.4)
+        self.assertEqual(record.pressure, 1012)
+        self.assertEqual(record.wind_speed, 6.4)
+        self.assertEqual(record.wind_gust, None)
+        self.assertEqual(record.wind_direction, 20)
+
+        # daily
+        self.assertEqual(record.cumulative_rain, 28.9)
+        self.assertEqual(record.max_wind_speed, 30.6)
+        self.assertEqual(record.max_wind_gust, None)
+        self.assertEqual(record.max_temperature, 11.0)
+        self.assertEqual(record.min_temperature, -5.1)
 
 
 if __name__ == "__main__":

@@ -56,23 +56,23 @@ class RealtimeReader(WeatherReader):
 
         fields["source_timestamp"] = local_observation_time
 
-        fields["instant"]["wind_direction"] = self.safe_float(
+        fields["live"]["wind_direction"] = self.safe_float(
             temp_dict.get("current_wind_direction", None)
         )
 
-        fields["instant"]["temperature"] = self.safe_float(
+        fields["live"]["temperature"] = self.safe_float(
             temp_dict.get("current_temperature_celsius", None)
         )
-        fields["instant"]["wind_speed"] = self.safe_float(
+        fields["live"]["wind_speed"] = self.safe_float(
             temp_dict.get("current_wind_speed_kph", None)
         )
-        fields["instant"]["humidity"] = self.safe_float(
+        fields["live"]["humidity"] = self.safe_float(
             temp_dict.get("relative_humidity", None)
         )
-        fields["instant"]["pressure"] = self.safe_float(
+        fields["live"]["pressure"] = self.safe_float(
             temp_dict.get("pressure_hpa", None)
         )
-        fields["instant"]["rain"] = self.safe_float(temp_dict.get("rain_rate_mm", None))
+        fields["live"]["rain"] = self.safe_float(temp_dict.get("rain_rate_mm", None))
 
         fields["daily"]["max_temperature"] = self.safe_float(
             temp_dict.get("daily_max_temperature", None)
@@ -83,7 +83,6 @@ class RealtimeReader(WeatherReader):
         fields["daily"]["max_wind_speed"] = self.safe_float(
             temp_dict.get("daily_max_wind_speed", None)
         )
-
         fields["daily"]["cumulative_rain"] = self.safe_float(
             temp_dict.get("total_daily_precipitation_at_record_timestamp", None)
         )

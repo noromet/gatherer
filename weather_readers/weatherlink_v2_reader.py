@@ -86,6 +86,7 @@ class WeatherlinkV2Reader(WeatherReader):
         )
         wind_gust = self.coalesce(
             [
+                self.coalesce(live_response_keys["wind_gust"]["wind_gust_10_min"]),
                 self.max_or_none(
                     live_response_keys["wind_gust"]["wind_speed_hi_last_10_min"]
                 ),
@@ -186,7 +187,7 @@ class WeatherlinkV2Reader(WeatherReader):
         current_data = current_data.get("sensors", None)
 
         daily_data = None
-        if data["daily"]:
+        if data.get("daily") is not None:
             daily_data = data["daily"]
             daily_data = daily_data.get("sensors", None)
 
@@ -226,15 +227,13 @@ class WeatherlinkV2Reader(WeatherReader):
 
         fields["source_timestamp"] = local_observation_time
 
-        fields["instant"]["temperature"] = UnitConverter.fahrenheit_to_celsius(
-            temperature
-        )
-        fields["instant"]["wind_speed"] = UnitConverter.mph_to_kph(wind_speed)
-        fields["instant"]["wind_direction"] = wind_direction
-        fields["instant"]["rain"] = rain
-        fields["instant"]["humidity"] = humidity
-        fields["instant"]["pressure"] = UnitConverter.psi_to_hpa(pressure)
-        fields["instant"]["wind_gust"] = UnitConverter.mph_to_kph(wind_gust)
+        fields["live"]["temperature"] = UnitConverter.fahrenheit_to_celsius(temperature)
+        fields["live"]["wind_speed"] = UnitConverter.mph_to_kph(wind_speed)
+        fields["live"]["wind_direction"] = wind_direction
+        fields["live"]["rain"] = rain
+        fields["live"]["humidity"] = humidity
+        fields["live"]["pressure"] = UnitConverter.psi_to_hpa(pressure)
+        fields["live"]["wind_gust"] = UnitConverter.mph_to_kph(wind_gust)
 
         fields["daily"]["max_wind_speed"] = UnitConverter.mph_to_kph(max_wind_speed)
         fields["daily"]["cumulative_rain"] = final_cumulative_rain

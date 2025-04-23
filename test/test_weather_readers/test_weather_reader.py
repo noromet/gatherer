@@ -19,10 +19,16 @@ class MockWeatherReader(WeatherReader):
         super().__init__()
         self.required_fields = required_fields if required_fields is not None else []
 
-    def fetch_data(self, station):
+    def fetch_data(self):
+        """
+        Mock method to simulate fetching data from a weather station.
+        """
         return {"live": {}, "daily": {}}
 
-    def parse(self, station, data):
+    def parse(self):
+        """
+        Mock method to simulate parsing data from a weather station.
+        """
         return self.get_fields()
 
 
@@ -75,7 +81,7 @@ class TestWeatherReader(unittest.TestCase):
             "taken_timestamp": fields[
                 "taken_timestamp"
             ],  # Match dynamically generated timestamp
-            "instant": {
+            "live": {
                 "temperature": None,
                 "wind_speed": None,
                 "wind_direction": None,
@@ -99,7 +105,7 @@ class TestWeatherReader(unittest.TestCase):
             fields["source_timestamp"], expected_fields["source_timestamp"]
         )
         self.assertEqual(fields["flagged"], expected_fields["flagged"])
-        self.assertEqual(fields["instant"], expected_fields["instant"])
+        self.assertEqual(fields["live"], expected_fields["live"])
         self.assertEqual(fields["daily"], expected_fields["daily"])
         self.assertIsInstance(fields["taken_timestamp"], datetime.datetime)
         self.assertEqual(fields["taken_timestamp"].tzinfo, datetime.timezone.utc)
@@ -127,12 +133,12 @@ class TestWeatherReader(unittest.TestCase):
         self.assertIsNone(record.gatherer_thread_id)
         self.assertEqual(record.station_id, self.station.id)
 
-    def test_build_weather_record_instant_fields(self):
+    def test_build_weather_record_live_fields(self):
         """
-        Test the build_weather_record method with instant fields.
+        Test the build_weather_record method with live fields.
         """
         fields = self.base_reader.get_fields()
-        fields["instant"].update(
+        fields["live"].update(
             {
                 "temperature": 25.0,
                 "wind_speed": 10.0,
@@ -148,13 +154,13 @@ class TestWeatherReader(unittest.TestCase):
         )
 
         self.assertIsInstance(record, WeatherRecord)
-        self.assertEqual(record.temperature, fields["instant"]["temperature"])
-        self.assertEqual(record.wind_speed, fields["instant"]["wind_speed"])
-        self.assertEqual(record.wind_direction, fields["instant"]["wind_direction"])
-        self.assertEqual(record.rain, fields["instant"]["rain"])
-        self.assertEqual(record.humidity, fields["instant"]["humidity"])
-        self.assertEqual(record.pressure, fields["instant"]["pressure"])
-        self.assertEqual(record.wind_gust, fields["instant"]["wind_gust"])
+        self.assertEqual(record.temperature, fields["live"]["temperature"])
+        self.assertEqual(record.wind_speed, fields["live"]["wind_speed"])
+        self.assertEqual(record.wind_direction, fields["live"]["wind_direction"])
+        self.assertEqual(record.rain, fields["live"]["rain"])
+        self.assertEqual(record.humidity, fields["live"]["humidity"])
+        self.assertEqual(record.pressure, fields["live"]["pressure"])
+        self.assertEqual(record.wind_gust, fields["live"]["wind_gust"])
 
     def test_build_weather_record_daily_fields(self):
         """

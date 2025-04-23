@@ -1,5 +1,5 @@
 """
-This module defines the `WeatherLinkV1Reader` class
+This module defines the `WeatherlinkV1Reader` class
 for fetching and parsing weather datan from the WeatherLink V1 API.
 It processes live weather data into a standardized `WeatherRecord` format.
 """
@@ -11,7 +11,7 @@ from .utils import UnitConverter
 from .weather_reader import WeatherReader
 
 
-class WeatherLinkV1Reader(WeatherReader):
+class WeatherlinkV1Reader(WeatherReader):
     """
     A weather data reader for the WeatherLink V1 API.
 
@@ -50,23 +50,21 @@ class WeatherLinkV1Reader(WeatherReader):
 
         fields["source_timestamp"] = local_observation_time
 
-        fields["instant"]["temperature"] = self.safe_float(live_data.get("temp_c"))
-        fields["instant"]["wind_speed"] = UnitConverter.mph_to_kph(
+        fields["live"]["temperature"] = self.safe_float(live_data.get("temp_c"))
+        fields["live"]["wind_speed"] = UnitConverter.mph_to_kph(
             self.safe_float(live_data.get("wind_mph"))
         )
-        fields["instant"]["wind_direction"] = self.safe_float(
+        fields["live"]["wind_direction"] = self.safe_float(
             live_data.get("wind_degrees")
         )
-        fields["instant"]["rain"] = UnitConverter.inches_to_mm(
+        fields["live"]["rain"] = UnitConverter.inches_to_mm(
             self.safe_float(
                 live_data.get("davis_current_observation").get("rain_rate_in_per_hr")
             )
         )
-        fields["instant"]["humidity"] = self.safe_float(
-            live_data.get("relative_humidity")
-        )
-        fields["instant"]["pressure"] = self.safe_float(live_data.get("pressure_mb"))
-        fields["instant"]["wind_gust"] = UnitConverter.mph_to_kph(
+        fields["live"]["humidity"] = self.safe_float(live_data.get("relative_humidity"))
+        fields["live"]["pressure"] = self.safe_float(live_data.get("pressure_mb"))
+        fields["live"]["wind_gust"] = UnitConverter.mph_to_kph(
             self.safe_float(
                 live_data["davis_current_observation"].get("wind_ten_min_gust_mph")
             )

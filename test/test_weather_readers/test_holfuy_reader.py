@@ -4,38 +4,51 @@ Unit tests for HolfuyReader.
 
 import unittest
 from unittest.mock import patch
-import uuid
+
+from test.factories import create_weather_reader, create_weather_station
+from test.test_weather_readers.base import WeatherReaderTestBase
 from weather_readers.holfuy_reader import HolfuyReader
-from schema import WeatherStation
 
 
-class TestHolfuyReader(unittest.TestCase):
+class TestHolfuyReader(WeatherReaderTestBase):
     """
-    Test cases for HolfuyReader.get_data method.
+    Test cases for HolfuyReader.read method.
     """
 
-    @patch(
-        "weather_readers.holfuy_reader.HolfuyReader.fetch_data",
-        return_value={"live": {}, "daily": {}},
-    )
-    def test_get_data_good(self, _):
+    live_fixture_filename = "holfuy_live_response.json"
+    daily_fixture_filename = "holfuy_daily_response.json"
+
+    @patch("weather_readers.holfuy_reader.HolfuyReader.fetch_data")
+    def test_read_good(self, mock_fetch_data):
         """
-        Test the get_data method of HolfuyReader with valid data.
+        Test the read method of HolfuyReader with valid data.
         """
-        station = WeatherStation(
-            ws_id=uuid.uuid4(),
-            connection_type="holfuy",
-            field1="stationid",
-            field2=None,
-            field3="password",
-            pressure_offset=0.0,
-            data_timezone="Etc/UTC",
-            local_timezone="Etc/UTC",
+        mock_fetch_data.return_value = self.test_data
+
+        station = create_weather_station(connection_type="ecowitt")
+        reader = create_weather_reader(
+            HolfuyReader, live_endpoint="", daily_endpoint=""
         )
-        reader = HolfuyReader("placeholder", "placeholder")
-        record = reader.get_data(station)
+
+        record = reader.read(station)
+
         self.assertIsNotNone(record)
-        # self.assertAlmostEqual(record.temperature, 17.5)  # Uncomment and adjust as needed
+
+        # live
+        self.assertEqual(record.temperature, 5.4)
+        self.assertEqual(record.humidity, 93.7)
+        self.assertEqual(record.rain, 0.0)
+        self.assertEqual(record.pressure, 1014)
+        self.assertEqual(record.wind_speed, 5)
+        self.assertEqual(record.wind_gust, 13)
+        self.assertEqual(record.wind_direction, 203)
+
+        # daily
+        self.assertEqual(record.cumulative_rain, 10.0)
+        self.assertEqual(record.max_wind_speed, 5)
+        self.assertEqual(record.max_wind_gust, 13)
+        self.assertEqual(record.max_temperature, 8.4)
+        self.assertEqual(record.min_temperature, 0.1)
 
 
 if __name__ == "__main__":

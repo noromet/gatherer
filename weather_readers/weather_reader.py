@@ -25,23 +25,71 @@ class WeatherReader(ABC):
     It also includes utility methods for data validation and transformation.
     """
 
-    def __init__(self, ignore_early_readings: bool = False):
+    def __init__(
+        self,
+        live_endpoint: str = None,
+        daily_endpoint: str = None,
+        ignore_early_readings: bool = False,
+    ):
         self.required_fields = []
         self.ignore_early_readings = ignore_early_readings
         self.max_reading_age_seconds = 1800  # 30 minutes
+        self.live_endpoint = live_endpoint
+        self.daily_endpoint = daily_endpoint
 
     # region template methods
-    @abstractmethod
     def fetch_data(self, station: WeatherStation) -> dict:
         """
-        Fetch data from the source.
+        Fetch data from the source. This base implementation fetches
+            from both live and daily endpoints if available.
 
         Args:
             station (WeatherStation): The weather station object.
 
         Returns:
-            dict: The raw data fetched from the source.
+            dict: The raw data fetched from the source with "live" and "daily" keys.
         """
+        result = {}
+
+        if self.live_endpoint:
+            live_response = self.fetch_live_data(station)
+            if live_response:
+                result["live"] = live_response
+
+        if self.daily_endpoint:
+            daily_response = self.fetch_daily_data(station)
+            if daily_response:
+                result["daily"] = daily_response
+
+        return result if result else None
+
+    @abstractmethod
+    def fetch_live_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch live data from the source.
+
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: The raw live data fetched from the source.
+        """
+        # Default implementation to be overridden by subclasses if needed
+        return None
+
+    @abstractmethod
+    def fetch_daily_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch daily data from the source.
+
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: The raw daily data fetched from the source.
+        """
+        # Default implementation to be overridden by subclasses if needed
+        return None
 
     @abstractmethod
     def parse(self, station: WeatherStation, data: dict) -> dict:
@@ -75,9 +123,9 @@ class WeatherReader(ABC):
 
         return True
 
-    def get_data(self, station: WeatherStation, *args, **kwargs) -> WeatherRecord:
+    def read(self, station: WeatherStation, *args, **kwargs) -> WeatherRecord:
         """
-        Template method to fetch and parse data.
+        Fetch and parse data using the template methods.
 
         Args:
             station (WeatherStation): The weather station object.
@@ -107,6 +155,7 @@ class WeatherReader(ABC):
                 station.id,
                 error_message,
             )
+            return None
 
         use_daily = True
 
@@ -138,7 +187,7 @@ class WeatherReader(ABC):
         return {
             "source_timestamp": None,
             "taken_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
-            "instant": {
+            "live": {
                 "temperature": None,
                 "wind_speed": None,
                 "wind_direction": None,
@@ -177,13 +226,13 @@ class WeatherReader(ABC):
             taken_timestamp=fields.get("taken_timestamp"),
             flagged=fields.get("flagged"),
             gatherer_thread_id=None,
-            temperature=fields.get("instant").get("temperature"),
-            wind_speed=fields.get("instant").get("wind_speed"),
-            wind_direction=fields.get("instant").get("wind_direction"),
-            rain=fields.get("instant").get("rain"),
-            humidity=fields.get("instant").get("humidity"),
-            pressure=fields.get("instant").get("pressure"),
-            wind_gust=fields.get("instant").get("wind_gust"),
+            temperature=fields.get("live").get("temperature"),
+            wind_speed=fields.get("live").get("wind_speed"),
+            wind_direction=fields.get("live").get("wind_direction"),
+            rain=fields.get("live").get("rain"),
+            humidity=fields.get("live").get("humidity"),
+            pressure=fields.get("live").get("pressure"),
+            wind_gust=fields.get("live").get("wind_gust"),
             max_temperature=(
                 fields.get("daily").get("max_temperature") if use_daily else None
             ),
