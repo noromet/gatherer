@@ -40,7 +40,8 @@ import argparse
 
 from dotenv import load_dotenv
 
-from schema import WeatherStation
+from schema import WeatherStation, WeatherRecord
+from postprocessing import Validator, Corrector
 from logger import setup_logger, set_debug_mode
 import weather_readers as api
 from database import Database, database_connection
@@ -148,7 +149,7 @@ class Gatherer:
         validate_station_timezones(station): Validates the timezones of a station.
         process_station(station): Processes a single weather station.
         _process_record(record, station): Processes and saves a data record.
-        process_chunk(chunk, chunk_number, result_queue): Processes a chunk of stations.
+        _process_chunk(chunk, chunk_number, result_queue): Processes a chunk of stations.
         multithread_processing(stations): Processes stations using multithreading.
         _split_into_chunks(stations): Splits stations into chunks for multithreading.
         process(single_thread): Processes all stations.
@@ -168,6 +169,8 @@ class Gatherer:
         self.max_threads = max_threads
         self.stations = set()
         self.readers = readers
+        self.validator = Validator()
+        self.corrector = Corrector()
 
     def add_station(self, station: WeatherStation):
         """Adds a single station to the set."""
@@ -224,32 +227,38 @@ class Gatherer:
                 logging.error(message)
                 return {"status": "error", "error": message}
 
-            self._process_record(record, station)
+            record = self._process_record(record, station)
+
+            if not self.dry_run:
+                Database.save_record(record)
+                logging.info("Record saved for station %s", station.id)
+            else:
+                logging.debug(
+                    json.dumps(record.__dict__, indent=4, sort_keys=True, default=str)
+                )
+                logging.info(
+                    "Dry run enabled, record not saved for station %s", station.id
+                )
+
             return {"status": "success"}
+
         except Exception as e:
             logging.error("Error processing station %s: %s", station.id, e)
             if not self.dry_run:
                 Database.increment_incident_count(station.id)
             return {"status": "error", "error": str(e)}
 
-    def _process_record(self, record, station: WeatherStation):
+    def _process_record(self, record: WeatherRecord, station: WeatherStation) -> bool:
         """Processes and saves a record."""
         record.station_id = station.id
         record.gatherer_thread_id = self.run_id
-        record.sanity_check()
-        record.apply_pressure_offset(station.pressure_offset)
-        record.apply_rounding(1)
 
-        if not self.dry_run:
-            Database.save_record(record)
-            logging.info("Record saved for station %s", station.id)
-        else:
-            logging.debug(
-                json.dumps(record.__dict__, indent=4, sort_keys=True, default=str)
-            )
-            logging.info("Dry run enabled, record not saved for station %s", station.id)
+        record = self.corrector.correct(record, station.pressure_offset)
+        record = self.validator.validate(record)
 
-    def process_chunk(
+        return record
+
+    def _process_chunk(
         self, chunk: list[WeatherStation], chunk_number: int, result_queue: queue.Queue
     ):
         """Processes a chunk of stations."""
@@ -268,7 +277,7 @@ class Gatherer:
             max_workers=self.max_threads
         ) as executor:
             futures = [
-                executor.submit(self.process_chunk, chunk, i, result_queue)
+                executor.submit(self._process_chunk, chunk, i, result_queue)
                 for i, chunk in enumerate(chunks)
             ]
             concurrent.futures.wait(futures)

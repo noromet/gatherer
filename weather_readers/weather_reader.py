@@ -63,8 +63,7 @@ class WeatherReader(ABC):
 
         return result if result else None
 
-    @abstractmethod
-    def fetch_live_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, _: WeatherStation) -> dict:
         """
         Fetch live data from the source.
 
@@ -75,10 +74,9 @@ class WeatherReader(ABC):
             dict: The raw live data fetched from the source.
         """
         # Default implementation to be overridden by subclasses if needed
-        return None
+        return {}
 
-    @abstractmethod
-    def fetch_daily_data(self, station: WeatherStation) -> dict:
+    def fetch_daily_data(self, _: WeatherStation) -> dict:
         """
         Fetch daily data from the source.
 
@@ -89,7 +87,7 @@ class WeatherReader(ABC):
             dict: The raw daily data fetched from the source.
         """
         # Default implementation to be overridden by subclasses if needed
-        return None
+        return {}
 
     @abstractmethod
     def parse(self, station: WeatherStation, data: dict) -> dict:

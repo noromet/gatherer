@@ -71,14 +71,14 @@ class Database:
     __connection_pool: Optional[pool.SimpleConnectionPool] = None
 
     STATION_FIELDS = [
-        "id as ws_id",
+        "id",
         "connection_type",
         "field1",
         "field2",
         "field3",
         "pressure_offset",
-        "data_timezone",
-        "local_timezone",
+        "data_timezone as _data_timezone",
+        "local_timezone as _local_timezone",
     ]
 
     @classmethod

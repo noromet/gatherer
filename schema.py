@@ -4,7 +4,6 @@ This module defines the schema for weather data gathering and processing.
 Classes:
 - WeatherRecord: Represents a single weather data record with attributes
 such as temperature, wind speed, humidity, etc.
-  Includes methods for data validation, applying offsets, and rounding values.
 - GathererThread: Represents a thread responsible for gathering weather data,
  including metadata about the process.
 - WeatherStation: Represents a weather station with attributes such as
@@ -17,8 +16,11 @@ The module is designed to facilitate the collection, validation, and
 import datetime
 import uuid
 import zoneinfo
+from dataclasses import dataclass, field
+from typing import Dict, Optional, Union
 
 
+@dataclass
 class WeatherRecord:
     """
     A class to represent a weather record with various meteorological parameters.
@@ -42,137 +44,33 @@ class WeatherRecord:
         wind_gust (float): Current wind gust speed in meters per second.
         max_wind_gust (float): Maximum wind gust speed recorded for the day in meters per second.
         taken_timestamp (datetime.datetime): Timestamp when the record was created.
-
-    Methods:
-        sanity_check():
-            Validates the weather data against predefined safe ranges and flags invalid data.
-        apply_pressure_offset(offset: float):
-            Applies an offset to the atmospheric pressure.
-        apply_rounding(decimals: int = 1):
-            Rounds numerical attributes to the specified number of decimal places.
     """
 
-    def __init__(
-        self,
-        wr_id: uuid.uuid4,
-        station_id: uuid.uuid4,
-        source_timestamp: datetime.datetime,
-        taken_timestamp: datetime.datetime,
-        temperature: float,
-        wind_speed: float,
-        max_wind_speed: float,
-        wind_direction: float,
-        rain: float,
-        humidity: float,
-        pressure: float,
-        flagged: bool,
-        gatherer_thread_id: uuid.uuid4,
-        cumulative_rain: float,
-        max_temperature: float,
-        min_temperature: float,
-        wind_gust: float,
-        max_wind_gust: float,
-    ):
-
-        self.id = wr_id
-        self.station_id = station_id
-        self.source_timestamp = source_timestamp
-        self.temperature = temperature
-        self.wind_speed = wind_speed
-        self.max_wind_speed = max_wind_speed  # today
-        self.wind_direction = wind_direction
-        self.rain = rain
-        self.cumulative_rain = cumulative_rain
-        self.humidity = humidity
-        self.pressure = pressure
-        self.flagged = flagged
-        self.taken_timestamp = taken_timestamp
-        self.gatherer_thread_id = gatherer_thread_id
-        self.max_temperature = max_temperature  # today
-        self.min_temperature = min_temperature  # today
-        self.wind_gust = wind_gust
-        self.max_wind_gust = max_wind_gust
-
-    def sanity_check(self):
-        """
-        Validates the weather data against predefined safe ranges and flags invalid data.
-        Sets the flagged attribute to True if any data point is outside the safe range.
-        """
-
-        def validate_range(attribute, value, safe_range):
-            if value is not None and not safe_range[0] <= value <= safe_range[1]:
-                setattr(self, attribute, None)
-                self.flagged = True
-
-        range_for_temperature = (-39, 50)
-        range_for_wind_speed = (0, 500)
-        range_for_humidity = (0, 100)
-        range_for_pressure = (800, 1100)
-        range_for_wind_direction = (0, 360)
-        range_for_rain = (0, 500)
-        range_for_cumulative_rain = (0, 15000)
-
-        ranges = {
-            "temperature": range_for_temperature,
-            "wind_speed": range_for_wind_speed,
-            "humidity": range_for_humidity,
-            "pressure": range_for_pressure,
-            "wind_direction": range_for_wind_direction,
-            "rain": range_for_rain,
-            "cumulative_rain": range_for_cumulative_rain,
-            "max_temperature": range_for_temperature,
-            "min_temperature": range_for_temperature,
-            "max_wind_speed": range_for_wind_speed,
-            "wind_gust": range_for_wind_speed,
-            "max_wind_gust": range_for_wind_speed,
-        }
-
-        # Validate each attribute against its safe range
-        for attr, safe_range in ranges.items():
-            validate_range(attr, getattr(self, attr, None), safe_range)
-
-    def apply_pressure_offset(self, offset: float):
-        """
-        Applies an offset to the atmospheric pressure.
-        Args:
-            offset (float): The offset value to be added to the pressure.
-        """
-        if offset and self.pressure is not None:
-            self.pressure += offset
-
-    def apply_rounding(self, decimals: int = 1):
-        """
-        Rounds numerical attributes to the specified number of decimal places.
-        Args:
-            decimals (int): The number of decimal places to round to.
-        """
-        if self.temperature is not None:
-            self.temperature = round(self.temperature, decimals)
-        if self.wind_speed is not None:
-            self.wind_speed = round(self.wind_speed, decimals)
-        if self.max_wind_speed is not None:
-            self.max_wind_speed = round(self.max_wind_speed, decimals)
-        if self.humidity is not None:
-            self.humidity = round(self.humidity, decimals)
-        if self.pressure is not None:
-            self.pressure = round(self.pressure, decimals)
-        if self.rain is not None:
-            self.rain = round(self.rain, decimals)
-        if self.cumulative_rain is not None:
-            self.cumulative_rain = round(self.cumulative_rain, decimals)
-        if self.max_temperature is not None:
-            self.max_temperature = round(self.max_temperature, decimals)
-        if self.min_temperature is not None:
-            self.min_temperature = round(self.min_temperature, decimals)
-        if self.wind_gust is not None:
-            self.wind_gust = round(self.wind_gust, decimals)
-        if self.max_wind_gust is not None:
-            self.max_wind_gust = round(self.max_wind_gust, decimals)
+    id: uuid.UUID
+    station_id: uuid.UUID
+    source_timestamp: datetime.datetime
+    taken_timestamp: datetime.datetime
+    gatherer_thread_id: uuid.UUID
+    temperature: Optional[float] = None
+    wind_speed: Optional[float] = None
+    max_wind_speed: Optional[float] = None
+    wind_direction: Optional[float] = None
+    rain: Optional[float] = None
+    cumulative_rain: Optional[float] = None
+    humidity: Optional[float] = None
+    pressure: Optional[float] = None
+    flagged: bool = False
+    max_temperature: Optional[float] = None
+    min_temperature: Optional[float] = None
+    wind_gust: Optional[float] = None
+    max_wind_gust: Optional[float] = None
 
 
+@dataclass
 class GathererThread:
     """
     A class to represent a thread responsible for gathering weather data.
+
     Attributes:
         id (uuid.UUID): Unique identifier for the gatherer thread.
         thread_timestamp (datetime.datetime): Timestamp of the thread's execution.
@@ -182,26 +80,19 @@ class GathererThread:
         command (str): Command that executed the thread.
     """
 
-    def __init__(
-        self,
-        gt_id: uuid.uuid4,
-        thread_timestamp: datetime.datetime,
-        total_stations: int,
-        error_stations: int,
-        errors: dict,
-        command: str,
-    ):
-        self.id = gt_id
-        self.thread_timestamp = thread_timestamp
-        self.total_stations = total_stations
-        self.error_stations = error_stations
-        self.errors = errors
-        self.command = command
+    id: uuid.UUID
+    thread_timestamp: datetime.datetime
+    total_stations: int
+    error_stations: int
+    errors: Dict
+    command: str
 
 
+@dataclass
 class WeatherStation:
     """
     A class to represent a weather station with various connection parameters.
+
     Attributes:
         id (uuid.UUID): Unique identifier for the weather station.
         connection_type (str): Type of connection used by the weather station.
@@ -213,36 +104,33 @@ class WeatherStation:
         local_timezone (zoneinfo.ZoneInfo): Local timezone information for the station.
     """
 
-    def __init__(
-        self,
-        ws_id: uuid.UUID,
-        connection_type: str,
-        field1: str,
-        field2: str,
-        field3: str,
-        pressure_offset: float,
-        data_timezone: str | datetime.tzinfo,
-        local_timezone: str | datetime.tzinfo,
-    ):
-        self.id = ws_id
-        self.connection_type = connection_type
-        self.field1 = field1
-        self.field2 = field2
-        self.field3 = field3
-        self.pressure_offset = pressure_offset
+    id: uuid.UUID
+    connection_type: str
+    field1: str
+    field2: str
+    field3: str
+    pressure_offset: float
+    _data_timezone: Union[str, datetime.tzinfo]
+    _local_timezone: Union[str, datetime.tzinfo]
+    data_timezone: zoneinfo.ZoneInfo = field(init=False)
+    local_timezone: zoneinfo.ZoneInfo = field(init=False)
 
+    def __post_init__(self):
+        """
+        Post-initialization processing to convert timezone strings to ZoneInfo objects.
+        """
         # Handle data_timezone
-        if isinstance(data_timezone, str):
-            self.data_timezone = zoneinfo.ZoneInfo(data_timezone)
-        elif isinstance(data_timezone, datetime.tzinfo):
-            self.data_timezone = data_timezone
+        if isinstance(self._data_timezone, str):
+            self.data_timezone = zoneinfo.ZoneInfo(self._data_timezone)
+        elif isinstance(self._data_timezone, datetime.tzinfo):
+            self.data_timezone = self._data_timezone
         else:
             raise ValueError("data_timezone must be a string or a tzinfo object")
 
         # Handle local_timezone
-        if isinstance(local_timezone, str):
-            self.local_timezone = zoneinfo.ZoneInfo(local_timezone)
-        elif isinstance(local_timezone, datetime.tzinfo):
-            self.local_timezone = local_timezone
+        if isinstance(self._local_timezone, str):
+            self.local_timezone = zoneinfo.ZoneInfo(self._local_timezone)
+        elif isinstance(self._local_timezone, datetime.tzinfo):
+            self.local_timezone = self._local_timezone
         else:
             raise ValueError("local_timezone must be a string or a tzinfo object")
