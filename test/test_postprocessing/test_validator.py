@@ -7,9 +7,9 @@ from test.factories import create_weather_record
 from postprocessing.validator import Validator, WEATHER_SAFE_RANGES
 
 
-class TestValidator(unittest.TestCase):
+class TestValidatorRanges(unittest.TestCase):
     """
-    Test cases for the Validator class.
+    Test cases for the Validator class range validation.
     """
 
     def setUp(self):
@@ -79,8 +79,13 @@ class TestValidator(unittest.TestCase):
         self.assertIsNone(result.wind_speed)
 
         # Test valid value
-        record_wind_speed_valid = create_weather_record(
-            wind_speed=(speed_min + speed_max) / 2
+        record_wind_speed_valid = (
+            create_weather_record(  # the values must be incremental in this order
+                wind_speed=(speed_min + speed_max) / 2,
+                wind_gust=(speed_min + speed_max) / 1.5,
+                max_wind_speed=(speed_min + speed_max) / 1.2,
+                max_wind_gust=(speed_min + speed_max) / 1.2,
+            )
         )
         result = self.validator.validate(record_wind_speed_valid)
         self.assertFalse(result.flagged)
@@ -243,7 +248,11 @@ class TestValidator(unittest.TestCase):
         self.assertIsNone(result.max_temperature)
 
         # Test valid value
-        record = create_weather_record(max_temperature=(temp_min + temp_max) / 2)
+        record = create_weather_record(
+            min_temperature=temp_min,
+            temperature=(temp_min + temp_max) / 2,
+            max_temperature=temp_max,
+        )
         result = self.validator.validate(record)
         self.assertFalse(result.flagged)
         self.assertEqual(result.max_temperature, record.max_temperature)
@@ -291,7 +300,13 @@ class TestValidator(unittest.TestCase):
         self.assertIsNone(result.wind_gust)
 
         # Test valid value
-        record = create_weather_record(wind_gust=(gust_min + gust_max) / 2)
+        record = create_weather_record(
+            wind_speed=(gust_min + gust_max) / 2.1,
+            max_wind_speed=(gust_min + gust_max) / 2,
+            wind_gust=(gust_min + gust_max) / 2,
+            max_wind_gust=(gust_min + gust_max) / 1.5,
+        )
+
         result = self.validator.validate(record)
         self.assertFalse(result.flagged)
         self.assertEqual(result.wind_gust, record.wind_gust)
@@ -332,6 +347,194 @@ class TestValidator(unittest.TestCase):
         self.assertIsNone(result.temperature)
         self.assertIsNone(result.humidity)
         self.assertEqual(result.pressure, 900)  # Valid value preserved
+
+
+class TestValidatorConsistency(unittest.TestCase):
+    """
+    Test cases for the Validator class consistency.
+    """
+
+    def setUp(self):
+        """
+        Set up the test case.
+        """
+        self.validator = Validator()
+        self.record = create_weather_record()
+
+    def test_temperature_consistency_all_values(self):
+        """
+        Test temperature consistency validation with all three values present.
+        Test ensures that min_temperature <= temperature <= max_temperature.
+        """
+        # Valid: min_temp <= temp <= max_temp
+        record = create_weather_record(
+            min_temperature=10.0, temperature=20.0, max_temperature=30.0
+        )
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Invalid: temp < min_temp
+        record = create_weather_record(
+            min_temperature=20.0, temperature=10.0, max_temperature=30.0
+        )
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+        # Invalid: temp > max_temp
+        record = create_weather_record(
+            min_temperature=10.0, temperature=40.0, max_temperature=30.0
+        )
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+        # Invalid: min_temp > max_temp
+        record = create_weather_record(
+            min_temperature=30.0, temperature=20.0, max_temperature=10.0
+        )
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+    def test_temperature_consistency_partial_values(self):
+        """
+        Test temperature consistency validation when only some temperature values are present.
+        """
+        # Only temp and min_temp: Valid
+        record = create_weather_record(min_temperature=10.0, temperature=20.0)
+        record.max_temperature = None
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Only temp and min_temp: Invalid (temp < min_temp)
+        record = create_weather_record(min_temperature=20.0, temperature=10.0)
+        record.max_temperature = None
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+        # Only temp and max_temp: Valid
+        record = create_weather_record(temperature=20.0, max_temperature=30.0)
+        record.min_temperature = None
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Only temp and max_temp: Invalid (temp > max_temp)
+        record = create_weather_record(temperature=30.0, max_temperature=20.0)
+        record.min_temperature = None
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+    def test_min_max_temperature_consistency(self):
+        """
+        Test consistency between min and max temperature values.
+        """
+        # Valid: min_temp < max_temp (no temp value)
+        record = create_weather_record(min_temperature=10.0, max_temperature=30.0)
+        record.temperature = None
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Invalid: min_temp > max_temp (no temp value)
+        record = create_weather_record(min_temperature=30.0, max_temperature=10.0)
+        record.temperature = None
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+    def test_wind_speed_consistency(self):
+        """
+        Test wind speed consistency validation.
+        Ensures that wind_speed <= max_wind_speed.
+        """
+        # Valid: wind_speed < max_wind_speed
+        record = create_weather_record(wind_speed=10.0, max_wind_speed=20.0)
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Invalid: wind_speed > max_wind_speed
+        record = create_weather_record(wind_speed=30.0, max_wind_speed=20.0)
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+        record = create_weather_record(max_wind_speed=20.0)
+        record.wind_speed = None
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+    def test_wind_gust_consistency(self):
+        """
+        Test wind gust consistency validation.
+        Ensures that wind_gust <= max_wind_gust.
+        """
+        # Valid: wind_gust < max_wind_gust
+        record = create_weather_record(wind_gust=15.0, max_wind_gust=25.0)
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Valid: wind_gust = max_wind_gust
+        record = create_weather_record(wind_gust=25.0, max_wind_gust=25.0)
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Invalid: wind_gust > max_wind_gust
+        record = create_weather_record(wind_gust=35.0, max_wind_gust=25.0)
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+        # Test with one value None
+        record = create_weather_record(wind_gust=15.0)
+        record.max_wind_gust = None
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        record = create_weather_record(max_wind_gust=25.0)
+        record.wind_gust = None
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+    def test_wind_speed_gust_consistency(self):
+        """
+        Test consistency between wind speed and wind gust.
+        Ensures that wind_speed <= wind_gust.
+        """
+        # Valid: wind_speed < wind_gust
+        record = create_weather_record(wind_speed=10.0, wind_gust=15.0)
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Valid: wind_speed = wind_gust
+        record = create_weather_record(wind_speed=15.0, wind_gust=15.0)
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        # Invalid: wind_speed > wind_gust
+        record = create_weather_record(wind_speed=20.0, wind_gust=15.0)
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
+
+        # Test with one value None
+        record = create_weather_record(wind_speed=10.0)
+        record.wind_gust = None
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+        record = create_weather_record(wind_gust=15.0)
+        record.wind_speed = None
+        result = self.validator.validate(record)
+        self.assertFalse(result.flagged)
+
+    def test_consistency_with_multiple_invalid_relationships(self):
+        """
+        Test validation when multiple consistency rules are violated.
+        """
+        record = create_weather_record(
+            min_temperature=20.0,
+            temperature=15.0,  # Inconsistent with min_temp
+            max_temperature=10.0,  # Inconsistent with min_temp and temp
+            wind_speed=30.0,
+            max_wind_speed=20.0,  # Inconsistent with wind_speed
+            wind_gust=25.0,  # Inconsistent with wind_speed
+            max_wind_gust=15.0,  # Inconsistent with wind_gust
+        )
+        result = self.validator.validate(record)
+        self.assertTrue(result.flagged)
 
 
 if __name__ == "__main__":
