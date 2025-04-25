@@ -45,7 +45,7 @@ class RealtimeReader(WeatherReader):
             index += 1
 
         _date = self.smart_parse_datetime(
-            f"{temp_dict["date"]} {temp_dict["time"]}", timezone=station.data_timezone
+            f"{temp_dict['date']} {temp_dict['time']}", timezone=station.data_timezone
         )
 
         local_observation_time = _date.replace(tzinfo=station.data_timezone).astimezone(
