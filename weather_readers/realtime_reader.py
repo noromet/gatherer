@@ -34,6 +34,16 @@ class RealtimeReader(WeatherReader):
         self.required_fields = ["field1"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
+        """
+        Parse the fetched data into a WeatherRecord object.
+
+        Args:
+            station (WeatherStation): The weather station object.
+            data (dict): The raw data fetched from the API.
+
+        Returns:
+            WeatherRecord: The parsed weather record.
+        """
         valid_keys = self.INDEX_TO_DATA.keys()
         temp_dict = {}
         for index, item in enumerate(data["live"].strip().split(" ")):
@@ -89,7 +99,16 @@ class RealtimeReader(WeatherReader):
 
         return fields
 
-    def fetch_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch live weather data from a realtime.txt compatible station.
+
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: The raw live data fetched from the station.
+        """
         endpoint = station.field1
 
         if not endpoint.endswith("/realtime.txt"):
@@ -102,7 +121,9 @@ class RealtimeReader(WeatherReader):
         }
 
         response = self.make_request(endpoint, headers=headers)
-        if response.status_code != 200:
-            raise ValueError(f"Error: Received status code {response.status_code}")
+        if not response or response.status_code != 200:
+            raise ValueError(
+                f"Error: Received status code {response.status_code if response else 'None'}"
+            )
 
-        return {"live": response.text}
+        return response.text

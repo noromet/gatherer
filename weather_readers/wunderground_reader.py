@@ -5,8 +5,6 @@ from the Weather Underground API. It processes live and daily weather data into 
 """
 
 import datetime
-import logging
-import requests
 from schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
@@ -21,9 +19,7 @@ class WundergroundReader(WeatherReader):
     """
 
     def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__(ignore_early_readings=True)
-        self.live_endpoint = live_endpoint
-        self.daily_endpoint = daily_endpoint
+        super().__init__(live_endpoint, daily_endpoint, ignore_early_readings=True)
         self.required_fields = ["field1", "field2"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
@@ -74,40 +70,52 @@ class WundergroundReader(WeatherReader):
 
         return fields
 
-    def fetch_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, station: WeatherStation) -> dict:
         """
-        Fetch live and daily weather data from the Weather Underground API.
+        Fetch live weather data from the Weather Underground API.
 
         Args:
             station (WeatherStation): The weather station object.
 
         Returns:
-            dict: A dictionary containing live and daily weather data.
+            dict: The raw live data fetched from the API.
         """
         did, token = station.field1, station.field2
 
-        live_response = requests.get(
-            self.live_endpoint,
-            {
-                "stationId": did,
-                "apiKey": token,
-                "format": "json",
-                "units": "m",
-                "numericPrecision": "decimal",
-            },
-        )
-        logging.info("Requesting %s", live_response.url)
+        params = {
+            "stationId": did,
+            "apiKey": token,
+            "format": "json",
+            "units": "m",
+            "numericPrecision": "decimal",
+        }
 
-        daily_response = requests.get(
-            self.daily_endpoint,
-            {
-                "stationId": did,
-                "apiKey": token,
-                "format": "json",
-                "units": "m",
-                "numericPrecision": "decimal",
-            },
-        )
-        logging.info("Requesting %s", daily_response.url)
+        live_response = self.make_request(self.live_endpoint, params=params)
+        if live_response:
+            return live_response.json()
+        return None
 
-        return {"live": live_response.json(), "daily": daily_response.json()}
+    def fetch_daily_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch daily weather data from the Weather Underground API.
+
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: The raw daily data fetched from the API.
+        """
+        did, token = station.field1, station.field2
+
+        params = {
+            "stationId": did,
+            "apiKey": token,
+            "format": "json",
+            "units": "m",
+            "numericPrecision": "decimal",
+        }
+
+        daily_response = self.make_request(self.daily_endpoint, params=params)
+        if daily_response:
+            return daily_response.json()
+        return None

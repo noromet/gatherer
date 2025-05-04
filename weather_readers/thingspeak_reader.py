@@ -25,9 +25,8 @@ class ThingspeakReader(WeatherReader):
     }
 
     def __init__(self, live_endpoint: str):
-        super().__init__()
-        self.live_endpoint = live_endpoint
-        self.required_fields = []
+        super().__init__(live_endpoint=live_endpoint)
+        self.required_fields = ["field1"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
         """
@@ -66,7 +65,7 @@ class ThingspeakReader(WeatherReader):
 
         return fields
 
-    def fetch_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, station: WeatherStation) -> dict:
         """
         Fetch live weather data from the ThingSpeak API.
 
@@ -74,16 +73,16 @@ class ThingspeakReader(WeatherReader):
             station (WeatherStation): The weather station object.
 
         Returns:
-            dict: A dictionary containing live weather data.
+            dict: The raw live data fetched from the API.
         """
         endpoint = f"{self.live_endpoint}/{station.field1}/feeds.json?results=1"
 
         live_response = self.make_request(endpoint)
-        if live_response.status_code != 200:
-            logging.error(
-                "Request failed with status code %s. Check station connection parameters.",
-                live_response.status_code,
-            )
-            return None
+        if live_response and live_response.status_code == 200:
+            return live_response.json()
 
-        return {"live": live_response.json()}
+        logging.error(
+            "Request failed with status code %s. Check station connection parameters.",
+            live_response.status_code if live_response else "None",
+        )
+        return None

@@ -51,15 +51,13 @@ class WeatherReader(ABC):
         """
         result = {}
 
-        if self.live_endpoint:
-            live_response = self.fetch_live_data(station)
-            if live_response:
-                result["live"] = live_response
+        live_response = self.fetch_live_data(station)
+        if live_response:
+            result["live"] = live_response
 
-        if self.daily_endpoint:
-            daily_response = self.fetch_daily_data(station)
-            if daily_response:
-                result["daily"] = daily_response
+        daily_response = self.fetch_daily_data(station)
+        if daily_response:
+            result["daily"] = daily_response
 
         return result if result else None
 
@@ -274,12 +272,11 @@ class WeatherReader(ABC):
             params = {}
 
         response = requests.get(url, params=params, headers=headers, timeout=timeout)
+        logging.info("Requesting %s", response.url)
 
         if response.status_code not in [200, 201, 204]:
             logging.error("Failed to fetch data from %s: %s", url, response.status_code)
             return None
-
-        logging.info("Requesting %s", response.url)
 
         return response
 
@@ -479,8 +476,11 @@ class WeatherReader(ABC):
         Raises:
             ValueError: If the date string is invalid.
         """
+        date_str = date_str.strip()
         if date_str.count(":") < 1:
             raise ValueError(f"Parsed date lacks hour and minute: {date_str}")
+        if date_str.count(",") > 1:
+            date_str = date_str.split(",")[0]
 
         def try_parse_datetime(date_str, date_format):
             try:
@@ -497,10 +497,18 @@ class WeatherReader(ABC):
                 return None
             return min(valid_dates, key=lambda date: abs((date - now).days))
 
-        # Try Spanish formatting
-        spanish_formats = ["%d/%m/%Y %H:%M", "%d-%m-%Y %H:%M", "%d/%m/%y %H:%M"]
-        spanish_dates = [try_parse_datetime(date_str, fmt) for fmt in spanish_formats]
-        spanish = next((date for date in spanish_dates if date is not None), None)
+        # Try custom formatting
+        custom_formats = [
+            "%Y-%m-%d %H:%M",
+            "%Y-%d-%m %H:%M",
+            "%d/%m/%Y %H:%M",
+            "%d-%m-%Y %H:%M",
+            "%d/%m/%y %H:%M",
+            "%d/%m/%y %H:%M",
+            "%d/%m/%y %H:%M:%S",
+        ]
+        custom_dates = [try_parse_datetime(date_str, fmt) for fmt in custom_formats]
+        custom = get_closest_datetime(custom_dates)
 
         # Try auto formatting
         try:
@@ -508,14 +516,14 @@ class WeatherReader(ABC):
         except ValueError:
             auto = None
 
-        if spanish is None and auto is None:
+        if custom is None and auto is None:
             raise ValueError(f"Invalid date format: {date_str}")
 
-        if spanish is not None:
+        if custom is not None:
             if auto is not None:
-                date = get_closest_datetime([spanish, auto])
+                date = get_closest_datetime([custom, auto])
             else:
-                date = spanish
+                date = custom
         else:
             date = auto
 

@@ -112,15 +112,15 @@ class MeteoclimaticReader(WeatherReader):
 
         return fields
 
-    def fetch_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, station: WeatherStation) -> dict:
         """
-        Fetch live weather data from the Meteoclimatic API.
+        Fetch live weather data from a Meteoclimatic endpoint.
 
         Args:
             station (WeatherStation): The weather station object.
 
         Returns:
-            dict: A dictionary containing live weather data.
+            dict: The raw live data fetched from the endpoint.
         """
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -128,14 +128,16 @@ class MeteoclimaticReader(WeatherReader):
             "Chrome/58.0.3029.110 Safari/537.3"
         }
 
-        response = self.make_request(station.field1, headers=headers)
+        endpoint = station.field1
+        response = self.make_request(endpoint, headers=headers)
 
-        if response.status_code != 200:
+        if not response or response.status_code != 200:
+            code = response.status_code if response else "None"
             raise requests.exceptions.HTTPError(
-                f"Error: Received status code {response.status_code} from {station.field1}"
+                f"Error: Received status code {code} from {endpoint}"
             )
 
-        return {"live": response.text}
+        return response.text
 
 
 CODE_TO_NAME = {

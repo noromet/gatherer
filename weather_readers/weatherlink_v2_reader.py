@@ -20,9 +20,7 @@ class WeatherlinkV2Reader(WeatherReader):
     """
 
     def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__()
-        self.live_endpoint = live_endpoint
-        self.daily_endpoint = daily_endpoint
+        super().__init__(live_endpoint, daily_endpoint)
         self.required_fields = ["field1", "field2", "field3"]
 
     def handle_current_data(self, current: list) -> dict:
@@ -182,7 +180,6 @@ class WeatherlinkV2Reader(WeatherReader):
         Returns:
             WeatherRecord: The parsed weather record.
         """
-
         current_data = data["live"]
         current_data = current_data.get("sensors", None)
 
@@ -246,15 +243,15 @@ class WeatherlinkV2Reader(WeatherReader):
 
         return fields
 
-    def fetch_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, station: WeatherStation) -> dict:
         """
-        Fetch live and historic weather data from the WeatherLink V2 API.
+        Fetch live weather data from the WeatherLink V2 API.
 
         Args:
             station (WeatherStation): The weather station object.
 
         Returns:
-            dict: A dictionary containing live and historic weather data.
+            dict: The raw live data fetched from the API.
         """
         station_id, api_key, api_secret = station.field1, station.field2, station.field3
 
@@ -262,8 +259,21 @@ class WeatherlinkV2Reader(WeatherReader):
         params = {"api-key": api_key, "t": int(datetime.datetime.now().timestamp())}
         headers = {"X-Api-Secret": api_secret}
         live_response = self.make_request(live_url, params=params, headers=headers)
-        if live_response is None:
-            return None
+        if live_response:
+            return live_response.json()
+        return None
+
+    def fetch_daily_data(self, station: WeatherStation) -> dict:
+        """
+        Fetch daily weather data from the WeatherLink V2 API.
+
+        Args:
+            station (WeatherStation): The weather station object.
+
+        Returns:
+            dict: The raw daily data fetched from the API.
+        """
+        station_id, api_key, api_secret = station.field1, station.field2, station.field3
 
         daily_url = self.daily_endpoint.format(mode="historic", station_id=station_id)
         _15_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes=15)
@@ -277,10 +287,8 @@ class WeatherlinkV2Reader(WeatherReader):
                 .timestamp()
             ),
         }
+        headers = {"X-Api-Secret": api_secret}
         daily_response = self.make_request(daily_url, params=params, headers=headers)
-
-        ret_dict = {"live": live_response.json(), "daily": None}
-        if daily_response is not None:
-            ret_dict["daily"] = daily_response.json()
-
-        return ret_dict
+        if daily_response:
+            return daily_response.json()
+        return None

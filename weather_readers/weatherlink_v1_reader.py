@@ -21,8 +21,7 @@ class WeatherlinkV1Reader(WeatherReader):
     """
 
     def __init__(self, live_endpoint: str):
-        super().__init__(ignore_early_readings=True)
-        self.live_endpoint = live_endpoint
+        super().__init__(live_endpoint=live_endpoint, ignore_early_readings=True)
         self.required_fields = ["field1", "field2", "field3"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
@@ -91,7 +90,7 @@ class WeatherlinkV1Reader(WeatherReader):
 
         return fields
 
-    def fetch_data(self, station: WeatherStation) -> dict:
+    def fetch_live_data(self, station: WeatherStation) -> dict:
         """
         Fetch live weather data from the WeatherLink V1 API.
 
@@ -99,19 +98,18 @@ class WeatherlinkV1Reader(WeatherReader):
             station (WeatherStation): The weather station object.
 
         Returns:
-            dict: A dictionary containing live weather data.
+            dict: The raw live data fetched from the API.
         """
         user, api_token, password = station.field1, station.field2, station.field3
 
         params = {"user": user, "pass": password, "apiToken": api_token}
         live_response = self.make_request(self.live_endpoint, params=params)
 
-        if live_response.status_code != 200:
-            logging.error(
-                "Request failed with status code %d."
-                "Check station connection parameters.",
-                live_response.status_code,
-            )
-            return None
+        if live_response and live_response.status_code == 200:
+            return live_response.json()
 
-        return {"live": live_response.json()}
+        logging.error(
+            "Request failed for station %s. Check station connection parameters.",
+            station.id,
+        )
+        return None
