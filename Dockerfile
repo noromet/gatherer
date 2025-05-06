@@ -16,7 +16,26 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy remaining files
-COPY . .
+COPY ./logger.py ./logger.py
+COPY ./main.py ./main.py
+COPY ./schema.py ./schema.py
+COPY ./database.py ./database.py
+COPY ./__init__.py ./__init__.py
+COPY ./postprocessing ./postprocessing
+COPY ./weather_readers ./weather_readers
+
+# Environment variables
+ENV DATABASE_CONNECTION_URL=""
+ENV MAX_THREADS=4
+ENV WEATHERLINK_V1_ENDPOINT="https://api.weatherlink.com/v1/NoaaExt.json"
+ENV WEATHERLINK_V2_ENDPOINT="https://api.weatherlink.com/v2/{mode}/{station_id}"
+ENV HOLFUY_LIVE_ENDPOINT="http://api.holfuy.com/live/"
+ENV HOLFUY_HISTORIC_ENDPOINT="http://api.holfuy.com/archive/"
+ENV THINGSPEAK_ENDPOINT="https://api.thingspeak.com/channels"
+ENV WUNDERGROUND_ENDPOINT="https://api.weather.com/v2/pws/observations/current"
+ENV WUNDERGROUND_DAILY_ENDPOINT="https://api.weather.com/v2/pws/dailysummary/7day"
+ENV ECOWITT_ENDPOINT="https://api.ecowitt.net/api/v3/device/real_time"
+ENV ECOWITT_DAILY_ENDPOINT="https://api.ecowitt.net/api/v3/device/history"
 
 # Set entrypoint
 ENTRYPOINT ["python", "main.py", "--all"]
