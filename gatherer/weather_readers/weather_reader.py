@@ -13,7 +13,7 @@ import uuid
 import requests
 from dateutil import parser
 
-from schema import WeatherRecord, WeatherStation
+from gatherer.schema import WeatherRecord, WeatherStation
 
 
 class WeatherReader(ABC):

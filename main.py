@@ -1,7 +1,7 @@
 """
 main.py
 
-This module serves as the entry point for the gatherer module.
+Entry point for the gatherer module.
 It is responsible for gathering, preprocessing, and saving weather
 station data from various sources using multithreading or
 single-threaded execution. The application supports
@@ -40,11 +40,14 @@ import argparse
 
 from dotenv import load_dotenv
 
-from schema import WeatherStation, WeatherRecord
-from postprocessing import Validator, Corrector
-from logger import setup_logger, set_debug_mode
-import weather_readers as api
-from database import Database, database_connection
+import gatherer.weather_readers as api
+from gatherer.database import database_connection, Database
+from gatherer.logger import (
+    set_debug_mode,
+    setup_logger,
+)
+from gatherer.schema import WeatherRecord, WeatherStation
+from gatherer.postprocessing import Validator, Corrector
 
 load_dotenv()
 

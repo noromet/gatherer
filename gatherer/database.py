@@ -39,7 +39,7 @@ from psycopg2.extensions import connection as _connection
 from psycopg2.extensions import cursor as _cursor
 from psycopg2.extras import RealDictCursor
 
-from schema import WeatherRecord, WeatherStation
+from gatherer.schema import WeatherRecord, WeatherStation
 
 
 class CursorFromConnectionFromPool:

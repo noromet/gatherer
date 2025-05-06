@@ -5,7 +5,7 @@ daily weather data into a standardized `WeatherRecord` format.
 """
 
 import datetime
-from schema import WeatherRecord, WeatherStation
+from gatherer.schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
 

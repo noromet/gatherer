@@ -5,3 +5,4 @@ requests
 pre-commit
 black
 pylint
+pdoc

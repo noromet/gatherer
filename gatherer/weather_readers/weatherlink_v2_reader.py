@@ -5,7 +5,7 @@ from the WeatherLink V2 API. It processes live and historic weather data into a 
 """
 
 import datetime
-from schema import WeatherRecord, WeatherStation
+from gatherer.schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 from .utils import UnitConverter
 

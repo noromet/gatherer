@@ -2,7 +2,7 @@
 This module holds the WeatherReader classes for various weather data sources.
 """
 
-from schema import WeatherRecord
+from gatherer.schema import WeatherRecord
 
 from .meteoclimatic_reader import MeteoclimaticReader
 from .weatherlink_v1_reader import WeatherlinkV1Reader

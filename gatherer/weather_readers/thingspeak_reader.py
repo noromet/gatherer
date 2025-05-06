@@ -5,7 +5,7 @@ from the ThingSpeak API. It processes live weather data into a standardized `Wea
 
 import datetime
 import logging
-from schema import WeatherRecord, WeatherStation
+from gatherer.schema import WeatherRecord, WeatherStation
 from .weather_reader import WeatherReader
 
 

@@ -4,8 +4,9 @@ Collection of factory methods to create test data for WeatherRecord.
 
 import uuid
 import datetime
-from schema import WeatherRecord, WeatherStation
-import weather_readers
+
+from gatherer.schema import WeatherRecord, WeatherStation
+from gatherer import weather_readers
 
 
 def create_weather_record(**overrides):

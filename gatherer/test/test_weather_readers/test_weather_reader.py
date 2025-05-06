@@ -7,7 +7,7 @@ import datetime
 import zoneinfo
 from test.factories import create_weather_station
 from weather_readers import WeatherReader
-from schema import WeatherRecord
+from gatherer.schema import WeatherRecord
 
 
 class MockWeatherReader(WeatherReader):

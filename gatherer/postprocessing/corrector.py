@@ -5,7 +5,8 @@ pressure offsets and rounding corrections to the weather data.
 """
 
 from typing import Optional
-from schema import WeatherRecord
+
+from gatherer.schema import WeatherRecord
 
 
 class Corrector:

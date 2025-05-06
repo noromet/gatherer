@@ -4,7 +4,8 @@ against predefined safe ranges.
 """
 
 from typing import Tuple
-from schema import WeatherRecord
+
+from gatherer.schema import WeatherRecord
 
 
 WEATHER_SAFE_RANGES = {
