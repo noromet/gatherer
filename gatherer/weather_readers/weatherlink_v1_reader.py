@@ -20,8 +20,12 @@ class WeatherlinkV1Reader(WeatherReader):
     and handles data transformation for various weather parameters.
     """
 
-    def __init__(self, live_endpoint: str):
-        super().__init__(live_endpoint=live_endpoint, ignore_early_readings=True)
+    def __init__(self, live_endpoint: str, is_benchmarking: bool = False):
+        super().__init__(
+            live_endpoint=live_endpoint,
+            ignore_early_readings=True,
+            is_benchmarking=is_benchmarking,
+        )
         self.required_fields = ["field1", "field2", "field3"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:

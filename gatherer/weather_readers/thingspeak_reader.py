@@ -24,8 +24,8 @@ class ThingspeakReader(WeatherReader):
         "pressure": "field4",
     }
 
-    def __init__(self, live_endpoint: str):
-        super().__init__(live_endpoint=live_endpoint)
+    def __init__(self, live_endpoint: str, is_benchmarking: bool = False):
+        super().__init__(live_endpoint=live_endpoint, is_benchmarking=is_benchmarking)
         self.required_fields = ["field1"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:

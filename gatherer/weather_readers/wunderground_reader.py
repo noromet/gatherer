@@ -18,8 +18,15 @@ class WundergroundReader(WeatherReader):
     data transformation for various weather parameters.
     """
 
-    def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__(live_endpoint, daily_endpoint, ignore_early_readings=True)
+    def __init__(
+        self, live_endpoint: str, daily_endpoint: str, is_benchmarking: bool = False
+    ):
+        super().__init__(
+            live_endpoint,
+            daily_endpoint,
+            ignore_early_readings=True,
+            is_benchmarking=is_benchmarking,
+        )
         self.required_fields = ["field1", "field2"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:

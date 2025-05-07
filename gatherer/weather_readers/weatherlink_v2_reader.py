@@ -19,8 +19,10 @@ class WeatherlinkV2Reader(WeatherReader):
     transformation for various weather parameters.
     """
 
-    def __init__(self, live_endpoint: str, daily_endpoint: str):
-        super().__init__(live_endpoint, daily_endpoint)
+    def __init__(
+        self, live_endpoint: str, daily_endpoint: str, is_benchmarking: bool = False
+    ):
+        super().__init__(live_endpoint, daily_endpoint, is_benchmarking=is_benchmarking)
         self.required_fields = ["field1", "field2", "field3"]
 
     def handle_current_data(self, current: list) -> dict:

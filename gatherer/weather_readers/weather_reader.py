@@ -5,6 +5,7 @@ from various sources into a standardized `WeatherRecord` format.
 """
 
 import datetime
+import time
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
@@ -30,12 +31,17 @@ class WeatherReader(ABC):
         live_endpoint: str = None,
         daily_endpoint: str = None,
         ignore_early_readings: bool = False,
+        is_benchmarking: bool = False,
     ):
         self.required_fields = []
         self.ignore_early_readings = ignore_early_readings
         self.max_reading_age_seconds = 1800  # 30 minutes
         self.live_endpoint = live_endpoint
         self.daily_endpoint = daily_endpoint
+
+        self.is_benchmarking = is_benchmarking
+        if is_benchmarking:
+            self.response_times_ms = []
 
     # region template methods
     def fetch_data(self, station: WeatherStation) -> dict:
@@ -51,6 +57,9 @@ class WeatherReader(ABC):
         """
         result = {}
 
+        if self.is_benchmarking:
+            start_time = time.monotonic()
+
         live_response = self.fetch_live_data(station)
         if live_response:
             result["live"] = live_response
@@ -58,6 +67,11 @@ class WeatherReader(ABC):
         daily_response = self.fetch_daily_data(station)
         if daily_response:
             result["daily"] = daily_response
+
+        if self.is_benchmarking:
+            end_time = time.monotonic()
+            response_time = (end_time - start_time) * 1000
+            self.response_times_ms.append(response_time)
 
         return result if result else None
 

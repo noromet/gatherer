@@ -27,10 +27,7 @@ process weather station data.
 """
 
 import os
-import concurrent.futures
-import threading
-import json
-import queue
+
 from time import tzset
 from uuid import uuid4
 from datetime import datetime
@@ -46,8 +43,8 @@ from gatherer.logger import (
     set_debug_mode,
     setup_logger,
 )
-from gatherer.schema import WeatherRecord, WeatherStation
-from gatherer.postprocessing import Validator, Corrector
+
+from gatherer.gatherer import Gatherer
 
 load_dotenv()
 
@@ -106,7 +103,11 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--all", action="store_true", help="Read all stations")
     parser.add_argument("--type", type=str, help="Read stations with a specific type")
     parser.add_argument("--id", type=str, help="Read a single weather station by id")
-    parser.add_argument("--dry-run", action="store_true", help="Perform a dry run")
+    parser.add_argument(
+        "--test-run",
+        action="store_true",
+        help="Perform a test run: no database save and benchmarking",
+    )
     parser.add_argument(
         "--single-thread",
         action="store_true",
@@ -134,192 +135,6 @@ def get_args() -> argparse.Namespace:
 # endregion
 
 
-# region processing
-class Gatherer:
-    """
-    Main class for gathering and processing weather station data.
-
-    Attributes:
-        run_id (str): Unique identifier for the current run.
-        dry_run (bool): Indicates whether the application is in dry-run mode.
-        max_threads (int): Maximum number of threads for multithreading.
-        stations (set): Set of weather stations to process.
-        readers (dict): Dictionary of data readers by connection type.
-
-    Methods:
-        add_station(station): Adds a single weather station to the set.
-        add_many(stations): Adds multiple weather stations to the set.
-        validate_station_timezones(station): Validates the timezones of a station.
-        process_station(station): Processes a single weather station.
-        _process_record(record, station): Processes and saves a data record.
-        _process_chunk(chunk, chunk_number, result_queue): Processes a chunk of stations.
-        multithread_processing(stations): Processes stations using multithreading.
-        _split_into_chunks(stations): Splits stations into chunks for multithreading.
-        process(single_thread): Processes all stations.
-    """
-
-    def __init__(self, run_id: str, dry_run: bool, max_threads: int, readers: dict):
-        """
-        Initializes the Gatherer instance.
-
-        :param run_id: Unique identifier for the run.
-        :param dry_run: Whether to perform a dry run.
-        :param max_threads: Maximum number of threads for multithreading.
-        :param readers: Dictionary of data readers by connection type.
-        """
-        self.run_id = run_id
-        self.dry_run = dry_run
-        self.max_threads = max_threads
-        self.stations = set()
-        self.readers = readers
-        self.validator = Validator()
-        self.corrector = Corrector()
-
-    def add_station(self, station: WeatherStation):
-        """Adds a single station to the set."""
-        if not station:
-            logging.error("Station is None")
-            return
-        if station in self.stations:
-            logging.error("Station %s already saved", station)
-            return
-        self.stations.add(station)
-
-    def add_many(self, stations: list[WeatherStation]):
-        """Adds multiple stations to the set."""
-        if not stations:
-            logging.error("Stations list is None")
-            return
-        for station in stations:
-            self.add_station(station)
-
-    def validate_station_timezones(self, station: WeatherStation) -> bool:
-        """Validates the timezones of a station."""
-        valid_timezones = {"Europe/Madrid", "Europe/Lisbon", "Etc/UTC"}
-        if station.data_timezone.key not in valid_timezones:
-            logging.error("Invalid data timezone for station %s. Skipping.", station.id)
-            return False
-        if station.local_timezone.key not in valid_timezones:
-            logging.error(
-                "Invalid local timezone for station %s. Skipping.", station.id
-            )
-            return False
-        return True
-
-    def process_station(self, station: WeatherStation) -> dict:
-        """Processes a single station."""
-        logging.info(
-            "Processing station %s, type %s", station.id, station.connection_type
-        )
-        if not self.validate_station_timezones(station):
-            return {
-                "status": "error",
-                "error": f"Invalid timezone for station {station.id}",
-            }
-
-        reader = self.readers.get(station.connection_type)
-        if not reader:
-            message = f"Invalid connection type for station {station.id}"
-            logging.error(message)
-            return {"status": "error", "error": message}
-
-        try:
-            record = reader.read(station)
-            if not record:
-                message = f"No data retrieved for station {station.id}"
-                logging.error(message)
-                return {"status": "error", "error": message}
-
-            record = self._process_record(record, station)
-
-            if not self.dry_run:
-                Database.save_record(record)
-                logging.info("Record saved for station %s", station.id)
-            else:
-                logging.debug(
-                    json.dumps(record.__dict__, indent=4, sort_keys=True, default=str)
-                )
-                logging.info(
-                    "Dry run enabled, record not saved for station %s", station.id
-                )
-
-            return {"status": "success"}
-
-        except Exception as e:
-            logging.error("Error processing station %s: %s", station.id, e)
-            if not self.dry_run:
-                Database.increment_incident_count(station.id)
-            return {"status": "error", "error": str(e)}
-
-    def _process_record(self, record: WeatherRecord, station: WeatherStation) -> bool:
-        """Processes and saves a record."""
-        record.station_id = station.id
-        record.gatherer_thread_id = self.run_id
-
-        record = self.corrector.correct(record, station.pressure_offset)
-        record = self.validator.validate(record)
-
-        return record
-
-    def _process_chunk(
-        self, chunk: list[WeatherStation], chunk_number: int, result_queue: queue.Queue
-    ):
-        """Processes a chunk of stations."""
-        logging.info(
-            "Processing chunk %d on %s", chunk_number, threading.current_thread().name
-        )
-        results = {station.id: self.process_station(station) for station in chunk}
-        result_queue.put(results)
-
-    def multithread_processing(self, stations: list[WeatherStation]) -> dict:
-        """Processes stations using multithreading."""
-        chunks = self._split_into_chunks(stations)
-        result_queue = queue.Queue()
-
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=self.max_threads
-        ) as executor:
-            futures = [
-                executor.submit(self._process_chunk, chunk, i, result_queue)
-                for i, chunk in enumerate(chunks)
-            ]
-            concurrent.futures.wait(futures)
-
-        results = {}
-        while not result_queue.empty():
-            results.update(result_queue.get())
-        return results
-
-    def _split_into_chunks(
-        self, stations: list[WeatherStation]
-    ) -> list[list[WeatherStation]]:
-        """Splits stations into chunks for multithreading."""
-        chunk_size = len(stations) // self.max_threads
-        remainder_size = len(stations) % self.max_threads
-        chunks = [
-            stations[i * chunk_size : (i + 1) * chunk_size]
-            for i in range(self.max_threads)
-        ]
-        for i in range(remainder_size):
-            chunks[i].append(stations[-(i + 1)])
-        return chunks
-
-    def process(self, single_thread: bool) -> dict:
-        """Processes all stations."""
-        if not self.stations:
-            logging.error("No active stations found!")
-            return {}
-
-        if single_thread or len(self.stations) < 30:
-            return {
-                station.id: self.process_station(station) for station in self.stations
-            }
-        return self.multithread_processing(list(self.stations))
-
-
-# endregion
-
-
 # region main
 def main():
     """
@@ -337,33 +152,42 @@ def main():
 
     args = get_args()
 
-    dry_run = args.dry_run
+    dry_run = args.test_run
+    benchmark = args.test_run
+
     single_thread = args.single_thread
     run_id = uuid4().hex
 
+    # Create reader factory functions instead of instances
     readers = {
-        "meteoclimatic": api.MeteoclimaticReader(),
-        "weatherlink_v1": api.WeatherlinkV1Reader(
-            live_endpoint=config.weatherlink_v1_endpoint
+        "meteoclimatic": lambda: api.MeteoclimaticReader(is_benchmarking=benchmark),
+        "weatherlink_v1": lambda: api.WeatherlinkV1Reader(
+            live_endpoint=config.weatherlink_v1_endpoint, is_benchmarking=benchmark
         ),
-        "wunderground": api.WundergroundReader(
+        "wunderground": lambda: api.WundergroundReader(
             live_endpoint=config.wunderground_endpoint,
             daily_endpoint=config.wunderground_daily_endpoint,
+            is_benchmarking=benchmark,
         ),
-        "weatherlink_v2": api.WeatherlinkV2Reader(
+        "weatherlink_v2": lambda: api.WeatherlinkV2Reader(
             live_endpoint=config.weatherlink_v2_endpoint,
             daily_endpoint=config.weatherlink_v2_endpoint,
+            is_benchmarking=benchmark,
         ),
-        "holfuy": api.HolfuyReader(
+        "holfuy": lambda: api.HolfuyReader(
             live_endpoint=config.holfuy_live_endpoint,
             daily_endpoint=config.holfuy_daily_endpoint,
+            is_benchmarking=benchmark,
         ),
-        "thingspeak": api.ThingspeakReader(live_endpoint=config.thingspeak_endpoint),
-        "ecowitt": api.EcowittReader(
+        "thingspeak": lambda: api.ThingspeakReader(
+            live_endpoint=config.thingspeak_endpoint, is_benchmarking=benchmark
+        ),
+        "ecowitt": lambda: api.EcowittReader(
             live_endpoint=config.cowitt_endpoint,
             daily_endpoint=config.ecowitt_daily_endpoint,
+            is_benchmarking=benchmark,
         ),
-        "realtime": api.RealtimeReader(),
+        "realtime": lambda: api.RealtimeReader(is_benchmarking=benchmark),
     }
 
     with database_connection(config.db_url):
@@ -374,7 +198,7 @@ def main():
             readers=readers,
         )
 
-        if args.dry_run:
+        if dry_run:
             logging.warning("[Dry run enabled]")
             set_debug_mode()
         else:
@@ -401,7 +225,7 @@ def main():
 
         results = gatherer.process(single_thread)
 
-        if not args.dry_run:
+        if not dry_run:
             logging.info("Saving thread record")
             Database.save_thread_record(run_id, results)
 

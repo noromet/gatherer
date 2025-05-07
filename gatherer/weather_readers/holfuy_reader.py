@@ -18,8 +18,18 @@ class HolfuyReader(WeatherReader):
     and handles data transformation for various weather parameters.
     """
 
-    def __init__(self, live_endpoint: str, daily_endpoint: str = None):
-        super().__init__(live_endpoint, daily_endpoint, ignore_early_readings=True)
+    def __init__(
+        self,
+        live_endpoint: str,
+        daily_endpoint: str = None,
+        is_benchmarking: bool = False,
+    ):
+        super().__init__(
+            live_endpoint,
+            daily_endpoint,
+            ignore_early_readings=True,
+            is_benchmarking=is_benchmarking,
+        )
         self.required_fields = ["field1", "field3"]  # station_id and password
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:

@@ -14,8 +14,8 @@ class MeteoclimaticReader(WeatherReader):
     Weather data reader for the Meteoclimatic API.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, is_benchmarking: bool = False):
+        super().__init__(is_benchmarking=is_benchmarking)
         self.required_fields = ["field1"]
 
     def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
