@@ -16,3 +16,5 @@ The module is designed to facilitate the collection, validation, and
 from .gatherer_thread import GathererThread
 from .weather_record import WeatherRecord
 from .weather_station import WeatherStation
+
+__all__ = ["GathererThread", "WeatherRecord", "WeatherStation"]

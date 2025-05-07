@@ -1,8 +1,6 @@
 """
-This module holds the WeatherReader classes for various weather data sources.
+This package holds the WeatherReader classes for various weather data sources.
 """
-
-from gatherer.schema import WeatherRecord
 
 from .meteoclimatic_reader import MeteoclimaticReader
 from .weatherlink_v1_reader import WeatherlinkV1Reader
@@ -13,3 +11,15 @@ from .holfuy_reader import HolfuyReader
 from .ecowitt_reader import EcowittReader
 from .realtime_reader import RealtimeReader
 from .weather_reader import WeatherReader
+
+__all__ = [
+    "WeatherReader",
+    "WeatherlinkV1Reader",
+    "WeatherlinkV2Reader",
+    "MeteoclimaticReader",
+    "WundergroundReader",
+    "ThingspeakReader",
+    "HolfuyReader",
+    "EcowittReader",
+    "RealtimeReader",
+]
