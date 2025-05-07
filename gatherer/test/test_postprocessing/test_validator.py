@@ -3,8 +3,8 @@ Test cases for the Validator class in the postprocessing module.
 """
 
 import unittest
-from test.factories import create_weather_record
-from postprocessing.validator import Validator, WEATHER_SAFE_RANGES
+from gatherer.test.factories import create_weather_record
+from gatherer.postprocessing.validator import Validator, WEATHER_SAFE_RANGES
 
 
 class TestValidatorRanges(unittest.TestCase):

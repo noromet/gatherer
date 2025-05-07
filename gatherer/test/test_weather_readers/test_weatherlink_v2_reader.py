@@ -5,9 +5,9 @@ Unit tests for WeatherlinkV2Reader.
 import unittest
 from unittest.mock import patch
 
-from test.factories import create_weather_reader, create_weather_station
-from test.test_weather_readers.base import WeatherReaderTestBase
-from weather_readers.weatherlink_v2_reader import WeatherlinkV2Reader
+from gatherer.test.factories import create_weather_reader, create_weather_station
+from gatherer.test.test_weather_readers.base import WeatherReaderTestBase
+from gatherer.weather_readers.weatherlink_v2_reader import WeatherlinkV2Reader
 
 
 class TestWeatherlinkV2Reader(WeatherReaderTestBase):
@@ -17,7 +17,9 @@ class TestWeatherlinkV2Reader(WeatherReaderTestBase):
 
     live_fixture_filename = "weatherlink_v2_response.json"
 
-    @patch("weather_readers.weatherlink_v2_reader.WeatherlinkV2Reader.fetch_data")
+    @patch(
+        "gatherer.weather_readers.weatherlink_v2_reader.WeatherlinkV2Reader.fetch_data"
+    )
     def test_read_good(self, mock_fetch_data):
         """
         Test the read method of WeatherlinkV2Reader with valid data.

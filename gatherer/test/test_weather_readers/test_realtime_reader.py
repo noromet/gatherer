@@ -5,9 +5,9 @@ Unit tests for RealtimeReader.
 import unittest
 from unittest.mock import patch
 
-from test.factories import create_weather_reader, create_weather_station
-from test.test_weather_readers.base import WeatherReaderTestBase
-from weather_readers.realtime_reader import RealtimeReader
+from gatherer.test.factories import create_weather_reader, create_weather_station
+from gatherer.test.test_weather_readers.base import WeatherReaderTestBase
+from gatherer.weather_readers.realtime_reader import RealtimeReader
 
 
 class TestRealtimeReader(WeatherReaderTestBase):
@@ -17,7 +17,7 @@ class TestRealtimeReader(WeatherReaderTestBase):
 
     live_fixture_filename = "realtime_response.txt"
 
-    @patch("weather_readers.realtime_reader.RealtimeReader.fetch_data")
+    @patch("gatherer.weather_readers.realtime_reader.RealtimeReader.fetch_data")
     def test_read_good(self, mock_fetch_data):
         """
         Test the read method of RealtimeReader with valid data.

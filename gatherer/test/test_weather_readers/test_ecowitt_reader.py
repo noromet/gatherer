@@ -5,9 +5,9 @@ Unit tests for EcowittReader.
 import unittest
 from unittest.mock import patch
 
-from test.factories import create_weather_reader, create_weather_station
-from test.test_weather_readers.base import WeatherReaderTestBase
-from weather_readers.ecowitt_reader import EcowittReader
+from gatherer.test.factories import create_weather_reader, create_weather_station
+from gatherer.test.test_weather_readers.base import WeatherReaderTestBase
+from gatherer.weather_readers.ecowitt_reader import EcowittReader
 
 
 class TestEcowittReader(WeatherReaderTestBase):
@@ -19,7 +19,7 @@ class TestEcowittReader(WeatherReaderTestBase):
     live_fixture_filename = "ecowitt_live_response.json"
     daily_fixture_filename = "ecowitt_daily_response.json"
 
-    @patch("weather_readers.ecowitt_reader.EcowittReader.fetch_data")
+    @patch("gatherer.weather_readers.ecowitt_reader.EcowittReader.fetch_data")
     def test_read_good(self, mock_fetch_data):
         """
         Test the read method of EcowittReader with valid data.

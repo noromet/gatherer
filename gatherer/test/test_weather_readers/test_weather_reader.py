@@ -5,8 +5,8 @@ Test cases for the WeatherReader base class.
 import unittest
 import datetime
 import zoneinfo
-from test.factories import create_weather_station
-from weather_readers import WeatherReader
+from gatherer.test.factories import create_weather_station
+from gatherer.weather_readers import WeatherReader
 from gatherer.schema import WeatherRecord
 
 
@@ -19,13 +19,13 @@ class MockWeatherReader(WeatherReader):
         super().__init__()
         self.required_fields = required_fields if required_fields is not None else []
 
-    def fetch_data(self):
+    def fetch_data(self, _):
         """
         Mock method to simulate fetching data from a weather station.
         """
         return {"live": {}, "daily": {}}
 
-    def parse(self):
+    def parse(self, _, __):
         """
         Mock method to simulate parsing data from a weather station.
         """

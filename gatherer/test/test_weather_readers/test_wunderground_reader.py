@@ -5,9 +5,9 @@ Unit tests for WundergroundReader.
 import unittest
 from unittest.mock import patch
 
-from test.factories import create_weather_reader, create_weather_station
-from test.test_weather_readers.base import WeatherReaderTestBase
-from weather_readers.wunderground_reader import WundergroundReader
+from gatherer.test.factories import create_weather_reader, create_weather_station
+from gatherer.test.test_weather_readers.base import WeatherReaderTestBase
+from gatherer.weather_readers.wunderground_reader import WundergroundReader
 
 
 class TestWundergroundReader(WeatherReaderTestBase):
@@ -18,7 +18,7 @@ class TestWundergroundReader(WeatherReaderTestBase):
     live_fixture_filename = "wunderground_live_response.json"
     daily_fixture_filename = "wunderground_daily_response.json"
 
-    @patch("weather_readers.wunderground_reader.WundergroundReader.fetch_data")
+    @patch("gatherer.weather_readers.wunderground_reader.WundergroundReader.fetch_data")
     def test_read_good(self, mock_fetch_data):
         """
         Test the read method of WundergroundReader with valid data.
