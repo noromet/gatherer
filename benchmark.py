@@ -27,7 +27,7 @@ def benchmark():
     for n_stations in N_STATIONS:
         for threads in THREADS:
             print(f"Running benchmark with {n_stations} stations and {threads} threads")
-            elapsed_time = run_benchmark(n_stations, threads)
+            elapsed_time = _run(n_stations, threads)
             results[threads][n_stations] = elapsed_time
             print(f"Elapsed time: {elapsed_time:.2f} seconds")
 
@@ -68,7 +68,7 @@ def benchmark():
     return results
 
 
-def run_benchmark(n_stations, threads):
+def _run(n_stations, threads):
     """
     Run the benchmark for a given number of stations and threads.
     """
@@ -118,6 +118,4 @@ def run_benchmark(n_stations, threads):
 if __name__ == "__main__":
     benchmark()
 else:
-    # If this module is imported, the benchmark function will not be executed.
-    # This is useful for testing or when this module is used as a library.
     pass

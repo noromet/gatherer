@@ -16,13 +16,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy remaining files
-COPY ./logger.py ./logger.py
 COPY ./main.py ./main.py
-COPY ./schema.py ./schema.py
-COPY ./database.py ./database.py
-COPY ./__init__.py ./__init__.py
-COPY ./postprocessing ./postprocessing
-COPY ./weather_readers ./weather_readers
+COPY ./gatherer ./gatherer
 
 # Environment variables
 ENV DATABASE_CONNECTION_URL=""
