@@ -15,8 +15,8 @@ class MockWeatherReader(WeatherReader):
     No-functionality weather reader, to be used in unit testing.
     """
 
-    def __init__(self, required_fields=None):
-        super().__init__()
+    def __init__(self, required_fields=None, ignore_early_readings=False):
+        super().__init__(ignore_early_readings=ignore_early_readings)
         self.required_fields = required_fields if required_fields is not None else []
 
     def fetch_data(self, _):
@@ -497,3 +497,118 @@ class TestWeatherReaderUtils(unittest.TestCase):
                 ValueError, msg=f"Failed to raise ValueError for {date_str}"
             ):
                 self.base_reader.smart_parse_datetime(date_str)
+
+    @unittest.mock.patch("gatherer.weather_readers.WeatherReader.validate_date_age")
+    @unittest.mock.patch(
+        "gatherer.test.test_weather_readers.test_weather_reader.MockWeatherReader.parse"
+    )
+    def test_build_weather_record_ignore_early_records(
+        self, mock_parse, mock_validate_date_age
+    ):
+        """
+        Test the ignore_early_records functionality.
+        """
+        # Create a mock weather reader with ignore_early_records set to True
+        reader = MockWeatherReader(ignore_early_readings=True)
+        station = create_weather_station()
+
+        # case 1: record is from 13:00 PM UTC. max and min are kept
+        fields = {
+            "source_timestamp": datetime.datetime(
+                2023, 10, 1, 13, 0, tzinfo=zoneinfo.ZoneInfo("UTC")
+            ),
+            "taken_timestamp": datetime.datetime(
+                2023, 10, 1, 13, 0, tzinfo=zoneinfo.ZoneInfo("UTC")
+            ),
+            "flagged": False,
+            "live": {
+                "temperature": 25.0,
+                "wind_speed": 10.0,
+                "wind_direction": 180.0,
+                "rain": 5.0,
+                "humidity": 50.0,
+                "pressure": 1013.0,
+                "wind_gust": 15.0,
+            },
+            "daily": {
+                "max_temperature": 30.0,
+                "min_temperature": 20.0,
+                "max_wind_speed": 25.0,
+                "max_wind_gust": 35.0,
+                "cumulative_rain": 10.0,
+            },
+        }
+        mock_parse.return_value = fields
+        mock_validate_date_age.return_value = (True, None)
+        record = reader.read(station)
+        self.assertIsInstance(record, WeatherRecord)
+        self.assertEqual(record.temperature, fields["live"]["temperature"])
+        self.assertEqual(record.max_temperature, fields["daily"]["max_temperature"])
+
+        # case 2: record is from 00:05 AM UTC. max and min are not kept
+        fields = {
+            "source_timestamp": datetime.datetime(
+                2023, 10, 1, 0, 5, tzinfo=zoneinfo.ZoneInfo("UTC")
+            ),
+            "taken_timestamp": datetime.datetime(
+                2023, 10, 1, 0, 5, tzinfo=zoneinfo.ZoneInfo("UTC")
+            ),
+            "flagged": False,
+            "live": {
+                "temperature": 25.0,
+                "wind_speed": 10.0,
+                "wind_direction": 180.0,
+                "rain": 5.0,
+                "humidity": 50.0,
+                "pressure": 1013.0,
+                "wind_gust": 15.0,
+            },
+            "daily": {
+                "max_temperature": None,
+                "min_temperature": None,
+                "max_wind_speed": None,
+                "max_wind_gust": None,
+                "cumulative_rain": None,
+            },
+        }
+        mock_parse.return_value = fields
+        mock_validate_date_age.return_value = (True, None)
+        record = reader.read(station)
+        self.assertIsInstance(record, WeatherRecord)
+        self.assertEqual(record.temperature, fields["live"]["temperature"])
+        self.assertIsNone(record.max_temperature)
+        self.assertIsNone(record.min_temperature)
+
+        # case 3: record has source timestamp 23:55 previous day, but taken timestamp is 00:05
+        fields = {
+            "source_timestamp": datetime.datetime(
+                2023, 10, 1, 23, 55, tzinfo=zoneinfo.ZoneInfo("UTC")
+            ),
+            "taken_timestamp": datetime.datetime(
+                2023, 10, 2, 0, 5, tzinfo=zoneinfo.ZoneInfo("UTC")
+            ),
+            "flagged": False,
+            "live": {
+                "temperature": 25.0,
+                "wind_speed": 10.0,
+                "wind_direction": 180.0,
+                "rain": 5.0,
+                "humidity": 50.0,
+                "pressure": 1013.0,
+                "wind_gust": 15.0,
+            },
+            "daily": {
+                "max_temperature": None,
+                "min_temperature": None,
+                "max_wind_speed": None,
+                "max_wind_gust": None,
+                "cumulative_rain": None,
+            },
+        }
+        mock_parse.return_value = fields
+        mock_validate_date_age.return_value = (True, None)
+        record = reader.read(station)
+        self.assertIsInstance(record, WeatherRecord)
+        self.assertEqual(record.temperature, fields["live"]["temperature"])
+        self.assertIsNone(record.max_temperature)
+        self.assertIsNone(record.min_temperature)

@@ -173,9 +173,15 @@ class WeatherReader(ABC):
             if (
                 fields["source_timestamp"].hour == 0
                 and fields["source_timestamp"].minute < 60
+            ) or (
+                fields["taken_timestamp"].hour == 0
+                and fields["taken_timestamp"].minute < 60
             ):
                 # Check if the source timestamp is from 00:00 AM to 01:00 AM
-                if fields["source_timestamp"].minute < 60:
+                if (
+                    fields["source_timestamp"].minute < 60
+                    or fields["taken_timestamp"].minute < 60
+                ):
                     use_daily = False
                     logging.warning(
                         "Ignoring early reading from %s: %s",
