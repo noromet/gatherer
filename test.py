@@ -5,11 +5,15 @@ This script is designed to be run from the command line.
 
 import unittest
 import sys
+import logging as log
 
 
 def run_all_tests():
     """Run all tests in the project"""
     test_loader = unittest.defaultTestLoader
+
+    # silence all logs
+    log.disable(log.CRITICAL)
 
     # Discover all tests in the test directory
     test_suite = test_loader.discover("test", pattern="test_*.py")
