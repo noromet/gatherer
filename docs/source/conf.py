@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
 
-project = "gatherer"
+project = "Noromet - Gatherer"
 copyright = "2025, Juan Torrente"
 author = "Juan Torrente"
 release = "1.3"
@@ -19,6 +19,7 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.mathjax",
     "rst2pdf.pdfbuilder",  # for PDF generation
+    "sphinx_simplepdf",
 ]
 
 
@@ -32,3 +33,8 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 pdf_documents = [("index", "GathererDocs", "Gatherer Documentation", "Juan Torrente")]
+
+simplepdf_vars = {
+    "cover": "#961a1a",
+    "cover-bg": "#ffffff",
+}
