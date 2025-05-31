@@ -194,11 +194,17 @@ class WeatherReader(ABC):
         return self.build_weather_record(fields, station, use_daily)
 
     def get_fields(self) -> dict:
-        """
-        Return an empty fields dictionary to be populated by the subclass.
+        """Returns an empty fields dictionary to be populated by the subclasses.
+
         Two values have defaults:
-            - flagged: False
-            - taken_timestamp: datetime.datetime.now(tz=datetime.timezone.utc)
+
+        Args:
+            None
+
+        Returns:
+            dict: An empty fields dictionary with the following defaults:
+                - flagged: False
+                - taken_timestamp: Current UTC datetime
         """
         return {
             "source_timestamp": None,
@@ -226,7 +232,7 @@ class WeatherReader(ABC):
         self, fields: dict, station: WeatherStation, use_daily=True
     ) -> WeatherRecord:
         """
-        Build a WeatherRecord object from the provided fields and station.
+        Builds a WeatherRecord object from the provided fields and station.
 
         Args:
             fields (dict): The fields to populate in the WeatherRecord.
