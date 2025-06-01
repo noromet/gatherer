@@ -55,20 +55,21 @@ class CursorFromConnectionFromPool:
         self.cursor = self.connection.cursor(cursor_factory=RealDictCursor)
         return self.cursor
 
-    def __exit__(self, exception_type, exception_value, exception_traceback) -> None:
-        """Exit the context manager."""
-        if exception_value:
-            self.connection.rollback()
-        else:
+    def __exit__(self, _, exc_val, __):
+        if self.cursor:
             self.cursor.close()
-            self.connection.commit()
-        Database.return_connection(self.connection)
+        if self.connection:
+            if exc_val:
+                self.connection.rollback()
+            else:
+                self.connection.commit()
+            Database.return_connection(self.connection)
 
 
 class Database:
     """Database class for managing PostgreSQL connections."""
 
-    __connection_pool: Optional[pool.SimpleConnectionPool] = None
+    __connection_pool: Optional[pool.ThreadedConnectionPool] = None
 
     STATION_FIELDS = [
         "id",
@@ -93,7 +94,7 @@ class Database:
                 print("Exiting...")
                 sys.exit()
 
-        cls.__connection_pool = pool.SimpleConnectionPool(1, 10, dsn=connection_string)
+        cls.__connection_pool = pool.ThreadedConnectionPool(1, 4, dsn=connection_string)
 
     @classmethod
     def get_connection(cls) -> _connection:

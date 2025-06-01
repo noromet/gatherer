@@ -78,6 +78,9 @@ class EcowittReader(WeatherReader):
             wind.get("wind_gust", {}).get("value")
         )
 
+        if fields["source_timestamp"].hour in [0, 1]:
+            return fields  # short circuit ignoring the readings from the first 2 hours of the day
+
         fields["daily"]["max_temperature"] = max(
             self.safe_float(temp)
             for temp in daily_data["outdoor"]["temperature"]["list"].values()
