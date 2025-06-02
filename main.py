@@ -68,7 +68,7 @@ class Config:
         holfuy_live_endpoint (str): Endpoint for Holfuy live data.
         holfuy_daily_endpoint (str): Endpoint for Holfuy historical data.
         thingspeak_endpoint (str): Endpoint for ThingSpeak API.
-        cowitt_endpoint (str): Endpoint for Ecowitt API.
+        ecowitt_endpoint (str): Endpoint for Ecowitt API.
         ecowitt_daily_endpoint (str): Endpoint for Ecowitt daily data.
     """
 
@@ -81,8 +81,9 @@ class Config:
     holfuy_live_endpoint: str = os.getenv("HOLFUY_LIVE_ENDPOINT")
     holfuy_daily_endpoint: str = os.getenv("HOLFUY_HISTORIC_ENDPOINT")
     thingspeak_endpoint: str = os.getenv("THINGSPEAK_ENDPOINT")
-    cowitt_endpoint: str = os.getenv("ECOWITT_ENDPOINT")
+    ecowitt_endpoint: str = os.getenv("ECOWITT_ENDPOINT")
     ecowitt_daily_endpoint: str = os.getenv("ECOWITT_DAILY_ENDPOINT")
+    govee_endpoint: str = os.getenv("GOVEE_ENDPOINT")
 
 
 config = Config()
@@ -183,11 +184,12 @@ def main():
             live_endpoint=config.thingspeak_endpoint, is_benchmarking=benchmark
         ),
         "ecowitt": lambda: api.EcowittReader(
-            live_endpoint=config.cowitt_endpoint,
+            live_endpoint=config.ecowitt_endpoint,
             daily_endpoint=config.ecowitt_daily_endpoint,
             is_benchmarking=benchmark,
         ),
         "realtime": lambda: api.RealtimeReader(is_benchmarking=benchmark),
+        "govee": lambda: api.GoveeReader(live_endpoint=config.govee_endpoint),
     }
 
     with database_connection(config.db_url):

@@ -306,6 +306,36 @@ class WeatherReader(ABC):
 
         return response
 
+    def make_post_request(
+        self, url: str, body: dict = None, headers: dict = None, timeout: int = 5
+    ) -> requests.Response:
+        """
+        Helper function to make a POST request with a default
+        timeout and optional headers and body.
+
+        Args:
+            url (str): The URL to request.
+            body (dict, optional): Body for the POST request.
+            headers (dict, optional): Headers for the request.
+            timeout (int, optional): Timeout for the request in seconds.
+
+        Returns:
+            requests.Response: The response object.
+        """
+        if headers is None:
+            headers = {}
+        if body is None:
+            body = {}
+
+        response = requests.post(url, json=body, headers=headers, timeout=timeout)
+        logging.info("Requesting %s", response.url)
+
+        if response.status_code not in [200, 201, 204]:
+            logging.error("Failed to fetch data from %s: %s", url, response.status_code)
+            return None
+
+        return response
+
     def validate_date_age(self, date: datetime.datetime) -> tuple[bool, str]:
         """
         Assert that the given date is recent, has a timezone, and is not in the future.
