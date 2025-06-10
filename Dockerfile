@@ -31,6 +31,7 @@ ENV WUNDERGROUND_ENDPOINT="https://api.weather.com/v2/pws/observations/current"
 ENV WUNDERGROUND_DAILY_ENDPOINT="https://api.weather.com/v2/pws/dailysummary/7day"
 ENV ECOWITT_ENDPOINT="https://api.ecowitt.net/api/v3/device/real_time"
 ENV ECOWITT_DAILY_ENDPOINT="https://api.ecowitt.net/api/v3/device/history"
+ENV GOVEE_ENDPOINT="https://openapi.api.govee.com/router/api/v1/device/state"
 
 # Set entrypoint
 ENTRYPOINT ["python", "main.py", "--all"]

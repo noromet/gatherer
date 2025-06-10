@@ -83,9 +83,9 @@ max_elapsed_time = (
 
 # Plot with improvements
 plt.figure(figsize=(12, 8))
-colors = ["blue", "red", "green"]
+colors = ["#52828b", "#578651", "#b6af4d"]
 markers = ["o", "s", "^"]
-line_styles = ["-", "--", "-."]
+line_styles = ["-", "-", "-"]
 
 # Set specific y-ticks with a reasonable range
 y_ticks = np.arange(0, max_elapsed_time, 50)
@@ -128,16 +128,17 @@ for i, threads in enumerate(sorted(results.keys())):
         )  # Ensure labels are also on top
 
 # Configure the plot
-plt.xlabel("Number of Stations", fontsize=12, fontweight="bold")
-plt.ylabel("Elapsed Time (seconds)", fontsize=12, fontweight="bold")
-plt.title(
-    "Benchmark Results: Elapsed Time vs Number of Stations",
-    fontsize=14,
-    fontweight="bold",
-)
+plt.xlabel("Número de estaciones", fontsize=12)
+plt.ylabel("Tiempo (s)", fontsize=12)
+plt.title("Benchmark: Tiempo de ejecución vs Número de Estaciones", fontsize=14)
 
 # Set specific x-ticks at station values
-plt.xticks(station_values)
+# Set specific x-ticks at station values with 0 included
+plt.xticks([0] + station_values)
+
+# Set axes to start at 0,0
+plt.xlim(0, max(station_values) * 1.05)  # Add a small margin on the right
+plt.ylim(0, max_elapsed_time * 1.05)  # Add a small margin on the top
 
 plt.legend(fontsize=10, loc="upper left")
 plt.grid(False)  # Disable default grid since we're adding custom grid lines
