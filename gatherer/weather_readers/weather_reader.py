@@ -32,6 +32,7 @@ class WeatherReader(ABC):
         daily_endpoint: str = None,
         ignore_early_readings: bool = False,
         is_benchmarking: bool = False,
+        auth_parameters: dict = None,
     ):
         self.required_fields = []
         self.ignore_early_readings = ignore_early_readings
@@ -42,6 +43,8 @@ class WeatherReader(ABC):
         self.is_benchmarking = is_benchmarking
         if is_benchmarking:
             self.response_times_ms = []
+
+        self.auth_parameters = auth_parameters if auth_parameters else {}
 
     # region template methods
     def fetch_data(self, station: WeatherStation) -> dict:

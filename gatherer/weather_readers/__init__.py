@@ -12,6 +12,7 @@ from .ecowitt_reader import EcowittReader
 from .realtime_reader import RealtimeReader
 from .weather_reader import WeatherReader
 from .govee_reader import GoveeReader
+from .sencrop_reader import SencropReader
 
 __all__ = [
     "WeatherReader",
@@ -24,4 +25,5 @@ __all__ = [
     "EcowittReader",
     "RealtimeReader",
     "GoveeReader",
+    "SencropReader",
 ]

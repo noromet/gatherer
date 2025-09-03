@@ -84,6 +84,10 @@ class Config:
     ecowitt_endpoint: str = os.getenv("ECOWITT_ENDPOINT")
     ecowitt_daily_endpoint: str = os.getenv("ECOWITT_DAILY_ENDPOINT")
     govee_endpoint: str = os.getenv("GOVEE_ENDPOINT")
+    sencrop_endpoint: str = os.getenv("SENCROP_ENDPOINT")
+    sencrop_partner_id: str = os.getenv("SENCROP_PARTNER_ID")
+    sencrop_application_id: str = os.getenv("SENCROP_APPLICATION_ID")
+    sencrop_application_secret: str = os.getenv("SENCROP_APPLICATION_SECRET")
 
 
 config = Config()
@@ -190,6 +194,13 @@ def main():
         ),
         "realtime": lambda: api.RealtimeReader(is_benchmarking=benchmark),
         "govee": lambda: api.GoveeReader(live_endpoint=config.govee_endpoint),
+        "sencrop": lambda: api.SencropReader(
+            live_endpoint=config.sencrop_endpoint,
+            auth_parameters={
+                "SENCROP_APPLICATION_ID": config.sencrop_application_id,
+                "SENCROP_APPLICATION_SECRET": config.sencrop_application_secret,
+            },
+        ),
     }
 
     with database_connection(config.db_url):
