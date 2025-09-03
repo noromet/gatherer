@@ -33,5 +33,10 @@ ENV ECOWITT_ENDPOINT="https://api.ecowitt.net/api/v3/device/real_time"
 ENV ECOWITT_DAILY_ENDPOINT="https://api.ecowitt.net/api/v3/device/history"
 ENV GOVEE_ENDPOINT="https://openapi.api.govee.com/router/api/v1/device/state"
 
+ENV SENCROP_ENDPOINT="https://api.sencrop.com/v1"
+ENV SENCROP_PARTNER_ID=""
+ENV SENCROP_APPLICATION_ID=""
+ENV SENCROP_APPLICATION_SECRET=""
+
 # Set entrypoint
 ENTRYPOINT ["python", "main.py", "--all"]
