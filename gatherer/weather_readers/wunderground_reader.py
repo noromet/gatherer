@@ -5,7 +5,9 @@ from the Weather Underground API. It processes live and daily weather data into 
 """
 
 import datetime
+
 from gatherer.schema import WeatherRecord, WeatherStation
+
 from .weather_reader import WeatherReader
 
 

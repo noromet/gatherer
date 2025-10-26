@@ -2,13 +2,14 @@
 Implements a reader for the Govee API.
 """
 
-import uuid
-import logging
 import datetime
+import logging
+import uuid
 
 from gatherer.schema import WeatherRecord, WeatherStation
-from .weather_reader import WeatherReader
+
 from .utils import UnitConverter
+from .weather_reader import WeatherReader
 
 
 class GoveeReader(WeatherReader):

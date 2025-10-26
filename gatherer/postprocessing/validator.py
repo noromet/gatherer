@@ -7,7 +7,6 @@ from typing import Tuple
 
 from gatherer.schema import WeatherRecord
 
-
 WEATHER_SAFE_RANGES = {
     "temperature": (-39, 50),
     "wind_speed": (0, 500),

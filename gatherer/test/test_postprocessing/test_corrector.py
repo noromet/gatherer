@@ -3,8 +3,9 @@ Test cases for the Corrector class in the postprocessing module.
 """
 
 import unittest
-from gatherer.test.factories import create_weather_record
+
 from gatherer.postprocessing.corrector import Corrector
+from gatherer.test.factories import create_weather_record
 
 
 class TestCorrector(unittest.TestCase):

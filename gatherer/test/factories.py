@@ -2,11 +2,11 @@
 Collection of factory methods to create test data for WeatherRecord.
 """
 
-import uuid
 import datetime
+import uuid
 
-from gatherer.schema import WeatherRecord, WeatherStation
 from gatherer import weather_readers
+from gatherer.schema import WeatherRecord, WeatherStation
 
 
 def create_weather_record(**overrides):

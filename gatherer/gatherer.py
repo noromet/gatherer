@@ -1,16 +1,16 @@
 """Gatherer module for processing weather station data."""
 
-from collections import defaultdict
-import statistics
 import concurrent.futures
-import threading
 import json
-import queue
 import logging
+import queue
+import statistics
+import threading
+from collections import defaultdict
 
-from gatherer.schema import WeatherRecord, WeatherStation
-from gatherer.postprocessing import Validator, Corrector
 from gatherer.database import Database
+from gatherer.postprocessing import Corrector, Validator
+from gatherer.schema import WeatherRecord, WeatherStation
 
 
 class Gatherer:

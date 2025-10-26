@@ -2,12 +2,12 @@
 Base classes for test cases.
 """
 
+import datetime
 import json
 import os
 import unittest
-import datetime
+from typing import Any, Dict
 from unittest import mock
-from typing import Dict, Any
 
 
 class WeatherReaderTestBase(unittest.TestCase):

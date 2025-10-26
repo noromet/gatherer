@@ -25,13 +25,13 @@ This module is designed to ensure safe and efficient database operations for the
 weather data gathering system.
 """
 
-from typing import List, Optional
 import datetime
-import uuid
 import json
 import logging
 import sys
+import uuid
 from contextlib import contextmanager
+from typing import List, Optional
 
 import psycopg2
 from psycopg2 import pool
