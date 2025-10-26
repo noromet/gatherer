@@ -2,12 +2,13 @@
 Test cases for the WeatherReader base class.
 """
 
-import unittest
 import datetime
+import unittest
 import zoneinfo
+
+from gatherer.schema import WeatherRecord
 from gatherer.test.factories import create_weather_station
 from gatherer.weather_readers import WeatherReader
-from gatherer.schema import WeatherRecord
 
 
 class MockWeatherReader(WeatherReader):

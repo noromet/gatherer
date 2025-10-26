@@ -5,7 +5,9 @@ It processes live weather data into a standardized `WeatherRecord` format.
 """
 
 import requests
+
 from gatherer.schema import WeatherRecord, WeatherStation
+
 from .weather_reader import WeatherReader
 
 

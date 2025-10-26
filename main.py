@@ -26,25 +26,20 @@ Run the script with appropriate command-line arguments to
 process weather station data.
 """
 
+import argparse
+import logging
 import os
-
+from dataclasses import dataclass
+from datetime import datetime
 from time import tzset
 from uuid import uuid4
-from datetime import datetime
-import logging
-from dataclasses import dataclass
-import argparse
 
 from dotenv import load_dotenv
 
 import gatherer.weather_readers as api
-from gatherer.database import database_connection, Database
-from gatherer.logger import (
-    set_debug_mode,
-    setup_logger,
-)
-
+from gatherer.database import Database, database_connection
 from gatherer.gatherer import Gatherer
+from gatherer.logger import set_debug_mode, setup_logger
 
 load_dotenv()
 

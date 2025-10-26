@@ -4,9 +4,9 @@ WeatherRecord: Represents a single weather data record with attributes such
 as temperature, wind speed, humidity, etc.
 """
 
-from dataclasses import dataclass
 import datetime
 import uuid
+from dataclasses import dataclass
 from typing import Optional
 
 

@@ -5,11 +5,11 @@ from various sources into a standardized `WeatherRecord` format.
 """
 
 import datetime
-import time
 import logging
+import time
+import uuid
 from abc import ABC, abstractmethod
 from typing import Any
-import uuid
 
 import requests
 from dateutil import parser

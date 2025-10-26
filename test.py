@@ -3,9 +3,9 @@ Run all tests in the project.
 This script is designed to be run from the command line.
 """
 
-import unittest
-import sys
 import logging as log
+import sys
+import unittest
 
 
 def run_all_tests():

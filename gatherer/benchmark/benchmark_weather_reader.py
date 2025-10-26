@@ -2,9 +2,10 @@
 Implementation of a benchmark weather data reader.
 """
 
-import time
 import datetime
+import time
 import zoneinfo
+
 from gatherer.weather_readers import WeatherReader
 
 

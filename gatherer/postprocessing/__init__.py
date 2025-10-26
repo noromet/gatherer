@@ -6,7 +6,7 @@ The exported classes and functions include:
 - Corrector: A class to correct the data in the WeatherRecord.
 """
 
-from .validator import Validator
 from .corrector import Corrector
+from .validator import Validator
 
 __all__ = ["Validator", "Corrector"]

@@ -2,15 +2,14 @@
 Benchmarking script for the Gatherer library.
 """
 
-from uuid import uuid4
 import time
+from uuid import uuid4
 
 import matplotlib.pyplot as plt
 
-from gatherer.gatherer import Gatherer
 from gatherer.benchmark import BenchmarkWeatherReader
+from gatherer.gatherer import Gatherer
 from gatherer.schema import WeatherStation
-
 
 THREADS = [1, 4, 8]
 N_STATIONS = [10, 100, 250, 500, 750, 1000]
