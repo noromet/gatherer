@@ -51,7 +51,11 @@ class WeatherlinkV2Reader(WeatherReader):
                 "rain_rate_mm": [],
                 "rain_rate_last_mm": [],
             },
-            "cumulative_rain": {"rain_day_mm": [], "rainfall_daily_mm": []},
+            "cumulative_rain": {
+                "rain_day_mm": [],
+                "rainfall_daily_mm": [],
+                "rainfall_day_mm": [],
+            },
             "humidity": {"hum": [], "hum_out": []},
             "pressure": {
                 "bar": [],
@@ -106,6 +110,9 @@ class WeatherlinkV2Reader(WeatherReader):
                 self.max_or_none(live_response_keys["cumulative_rain"]["rain_day_mm"]),
                 self.max_or_none(
                     live_response_keys["cumulative_rain"]["rainfall_daily_mm"]
+                ),
+                self.max_or_none(
+                    live_response_keys["cumulative_rain"]["rainfall_day_mm"]
                 ),
             ]
         )
