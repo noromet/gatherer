@@ -160,24 +160,33 @@ class SencropReader(WeatherReader):
         )
         end_of_day = start_of_day + datetime.timedelta(days=1)
 
-        filtered_daily_data = []
+        logging.debug(
+            "Filtering daily data for station %s (timezone %s) between %s and %s.",
+            station.id,
+            station_tz,
+            start_of_day,
+            end_of_day,
+        )
+
+        cumulative_rain = 0
         for entry in daily_data:
             entry_key = entry.get("key")
             if entry_key:
                 entry_dt = datetime.datetime.fromtimestamp(
                     entry_key / 1000, tz=station_tz
                 )
-                if start_of_day <= entry_dt < end_of_day:
-                    filtered_daily_data.append(entry)
+                if start_of_day < entry_dt < end_of_day:
+                    rain_value = entry.get("RAIN_FALL_MEAN_SUM_ADJUSTED", {}).get(
+                        "value", 0
+                    )
+                    # print("using")
+                    # print(entry_dt)
+                    # print(entry)
+                    # print("\n")
+                    # print(f"addition: {cumulative_rain} + {rain_value}
+                    #       = {cumulative_rain + rain_value}")
 
-        if not filtered_daily_data:
-            return {"cumulative_rain": None}
-
-        # Aggregate the daily data: sum RAIN_FALL_MEAN_SUM_ADJUSTED
-        cumulative_rain = 0
-        for entry in daily_data:
-            rain_value = entry.get("RAIN_FALL_MEAN_SUM_ADJUSTED", {}).get("value", 0)
-            cumulative_rain += rain_value
+                    cumulative_rain += rain_value
 
         return {"cumulative_rain": cumulative_rain}
 
