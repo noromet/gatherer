@@ -1,0 +1,88 @@
+{
+    "item": 97251,
+    "models": {
+        "8": {
+            "id": 8,
+            "contents": {
+                "name": "Windcrop",
+                "conception": "France - Lille",
+                "manufacturing": "Europe-France",
+                "calibration": "Ok",
+                "weight": 3.1
+            }
+        }
+    },
+    "devicesStatuses": {
+        "97251": {
+            "id": 97251,
+            "contents": {
+                "firmware": "1.1.60",
+                "lqi": "Excellent",
+                "battery": 3328,
+                "timeZone": "Europe/Madrid",
+                "lastMoveDate": "2025-08-20T06:14:27.000Z",
+                "lastStatusUpdateDate": "2025-11-16T18:57:29.000Z",
+                "lastRebootDate": "2023-02-10T09:42:53.000Z"
+            }
+        }
+    },
+    "devices": {
+        "97251": {
+            "id": 97251,
+            "creationDate": "2023-01-27T10:03:42.000Z",
+            "lastModificationDate": "2024-02-19T08:16:34.000Z",
+            "extendedGapFillingEnabled": false,
+            "hasBeenReplaced": false,
+            "previousDevicesIds": [],
+            "settings": {
+                "patchSmallRainFall": true
+            },
+            "accessPeriods": [
+                {
+                    "id": 742161,
+                    "bucketId": 38514,
+                    "authorId": 1,
+                    "granteeId": 133269,
+                    "sharingOrganisationId": 5,
+                    "userId": 298047,
+                    "delegatorId": 1,
+                    "organisationId": 133269,
+                    "parameters": {},
+                    "type": "guest",
+                    "startDate": "2023-02-10T12:11:23.000Z",
+                    "endDate": "2023-09-05T15:23:41.000Z",
+                    "deletionDate": "2023-09-05T15:23:41.000Z"
+                }
+            ],
+            "modelId": 8,
+            "identification": "WC011996",
+            "serial": "29F36AF",
+            "calibrations": {},
+            "contents": {
+                "name": ""
+            },
+            "status": {
+                "firmware": "1.1.60",
+                "signal": 0,
+                "lqi": "Excellent",
+                "battery": 3328,
+                "lastLocationDate": "2025-08-20T09:10:32.000Z",
+                "lastMoveDate": "2025-08-20T06:14:27.000Z",
+                "lastStatusUpdateDate": "2025-11-16T18:57:29.000Z",
+                "lastRebootDate": "2023-02-10T09:42:53.000Z"
+            },
+            "measures": {
+                "default": "WIND_SPEED",
+                "list": [
+                    "WIND_SPEED",
+                    "WIND_GUST",
+                    "WIND_DIRECTION"
+                ]
+            }
+        }
+    },
+    "measures": {
+        "interval": "1h",
+        "data": []
+    }
+}

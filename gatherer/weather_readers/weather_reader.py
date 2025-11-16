@@ -58,7 +58,10 @@ class WeatherReader(ABC):
         Returns:
             dict: The raw data fetched from the source with "live" and "daily" keys.
         """
-        result = {}
+        result = {
+            "live": {},
+            "daily": {},
+        }
 
         if self.is_benchmarking:
             start_time = time.monotonic()
