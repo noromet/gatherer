@@ -80,32 +80,28 @@ class SencropReader(WeatherReader):
         devices_info = response.json()
         return devices_info
 
-    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
+    def _parse_live_data(self, station: WeatherStation, live_data: dict) -> tuple:
         """
-        Parse the fetched data into a WeatherRecord object.
-        Args:
-            station (WeatherStation): The weather station object.
-            data (dict): The raw data fetched from the API.
-        Returns:
-            WeatherRecord: The parsed weather record.
-        """
-        station_identifier = station.field1
-        live_data = data.get("live", {}).get(station_identifier)
-        daily_data = data.get("daily", {})
+        Parse live weather data and extract the latest timestamp.
 
-        # for live data
-        # -----------------
+        Args:
+            station: The weather station object
+            live_data: Live data from the API
+
+        Returns:
+            tuple: (latest_timestamp, live_fields_dict) or (None, None) if invalid
+        """
         if not live_data:
             logging.error(
                 "No live data found for station %s. Check the API response format.",
                 station.field1,
             )
-            return None
+            return None, None
+
         logging.info("Found live data for station %s.", station.id)
 
         # find the latest timestamp in the data
         timestamps = []
-        latest_timestamp = None
         for key, value in live_data.items():
             if key in SencropReader.FIELDS_THAT_MIGHT_HAVE_TIMESTAMP and isinstance(
                 value, dict
@@ -119,51 +115,41 @@ class SencropReader(WeatherReader):
                         logging.warning(
                             "Invalid timestamp format for field %s: %s", key, ts
                         )
-        if timestamps:
-            latest_timestamp = max(timestamps)
-        else:
+
+        if not timestamps:
             logging.error(
                 "No timestamps found in data for station %s, discarding as invalid.",
                 station.id,
             )
-            return None
+            return None, None
 
-        fields = self.get_fields()
-        fields["source_timestamp"] = latest_timestamp
-        fields["live"]["temperature"] = live_data.get("TEMPERATURE", {}).get(
-            "lastMeasure"
-        )
-        fields["live"]["humidity"] = live_data.get("RELATIVE_HUMIDITY", {}).get(
-            "lastMeasure"
-        )
-        fields["live"]["wind_speed"] = live_data.get("WIND_SPEED", {}).get(
-            "lastMeasure"
-        )
-        fields["live"]["wind_direction"] = live_data.get("WIND_DIRECTION", {}).get(
-            "lastMeasure"
-        )
-        fields["live"]["wind_gust"] = live_data.get("WIND_GUST", {}).get("lastMeasure")
-        # -----------------
+        latest_timestamp = max(timestamps)
 
-        # for daily data
-        # -----------------
+        live_fields = {
+            "temperature": live_data.get("TEMPERATURE", {}).get("lastMeasure"),
+            "humidity": live_data.get("RELATIVE_HUMIDITY", {}).get("lastMeasure"),
+            "wind_speed": live_data.get("WIND_SPEED", {}).get("lastMeasure"),
+            "wind_direction": live_data.get("WIND_DIRECTION", {}).get("lastMeasure"),
+            "wind_gust": live_data.get("WIND_GUST", {}).get("lastMeasure"),
+        }
 
-        # i have a list of entries like:
-        # {
-        #     "key": 1763323200000,
-        #     "RAIN_FALL": {
-        #         "value": 0
-        #     },
-        #     "RAIN_FALL_MEAN_SUM": {
-        #         "value": 0
-        #     },
-        #     "RAIN_FALL_MEAN_SUM_ADJUSTED": {
-        #         "value": 0
-        #     },
-        #     "docCount": 4
-        # }
+        return latest_timestamp, live_fields
 
-        # i want to get only the entries of the current natural day for the station's timezone
+    def _parse_daily_data(self, station: WeatherStation, daily_data: list) -> dict:
+        """
+        Parse daily weather data and calculate cumulative rain.
+
+        Args:
+            station: The weather station object
+            daily_data: List of daily data entries from the API
+
+        Returns:
+            dict: Daily fields dict or None if no valid data
+        """
+        if not daily_data:
+            return {"cumulative_rain": None}
+
+        # Filter entries for the current natural day in station's timezone
         station_tz = station.data_timezone
         now_in_tz = datetime.datetime.now(tz=station_tz)
         start_of_day = datetime.datetime(
@@ -173,6 +159,7 @@ class SencropReader(WeatherReader):
             tzinfo=station_tz,
         )
         end_of_day = start_of_day + datetime.timedelta(days=1)
+
         filtered_daily_data = []
         for entry in daily_data:
             entry_key = entry.get("key")
@@ -182,19 +169,42 @@ class SencropReader(WeatherReader):
                 )
                 if start_of_day <= entry_dt < end_of_day:
                     filtered_daily_data.append(entry)
-        if not filtered_daily_data:
-            logging.error(
-                "No daily data found for station %s for today. Check the API response format.",
-                station.id,
-            )
-            return None
 
-        # now aggregate the daily data: sum RAIN_FALL_MEAN_SUM_ADJUSTED
+        if not filtered_daily_data:
+            return {"cumulative_rain": None}
+
+        # Aggregate the daily data: sum RAIN_FALL_MEAN_SUM_ADJUSTED
         cumulative_rain = 0
         for entry in daily_data:
             rain_value = entry.get("RAIN_FALL_MEAN_SUM_ADJUSTED", {}).get("value", 0)
             cumulative_rain += rain_value
-        fields["daily"]["cumulative_rain"] = cumulative_rain
+
+        return {"cumulative_rain": cumulative_rain}
+
+    def parse(self, station: WeatherStation, data: dict) -> WeatherRecord:
+        """
+        Parse the fetched data into a WeatherRecord object.
+        Args:
+            station (WeatherStation): The weather station object.
+            data (dict): The raw data fetched from the API.
+        Returns:
+            WeatherRecord: The parsed weather record.
+        """
+        station_identifier = station.field1
+        live_data = data.get("live", {}).get(station_identifier)
+        daily_data = data.get("daily", {})
+
+        # Parse live data
+        latest_timestamp, live_fields = self._parse_live_data(station, live_data)
+
+        # Parse daily data
+        daily_fields = self._parse_daily_data(station, daily_data)
+
+        # Combine results
+        fields = self.get_fields()
+        fields["source_timestamp"] = latest_timestamp
+        fields["live"].update(live_fields)
+        fields["daily"].update(daily_fields)
 
         return fields
 
@@ -249,7 +259,7 @@ class SencropReader(WeatherReader):
         datalist = response.json().get("measures", {}).get("data", {})
 
         if not datalist:
-            logging.error(
+            logging.warning(
                 "No daily data found for station %s. Check the API response format.",
                 station.id,
             )

@@ -72,7 +72,6 @@ class WeatherReader(ABC):
 
         daily_response = self.fetch_daily_data(station)
         if daily_response:
-            print("setting daily response")
             result["daily"] = daily_response
 
         if self.is_benchmarking:
