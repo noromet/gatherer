@@ -93,6 +93,8 @@ class SencropReader(WeatherReader):
         live_data = data.get("live", {}).get(station_identifier)
         daily_data = data.get("daily", {})
 
+        # for live data
+        # -----------------
         if not live_data:
             logging.error(
                 "No live data found for station %s. Check the API response format.",
@@ -141,10 +143,58 @@ class SencropReader(WeatherReader):
             "lastMeasure"
         )
         fields["live"]["wind_gust"] = live_data.get("WIND_GUST", {}).get("lastMeasure")
+        # -----------------
 
-        fields["daily"]["cumulative_rain"] = daily_data.get(
-            "RAIN_FALL_MEAN_SUM_ADJUSTED"
-        ).get("value")
+        # for daily data
+        # -----------------
+
+        # i have a list of entries like:
+        # {
+        #     "key": 1763323200000,
+        #     "RAIN_FALL": {
+        #         "value": 0
+        #     },
+        #     "RAIN_FALL_MEAN_SUM": {
+        #         "value": 0
+        #     },
+        #     "RAIN_FALL_MEAN_SUM_ADJUSTED": {
+        #         "value": 0
+        #     },
+        #     "docCount": 4
+        # }
+
+        # i want to get only the entries of the current natural day for the station's timezone
+        station_tz = station.data_timezone
+        now_in_tz = datetime.datetime.now(tz=station_tz)
+        start_of_day = datetime.datetime(
+            year=now_in_tz.year,
+            month=now_in_tz.month,
+            day=now_in_tz.day,
+            tzinfo=station_tz,
+        )
+        end_of_day = start_of_day + datetime.timedelta(days=1)
+        filtered_daily_data = []
+        for entry in daily_data:
+            entry_key = entry.get("key")
+            if entry_key:
+                entry_dt = datetime.datetime.fromtimestamp(
+                    entry_key / 1000, tz=station_tz
+                )
+                if start_of_day <= entry_dt < end_of_day:
+                    filtered_daily_data.append(entry)
+        if not filtered_daily_data:
+            logging.error(
+                "No daily data found for station %s for today. Check the API response format.",
+                station.id,
+            )
+            return None
+
+        # now aggregate the daily data: sum RAIN_FALL_MEAN_SUM_ADJUSTED
+        cumulative_rain = 0
+        for entry in daily_data:
+            rain_value = entry.get("RAIN_FALL_MEAN_SUM_ADJUSTED", {}).get("value", 0)
+            cumulative_rain += rain_value
+        fields["daily"]["cumulative_rain"] = cumulative_rain
 
         return fields
 
@@ -152,7 +202,7 @@ class SencropReader(WeatherReader):
         """
         Call the Sencrop API and retrieve raw data.
         Store it in class variable.
-        IS ONLY CALLED ONCE.
+        THIS ONE IS ONLY CALLED ONCE.
         """
         if len(SencropReader.device_data_cache) == 0:
             logging.info("Caching all-devices data.")
@@ -196,12 +246,13 @@ class SencropReader(WeatherReader):
         if not response:
             return None
 
-        datalist = response.json().get("measures").get("data")
-        # datalist has key "key" with value timestamp. sort ascending.
-        datalist.sort(key=lambda x: x.get("key"), reverse=False)
-        daily_data = {}
-        for entry in datalist:
-            if entry.get("docCount", 0) > 0:
-                daily_data = entry
+        datalist = response.json().get("measures", {}).get("data", {})
 
-        return daily_data
+        if not datalist:
+            logging.error(
+                "No daily data found for station %s. Check the API response format.",
+                station.id,
+            )
+            return None
+
+        return datalist
