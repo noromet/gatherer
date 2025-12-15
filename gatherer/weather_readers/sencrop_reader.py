@@ -28,7 +28,11 @@ class SencropReader(WeatherReader):
     device_data_cache = {}
 
     def __init__(self, live_endpoint: str, auth_parameters: dict):
-        super().__init__(live_endpoint=live_endpoint, auth_parameters=auth_parameters)
+        super().__init__(
+            live_endpoint=live_endpoint,
+            ignore_early_readings=True,
+            auth_parameters=auth_parameters,
+        )
         self.required_fields = ["field1"]
         self.auth_token: str = self._get_auth_token()
         self.user_id: str = self._get_user_id(self.auth_token)
@@ -170,12 +174,13 @@ class SencropReader(WeatherReader):
 
         cumulative_rain = 0
         for entry in daily_data:
+            print(entry)
             entry_key = entry.get("key")
             if entry_key:
                 entry_dt = datetime.datetime.fromtimestamp(
                     entry_key / 1000, tz=station_tz
                 )
-                if start_of_day < entry_dt < end_of_day:
+                if start_of_day <= entry_dt < end_of_day:
                     rain_value = entry.get("RAIN_FALL_MEAN_SUM_ADJUSTED", {}).get(
                         "value", 0
                     )
@@ -183,10 +188,11 @@ class SencropReader(WeatherReader):
                     # print(entry_dt)
                     # print(entry)
                     # print("\n")
-                    # print(f"addition: {cumulative_rain} + {rain_value}
+                    # print(f"addition: {cumulative_rain} + {rain_value} \
                     #       = {cumulative_rain + rain_value}")
 
                     cumulative_rain += rain_value
+                    print("keeping")
 
         return {"cumulative_rain": cumulative_rain}
 
@@ -206,12 +212,16 @@ class SencropReader(WeatherReader):
         # Parse live data
         latest_timestamp, live_fields = self._parse_live_data(station, live_data)
 
+        local_observation_time = latest_timestamp.replace(
+            tzinfo=station.data_timezone
+        ).astimezone(station.local_timezone)
+
         # Parse daily data
         daily_fields = self._parse_daily_data(station, daily_data)
 
         # Combine results
         fields = self.get_fields()
-        fields["source_timestamp"] = latest_timestamp
+        fields["source_timestamp"] = local_observation_time
         fields["live"].update(live_fields)
         fields["daily"].update(daily_fields)
 
